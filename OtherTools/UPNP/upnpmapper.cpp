@@ -3,15 +3,27 @@
 using  namespace micagent;
 using  std::cout;
 using  std::endl;
-Upnp_Connection::Upnp_Connection(UpnpMapper * server,xop::TaskScheduler *taskScheduler, int sockfd,UPNP_COMMAND mode)
-    :TcpConnection(taskScheduler, sockfd),m_upnp_mapper(server),m_taskscheduler(taskScheduler),m_mode(mode)
+Upnp_Connection::Upnp_Connection(UpnpMapper * server,EventLoop *loop, int sockfd,UPNP_COMMAND mode)
+    :m_channel(new Channel(sockfd)),m_upnp_mapper(server),m_event_loop(loop),m_mode(mode)
 {
-    this->setReadCallback([this](std::shared_ptr<TcpConnection> conn, xop::BufferReader& buffer) {
-        return this->onRead(buffer);
+    Network_Util::Instance().make_noblocking(sockfd);
+    m_channel->setReadCallback([this](Channel *chn){
+        return this->onRead();
     });
-    this->setCloseCallback([this](std::shared_ptr<TcpConnection> conn) {
-        this->onClose();
+    m_channel->setCloseCallback([this](Channel *chn){
+        m_event_loop->removeChannel(chn->fd());
+        m_upnp_mapper->removeConnection(chn->fd());
+        cout<<"close Upnp_Connection : "<<chn->fd()<<endl;
+        return true;
     });
+    m_channel->enableReading();
+}
+void Upnp_Connection::start_work()
+{
+    m_event_loop->updateChannel(m_channel);
+}
+void Upnp_Connection::stop_work(){
+    m_event_loop->removeChannel(m_channel);
 }
 Upnp_Connection::~Upnp_Connection()
 {
@@ -48,20 +60,27 @@ string Upnp_Connection::build_xml_packet(string action,std::vector<std::pair<str
     request+=packet;
     return request;
 }
-bool Upnp_Connection::onRead(xop::BufferReader& buffer)
+bool Upnp_Connection::onRead()
 {
-    std::string recv_data;
-    int size = buffer.readAll(recv_data);
-    if(size<=0)return false;
-    else {
-        m_buf+=recv_data;
-        if(check_packet())HandleData();
+    shared_ptr<char[]>buf(new char[4096]);
+    bool ret=true;
+    while(1){
+        int size = recv(m_channel->fd(),buf.get(),4096,0);
+        if(size==0){
+            ret=false;
+            break;
+        }
+        else if(size<0) {
+            break;
+        }
+        else {
+            m_buf+=string(buf.get(),size);
+        }
+        memset(buf.get(),0,4096);
     }
-    return true;
-}
-void Upnp_Connection::onClose()
-{
-    cout<<"close Upnp_Connection"<<endl;
+    cout<<m_buf<<endl;
+    if(check_packet())HandleData();
+    return ret;
 }
 bool Upnp_Connection::check_packet()
 {
@@ -88,44 +107,44 @@ void Upnp_Connection::send_get_wanip()
 {
     std::vector<std::pair<string ,string>>args;
     std::string request=this->build_xml_packet("GetExternalIPAddress",args);
-    this->send(request.c_str(),request.length());
+    send(m_channel->fd(),request.c_str(),request.length(),0);
 }
-void Upnp_Connection::send_add_port_mapper(SOCKET_TYPE type,string internal_ip,int internal_port,int external_port,string description)
+void Upnp_Connection::send_add_port_mapper(SOCKET_TYPE type,string internal_ip,int internal_port,int external_port,string description,int alive_time)
 {
     std::vector<std::pair<string ,string>>args;
     args.emplace_back(std::pair<string,string>("NewRemoteHost",string()));
     args.emplace_back(std::pair<string,string>("NewExternalPort",std::to_string(external_port)));
-    args.emplace_back(std::pair<string,string>("NewProtocol",type==SOCKET_TYPE::SOCKET_TCP?"TCP":"UDP"));
+    args.emplace_back(std::pair<string,string>("NewProtocol",type==SOCKET_TYPE::TCP?"TCP":"UDP"));
     args.emplace_back(std::pair<string,string>("NewInternalPort",std::to_string(internal_port)));
     args.emplace_back(std::pair<string,string>("NewInternalClient",internal_ip));
     args.emplace_back(std::pair<string,string>("NewEnabled","1"));
     args.emplace_back(std::pair<string,string>("NewPortMappingDescription",description));
-    args.emplace_back(std::pair<string,string>("NewLeaseDuration",type==SOCKET_TYPE::SOCKET_TCP?"0":"20"));
+    args.emplace_back(std::pair<string,string>("NewLeaseDuration",to_string(alive_time)));
     std::string request=this->build_xml_packet("AddPortMapping",args);
-    this->send(request.c_str(),request.length());
+    send(m_channel->fd(),request.c_str(),request.length(),0);
 }
 void Upnp_Connection::send_get_specific_port_mapping_entry(SOCKET_TYPE type,int external_port)
 {
     std::vector<std::pair<string ,string>>args;
     args.emplace_back(std::pair<string,string>("NewRemoteHost",string()));
     args.emplace_back(std::pair<string,string>("NewExternalPort",std::to_string(external_port)));
-    args.emplace_back(std::pair<string,string>("NewProtocol",type==SOCKET_TYPE::SOCKET_TCP?"TCP":"UDP"));
+    args.emplace_back(std::pair<string,string>("NewProtocol",type==SOCKET_TYPE::TCP?"TCP":"UDP"));
     args.emplace_back(std::pair<string,string>("NewInternalPort",string()));
     args.emplace_back(std::pair<string,string>("NewInternalClient",string()));
     args.emplace_back(std::pair<string,string>("NewEnabled",string()));
     args.emplace_back(std::pair<string,string>("NewPortMappingDescription",string()));
     args.emplace_back(std::pair<string,string>("NewLeaseDuration",string()));
     std::string request=this->build_xml_packet("GetSpecificPortMappingEntry",args);
-    this->send(request.c_str(),request.length());
+    send(m_channel->fd(),request.c_str(),request.length(),0);
 }
 void Upnp_Connection::send_delete_port_mapper(SOCKET_TYPE type,int external_port)
 {
     std::vector<std::pair<string ,string>>args;
     args.emplace_back(std::pair<string,string>("NewRemoteHost",string()));
     args.emplace_back(std::pair<string,string>("NewExternalPort",std::to_string(external_port)));
-    args.emplace_back(std::pair<string,string>("NewProtocol",type==SOCKET_TYPE::SOCKET_TCP?"TCP":"UDP"));
+    args.emplace_back(std::pair<string,string>("NewProtocol",type==SOCKET_TYPE::TCP?"TCP":"UDP"));
     std::string request=this->build_xml_packet("DeletePortMapping",args);
-    this->send(request.c_str(),request.length());
+    send(m_channel->fd(),request.c_str(),request.length(),0);
 }
 void Upnp_Connection::send_get_control_url()
 {
@@ -136,7 +155,7 @@ void Upnp_Connection::send_get_control_url()
     request=request+"Accept: application/xml\r\n";
     request=request+"Connection: keep-alive\r\n";
     request+="\r\n";
-    this->send(request.c_str(),request.length());
+    send(m_channel->fd(),request.c_str(),request.length(),0);
 }
 void Upnp_Connection::handle_get_wanip()
 {
@@ -224,7 +243,15 @@ void Upnp_Connection::handle_get_specific_port_mapping_entry()
             cout<<"false http response! : "<<m_buf<<endl;
             break;
         }
-        if(xop::NetInterface::getLocalIPAddress()!=internalIP)break;
+        auto interface_info=Network_Util::Instance().get_net_interface_info(false);
+        bool find=false;
+        for(auto i:interface_info){
+            if(i.ip==internalIP){
+            find=true;
+            break;
+            }
+        }
+        if(!find)break;
         cout<<"get port mapping entry success!"<<endl;
         b_success=true;
     }while(0);
@@ -334,7 +361,7 @@ void Upnp_Connection::HandleData()
         break;
     }
 }
-void UpnpMapper::Init(xop::EventLoop *event_loop,string lgd_ip)
+void UpnpMapper::Init(EventLoop *event_loop,string lgd_ip)
 {
     m_control_url=string();
     m_event_loop=event_loop;
@@ -344,9 +371,9 @@ void UpnpMapper::Init(xop::EventLoop *event_loop,string lgd_ip)
     m_wan_ip=string();
     m_init_ok=false;
     int fd=socket(AF_INET,SOCK_DGRAM,0);
-    m_udp_channel.reset(new xop::Channel(fd));
+    m_udp_channel.reset(new Channel(fd));
     m_udp_channel->enableReading();
-    m_udp_channel->setReadCallback([this](){
+    m_udp_channel->setReadCallback([this](Channel *chn){
         struct sockaddr_in addr = {0};
         socklen_t addr_len=sizeof addr;
         char buf[4096]={0};
@@ -374,7 +401,7 @@ void UpnpMapper::Init(xop::EventLoop *event_loop,string lgd_ip)
                     m_location_src=location_src;
                     std::thread t(std::bind(&UpnpMapper::get_control_url,this));
                     t.detach();
-                    return ;
+                    return true;
                 }while(0);
                 cout<<"false upnp device!"<<endl;
             }
@@ -382,11 +409,12 @@ void UpnpMapper::Init(xop::EventLoop *event_loop,string lgd_ip)
                 cout<<"recvfrom  ip:"<<inet_ntoa(addr.sin_addr)<<" port : "<<ntohs(addr.sin_port)<<endl<<buf<<endl;
             }
         }
+        return true;
     });
     event_loop->updateChannel(m_udp_channel);
     send_discover_packet();
     event_loop->addTimer([this](){
-        if(this->m_location_src!=string()&&this->m_control_url!=string())
+        if(this->m_location_src!=string())
         {
             this->m_event_loop->removeChannel(m_udp_channel);
             m_udp_channel.reset();
@@ -397,10 +425,10 @@ void UpnpMapper::Init(xop::EventLoop *event_loop,string lgd_ip)
         return true;
     },MAX_WAIT_TIME*2);
 }
-void UpnpMapper:: Api_addportMapper(SOCKET_TYPE type,string internal_ip,int internal_port,int external_port,string description,UPNPCALLBACK callback)
+void UpnpMapper:: Api_addportMapper(SOCKET_TYPE type,string internal_ip,int internal_port,int external_port,string description,UPNPCALLBACK callback,int alive_time)
 {
     if(!m_init_ok||m_control_url==string())return;
-    std::thread t(std::bind(&UpnpMapper::add_port_mapper,this,type,internal_ip,internal_port,external_port,description,callback));
+    std::thread t(std::bind(&UpnpMapper::add_port_mapper,this,type,internal_ip,internal_port,external_port,description,callback,alive_time));
     t.detach();
 }
 void UpnpMapper:: Api_GetSpecificPortMappingEntry(SOCKET_TYPE type,int external_port,UPNPCALLBACK callback)
@@ -423,25 +451,21 @@ if(!m_init_ok||m_control_url==string())return;
 }
 std::shared_ptr<Upnp_Connection> UpnpMapper::newConnection(SOCKET sockfd,UPNP_COMMAND mode)
 {
-    return std::make_shared<Upnp_Connection>(this, m_event_loop->getTaskScheduler().get(), sockfd,mode);
+    return std::make_shared<Upnp_Connection>(this, m_event_loop, sockfd,mode);
 }
 void UpnpMapper::addConnection(SOCKET sockfd, std::shared_ptr<Upnp_Connection> Conn)
 {
-    Conn->setDisconnectCallback([this] (xop::TcpConnection::Ptr conn){
-        auto taskScheduler = conn->getTaskScheduler();
-        int sockfd = conn->fd();
-        if (!taskScheduler->addTriggerEvent([this, sockfd] {this->removeConnection(sockfd); }))
-        {
-            taskScheduler->addTimer([this, sockfd]() {this->removeConnection(sockfd); return false;}, 1);
-        }
-    });
     std::lock_guard<std::mutex> locker(m_map_mutex);
     m_connections.emplace(sockfd, Conn);
 }
 void UpnpMapper::removeConnection(SOCKET sockfd)
 {
     std::lock_guard<std::mutex> locker(m_map_mutex);
-    m_connections.erase(sockfd);
+    auto iter=m_connections.find(sockfd);
+    if(iter!=m_connections.end()){
+        iter->second->stop_work();
+        m_connections.erase(iter);
+    }
 }
 void UpnpMapper::addTimeoutEvent(SOCKET sockfd)
 {
@@ -493,126 +517,111 @@ void UpnpMapper::send_discover_packet()
 void UpnpMapper::get_control_url()
 {
     if(m_init_ok)return;
-    xop::TcpSocket tcpsock;
-    tcpsock.create();
-    if(tcpsock.fd()<=0)
+    SOCKET fd=Network_Util::Instance().build_socket(TCP);
+    if(fd<=0)
     {
         cout<<"failed to create socket!"<<endl;
         return;
     }
-    if(!tcpsock.connect(m_lgd_ip,m_lgd_port,MAX_WAIT_TIME))
-    {
+    if(!Network_Util::Instance().connect(fd,m_lgd_ip,m_lgd_port,MAX_WAIT_TIME)){
         cout<<"failed to connect to the device!"<<endl;
-        tcpsock.close();
+        Network_Util::Instance().close_socket(fd);
         return;
     }
-    auto conn=newConnection(tcpsock.fd(),UPNP_GETCONTROLURL);
+    auto conn=newConnection(fd,UPNP_GETCONTROLURL);
     if(conn)
     {
-        addConnection(tcpsock.fd(),conn);
+        conn->start_work();
+        addConnection(fd,conn);
         conn->send_get_control_url();
-        //must wake_up event_loop
-        m_event_loop->addTriggerEvent([](){});
     }
 }
 void UpnpMapper::get_wanip(UPNPCALLBACK callback)
 {
     if(!m_init_ok||m_control_url==string())return;
-    xop::TcpSocket tcpsock;
-    tcpsock.create();
-    if(tcpsock.fd()<=0)
+    SOCKET fd=Network_Util::Instance().build_socket(TCP);
+    if(fd<=0)
     {
         cout<<"failed to create socket!"<<endl;
         return;
     }
-    if(!tcpsock.connect(m_lgd_ip,m_lgd_port,MAX_WAIT_TIME))
-    {
+    if(!Network_Util::Instance().connect(fd,m_lgd_ip,m_lgd_port,MAX_WAIT_TIME)){
         cout<<"failed to connect to the device!"<<endl;
-        tcpsock.close();
+        Network_Util::Instance().close_socket(fd);
         return;
     }
-    auto conn=newConnection(tcpsock.fd(),UPNP_GETEXTERNALIPADDRESS);
+    auto conn=newConnection(fd,UPNP_GETCONTROLURL);
     if(conn)
     {
-        addConnection(tcpsock.fd(),conn);
+        conn->start_work();
+        addConnection(fd,conn);
         if(callback)conn->setUPNPCallback(callback);
         conn->send_get_wanip();
-        //must wake_up event_loop
-        m_event_loop->addTriggerEvent([](){});
     }
 }
-void UpnpMapper::add_port_mapper(SOCKET_TYPE type,string internal_ip,int internal_port,int external_port,string description,UPNPCALLBACK callback)
+void UpnpMapper::add_port_mapper(SOCKET_TYPE type,string internal_ip,int internal_port,int external_port,string description,UPNPCALLBACK callback,int alive_time)
 {
-    xop::TcpSocket tcpsock;
-    tcpsock.create();
-    if(tcpsock.fd()<=0)
+    SOCKET fd=Network_Util::Instance().build_socket(TCP);
+    if(fd<=0)
     {
         cout<<"failed to create socket!"<<endl;
         return;
     }
-    if(!tcpsock.connect(m_lgd_ip,m_lgd_port,MAX_WAIT_TIME))
-    {
+    if(!Network_Util::Instance().connect(fd,m_lgd_ip,m_lgd_port,MAX_WAIT_TIME)){
         cout<<"failed to connect to the device!"<<endl;
-        tcpsock.close();
+        Network_Util::Instance().close_socket(fd);
         return;
     }
-    auto conn=newConnection(tcpsock.fd(),UPNP_ADDPORTMAPPING);
+    auto conn=newConnection(fd,UPNP_GETCONTROLURL);
     if(conn)
     {
-        addConnection(tcpsock.fd(),conn);
+        conn->start_work();
+        addConnection(fd,conn);
         if(callback)conn->setUPNPCallback(callback);
-        conn->send_add_port_mapper(type,internal_ip,internal_port,external_port,description);
-        //must wake_up event_loop
-        m_event_loop->addTriggerEvent([](){});
+        conn->send_add_port_mapper(type,internal_ip,internal_port,external_port,description,alive_time);
     }
 }
 void UpnpMapper::get_specific_port_mapping_entry(SOCKET_TYPE type,int external_port,UPNPCALLBACK callback)
 {
-    xop::TcpSocket tcpsock;
-    tcpsock.create();
-    if(tcpsock.fd()<=0)
+    SOCKET fd=Network_Util::Instance().build_socket(TCP);
+    if(fd<=0)
     {
         cout<<"failed to create socket!"<<endl;
         return;
     }
-    if(!tcpsock.connect(m_lgd_ip,m_lgd_port,MAX_WAIT_TIME))
-    {
+    if(!Network_Util::Instance().connect(fd,m_lgd_ip,m_lgd_port,MAX_WAIT_TIME)){
         cout<<"failed to connect to the device!"<<endl;
-        tcpsock.close();
+        Network_Util::Instance().close_socket(fd);
         return;
     }
-    auto conn=newConnection(tcpsock.fd(),UPNP_GETSPECIFICPORTMAPPINGENTRY);
+    auto conn=newConnection(fd,UPNP_GETCONTROLURL);
     if(conn)
     {
-        addConnection(tcpsock.fd(),conn);
+        conn->start_work();
+        addConnection(fd,conn);
         if(callback)conn->setUPNPCallback(callback);
         conn->send_get_specific_port_mapping_entry(type,external_port);
-        //must wake_up event_loop
-        m_event_loop->addTriggerEvent([](){});
     }
 }
 void UpnpMapper::delete_port_mapper(SOCKET_TYPE type,int external_port,UPNPCALLBACK callback)
 {
-    xop::TcpSocket tcpsock;
-    tcpsock.create();
-    if(tcpsock.fd()<=0)
+    SOCKET fd=Network_Util::Instance().build_socket(TCP);
+    if(fd<=0)
     {
         cout<<"failed to create socket!"<<endl;
         return;
     }
-    if(!tcpsock.connect(m_lgd_ip,m_lgd_port,MAX_WAIT_TIME))
-    {
+    if(!Network_Util::Instance().connect(fd,m_lgd_ip,m_lgd_port,MAX_WAIT_TIME)){
         cout<<"failed to connect to the device!"<<endl;
-        tcpsock.close();
+        Network_Util::Instance().close_socket(fd);
         return;
     }
-    auto conn=newConnection(tcpsock.fd(),UPNP_DELETEPORTMAPPING);
+    auto conn=newConnection(fd,UPNP_GETCONTROLURL);
     if(conn)
     {
-        addConnection(tcpsock.fd(),conn);
+        conn->start_work();
+        addConnection(fd,conn);
         if(callback)conn->setUPNPCallback(callback);
         conn->send_delete_port_mapper(type,external_port);
-        //must wake_up event_loop
-        m_event_loop->addTriggerEvent([](){});
     }
 }

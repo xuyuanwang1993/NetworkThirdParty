@@ -148,6 +148,11 @@ public:
      */
     void removeTimer(TimerId timerId);
     /**
+     * @brief blockRemoveTimer 移除定时器
+     * @param timerId 定时器id
+     */
+    void blockRemoveTimer(TimerId timerId);
+    /**
      * @brief loop 循环处理定时器事件
      */
     void loop();
@@ -179,6 +184,7 @@ private:
      * @brief _mutex 数据读写锁
      */
     std::mutex _mutex;
+    std::mutex m_block_mutex;
     std::mutex _conn_mutex;
     /**
      * @brief _timers 当前的timers集合

@@ -1,0 +1,43 @@
+﻿#ifndef TCP_CONNECTION_H
+#define TCP_CONNECTION_H
+#include "io_channel.h"
+#include "buffer_handle.h"
+#include "event_loop.h"
+#include "c_log.h"
+#include <atomic>
+namespace micagent {
+using namespace std;
+class tcp_connection:public enable_shared_from_this<tcp_connection>
+{
+    using disconnectCallBack=function<void(shared_ptr<tcp_connection>)>;
+public:
+    tcp_connection(SOCKET _fd);
+    virtual ~tcp_connection();
+    void register_handle(EventLoop *loop);
+    void unregister_handle(EventLoop *loop);
+    void set_disconnect_callback(const disconnectCallBack&cb ){
+        lock_guard<mutex>locker(m_mutex);
+        m_disconnect_CB=cb;
+    }
+    SOCKET fd()const{return m_channel->fd();}
+    friend class tcp_server;
+protected:
+    virtual bool handle_read(){
+        shared_ptr<char[]>buf(new char[1024]);
+        auto len=recv(m_channel->fd(),buf.get(),1024,0);
+        if(len>0){
+            send(m_channel->fd(),buf.get(),len,0);
+        }
+        return len!=0;
+    }
+    virtual bool handle_write(){return true;}
+    virtual bool handle_close(){if(m_disconnect_CB)m_disconnect_CB(shared_from_this());return true;}
+    virtual bool handle_error(){return true;}
+    ChannelPtr m_channel;
+    atomic_bool m_registered;
+    disconnectCallBack m_disconnect_CB;
+    mutex m_mutex;
+};
+}
+
+#endif // TCP_CONNECTION_H

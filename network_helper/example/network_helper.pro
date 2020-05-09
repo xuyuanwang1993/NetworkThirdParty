@@ -13,7 +13,11 @@ HEADERS += \
     ../../events_handler/network_util.h \
     ../../events_handler/io_channel.h \
     ../../events_handler/event_loop.h \
-    ../buffer_handle.h
+    ../buffer_handle.h \
+    ../tcp_connection.h \
+    ../tcp_server.h \
+    ../http_request.h \
+    ../http_response.h
 
 SOURCES += \
     ../../LOG/c_log.cpp \
@@ -25,7 +29,11 @@ SOURCES += \
     ../../events_handler/network_util.cpp \
     ../../events_handler/event_loop.cpp \
     man.cpp \
-    ../buffer_handle.cpp
+    ../buffer_handle.cpp \
+    ../tcp_connection.cpp \
+    ../tcp_server.cpp \
+    ../http_request.cpp \
+    ../http_response.cpp
 INCLUDEPATH += \
 ../../LOG \
 ../../events_handler \

@@ -75,10 +75,11 @@ string Logger::get_local_name(){
     return stream.str();
 }
 void Logger::log(int level,const char *file,const char *func,int line,const char *fmt,...){
+    if(!get_register_status())return;
     //小于最小打印等级的log不处理
     {
         DEBUG_LOCK
-        if(level<m_level||level>LOG_BREAK_POINT)return;
+         if(level<m_level||level>LOG_BREAK_POINT)return;
     }
     shared_ptr<char[]>buf(new char[MAX_LOG_MESSAGE_SIZE]);
     {
@@ -88,6 +89,28 @@ void Logger::log(int level,const char *file,const char *func,int line,const char
         va_start(arg, fmt);
         vsnprintf(buf.get() + use_len, MAX_LOG_MESSAGE_SIZE - use_len, fmt, arg);
         va_end(arg);
+#ifdef DEBUG
+        if(m_log_to_std){
+            /*输出到标准输出*/
+#if defined(__linux) || defined(__linux__)
+            if(level<LOG_ERROR)fprintf(stdout,"%s%s%s%s",log_color[level],buf.get(),LINE_END,log_color[0]);
+            else fprintf(stderr,"%s%s%s%s",log_color[level],buf.get(),LINE_END,log_color[0]);
+#elif defined(WIN32) || defined(_WIN32)
+            if (level < LOG_ERROR) {
+                HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+                SetConsoleTextAttribute(handle, log_color[level]);
+                fprintf(stdout, "%s%s",  buf.get(), LINE_END);
+                SetConsoleTextAttribute(handle, FOREGROUND_INTENSITY|log_color[0]);
+            }
+            else {
+                HANDLE handle = GetStdHandle(STD_ERROR_HANDLE);
+                SetConsoleTextAttribute(handle, log_color[level]);
+                fprintf(stderr, "%s%s", buf.get(), LINE_END);
+                SetConsoleTextAttribute(handle, log_color[0]);
+            }
+#endif
+        }
+#endif
     }
     if(level==LOG_BREAK_POINT){
     /*断点信息存储*/
@@ -95,29 +118,6 @@ void Logger::log(int level,const char *file,const char *func,int line,const char
         while(m_dump_queue.size()>=m_dump_max_size)m_dump_queue.pop();
         m_dump_queue.push(make_shared<string>(buf.get()));
     }
-
-#ifdef DEBUG
-    if(m_log_to_std){
-        /*输出到标准输出*/
-#if defined(__linux) || defined(__linux__)
-        if(level<LOG_ERROR)fprintf(stdout,"%s%s%s%s",log_color[level],buf.get(),LINE_END,log_color[0]);
-        else fprintf(stderr,"%s%s%s%s",log_color[level],buf.get(),LINE_END,log_color[0]);
-#elif defined(WIN32) || defined(_WIN32)
-		if (level < LOG_ERROR) {
-			HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-			SetConsoleTextAttribute(handle, log_color[level]);
-			fprintf(stdout, "%s%s",  buf.get(), LINE_END);
-			SetConsoleTextAttribute(handle, FOREGROUND_INTENSITY|log_color[0]);
-		}
-		else {
-			HANDLE handle = GetStdHandle(STD_ERROR_HANDLE);
-			SetConsoleTextAttribute(handle, log_color[level]);
-			fprintf(stderr, "%s%s", buf.get(), LINE_END);
-			SetConsoleTextAttribute(handle, log_color[0]);
-		}
-#endif
-    }
-#endif
     std::unique_lock<mutex> locker(m_mutex);
     m_log_buf.push(make_shared<string>(buf.get()));
     m_conn.notify_all();
@@ -186,13 +186,26 @@ string Logger::get_dump_info()const{
     }
     return ret_string;
 }
-Logger::Logger():m_stop(false),m_fp(nullptr),m_save_path(string(".")+DIR_DIVISION),m_env_set(false),m_level(MIN_LOG_LEVEL),m_clear_flag(false)\
+Logger::Logger():m_registered(false),m_stop(false),m_fp(nullptr),m_save_path(string(".")+DIR_DIVISION),m_env_set(false),m_level(MIN_LOG_LEVEL),m_clear_flag(false)\
 ,m_max_file_size(MIN_LOG_FILE_SIZE),m_dump_max_size(MIN_TRACE_SIZE)\
 ,m_log_cnt(0),m_max_log_cnt(MIN_LOG_CACHE_CNT),m_cache_callback(nullptr),m_write_error_cnt(0),m_log_to_std(false)
 {
-    m_thread.reset(new thread(&Logger::run,this));
+
 }
-Logger::~Logger(){
+void Logger::register_handle()
+{
+    if(!get_register_status()){
+        {
+            DEBUG_LOCK
+            m_registered.exchange(true);
+            m_stop.exchange(false);
+        }
+        unique_lock<mutex>locker(m_mutex);
+        m_thread.reset(new thread(&Logger::run,this));
+    }
+}
+void Logger::unregister_handle()
+{
     {
         DEBUG_LOCK
         m_stop.exchange(true);
@@ -204,7 +217,13 @@ Logger::~Logger(){
         m_conn.notify_all();
     }
     if(m_thread&&m_thread->joinable())m_thread->join();
-    if(m_thread)m_thread.reset();
+    {
+        DEBUG_LOCK
+        m_registered.exchange(false);
+    }
+}
+Logger::~Logger(){
+    if(get_register_status())unregister_handle();
 }
 bool Logger::open_file()
 {

@@ -13,6 +13,7 @@ void client_mode(shared_ptr<EventLoop> loop,string server_ip,uint16_t local_port
 void kcp_mem_test(uint16_t port);
 int main(int argc,char *argv[])
 {
+    Logger::Instance().register_handle();
     Logger::Instance().set_log_to_std(true);
     Logger::Instance().set_clear_flag(true);
     Logger::Instance().set_log_file_size(200*1024);
@@ -136,6 +137,8 @@ void server_mode(shared_ptr<EventLoop> loop)
                              return false;
                          });
     while(getchar()!='8')continue;
+    loop->stop();
+    Logger::Instance().unregister_handle();
    is_exit.exchange(true);
    loop->removeChannel(server_chn);
     if(t.joinable()) t.join();
@@ -196,7 +199,8 @@ void client_mode(shared_ptr<EventLoop> loop,string server_ip,uint16_t local_port
         }
         Timer::sleep(10);
     }
-    while(getchar()!='8')continue;
+    //while(getchar()!='8')continue;
+    Timer::sleep(10000);
     kcp_manager::GetInstance().StopUpdateLoop();
     m_save_mutex->lock();
     for(auto i :*save.get()){

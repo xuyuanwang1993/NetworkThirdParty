@@ -25,15 +25,6 @@ namespace micagent{
  * @param user_data 创建kcp_interface 时传入的用户指针
  */
 typedef std::function<void(const char *buf ,int len ,struct IKCPCB *kcp,void *user_data)> RecvDataCallback;
-/**
- * @brief ClearCallback kcp_interface失效时需要进行的清理操作
- */
-typedef std::function<void()>ClearCallback;
-/**
- * @brief LostConnectionCallback 连接断开时调用
- * @param user_data 创建kcp_interface 时传入的用户指针
- */
-typedef std::function<void(void *user_data)>LostConnectionCallback;
 enum KCP_TRANSFER_MODE{
     DEFULT_MODE,//默认模式,不启用加速，内部时钟10ms 禁止快速重传，启用流控
     NORMAL_MODE,//常规模式，不启用加速，内部时钟10ms 禁止快速重传，关闭流控
@@ -71,7 +62,7 @@ public:
      * @param clearCB 清理回调函数
      * @param max_frame_size 最大数据帧大小
      */
-    kcp_interface(SOCKET fd,uint32_t conv_id,EventLoop *loop,RecvDataCallback recvCB,void *userdata=nullptr,ClearCallback clearCB=nullptr,uint32_t max_frame_size=DEFAULT_FRAME_SIZE);
+    kcp_interface(SOCKET fd,uint32_t conv_id,EventLoop *loop,RecvDataCallback recvCB,void *userdata=nullptr,uint32_t max_frame_size=DEFAULT_FRAME_SIZE);
     /**
      * @brief change_time_out_time 修改会话超时时间，线程不安全
      * @param time_out_ms 超时时间
@@ -96,52 +87,11 @@ public:
      * @return
      */
     int raw_send(const char *buf,int len);
-    /**
-     * @brief update 更新当前对象，处理协议数据，判断超时状态
-     * @param timenow 当前系统时间
-     */
-    void update(int64_t timenow)
-    {
-
-        unique_lock<mutex>locker(m_mutex);
-        ikcp_update(m_kcp->kcp_ptr(),static_cast<IUINT32>(timenow));
-        if(m_last_alive_time==0)m_last_alive_time=timenow;
-        if(m_last_alive_time!=0&&timenow-m_last_alive_time>MAX_TIMEOUT_TIME)
-        {
-            if(m_timeout_times>MAX_TIME_OUT_CNT){
-                if(locker.owns_lock())locker.unlock();
-                clear();
-                if(m_lost_connectionCB)
-                {
-                    m_lost_connectionCB(m_data);
-                }
-            }
-            else {
-                m_last_alive_time=timenow;
-                m_timeout_times++;
-            }
-        }else {
-            m_timeout_times=0;
-        }
-    }
     /*获取会话id*/
     uint32_t conv_id()const{return m_conv_id;}
     /*加入事件循环*/
     void start_work();
-    void exit_work(){
-        if(!get_clear_status())
-        {
-            {
-                DEBUG_LOCK
-                        m_have_cleared=true;
-            }
-            {
-                lock_guard<mutex>locker(m_mutex);
-                if(m_udp_channel)m_loop->removeChannel(m_udp_channel->fd());
-                m_udp_channel.reset();
-            }
-        }
-    }
+    void exit_work();
     /**
      * @brief SetTransferMode 设置传输模式
      * @param mode 传输模式
@@ -151,15 +101,21 @@ public:
      * @param nc 拥塞控制 开关
      */
     void SetTransferMode(KCP_TRANSFER_MODE mode,int nodelay=0, int interval=10, int resend=0, int nc=0);
-    void SetLostConnectionCallback(const LostConnectionCallback &cb){lock_guard<mutex>locker(m_mutex);m_lost_connectionCB=cb;}
     ~kcp_interface();
-    bool get_clear_status()const{
-        DEBUG_LOCK
-        return m_have_cleared;
-    }
 private:
-    /*调用清理回调函数，更新状态*/
-    void clear();
+    friend class kcp_manager;
+    bool update(int64_t time_now=Timer::getTimeNow()){
+        lock_guard<mutex>locker(m_mutex);
+        ikcp_update(m_kcp->kcp_ptr(),(IUINT32)time_now);
+        if(time_now-m_last_alive_time>MAX_TIMEOUT_TIME){
+            m_timeout_times++;
+            m_last_alive_time=time_now;
+        }
+        else {
+            m_timeout_times=0;
+        }
+        return m_timeout_times<MAX_TIME_OUT_CNT;
+    }
     /**
      * @brief m_udp_channel UDP通道
      */
@@ -172,10 +128,6 @@ private:
      * @brief m_conv_id 存储会话id
      */
     uint32_t m_conv_id;
-    /**
-     * @brief m_have_cleared 判断会话是否失效
-     */
-    std::atomic<bool> m_have_cleared;//连接失效标识
 #ifdef DEBUG
     mutable mutex m_debug_mutex;
 #endif
@@ -184,14 +136,9 @@ private:
      */
     EventLoop *m_loop;
     /**
-     * @brief m_clear_CB 清理回调函数
-     */
-    ClearCallback m_clear_CB;
-    /**
      * @brief m_recvCB 接收回调函数
      */
     RecvDataCallback m_recvCB;
-    LostConnectionCallback m_lost_connectionCB;//连接中断回调处理函数
     void * m_data;//用户数据
     /**
      * @brief m_last_alive_time 上次存活时间
@@ -231,6 +178,7 @@ public:
                 DEBUG_LOCK
                 m_init.exchange(true);
             }
+            lock_guard<mutex>locker(m_mutex);
             m_event_loop=event_loop;
         }
     }
@@ -320,9 +268,6 @@ public:
         return m_init;
     }
 private:
-    void clear_cb(uint32_t conv_id){
-
-    }
     /**
      * @brief UpdateLoop 循环任务
      * @return

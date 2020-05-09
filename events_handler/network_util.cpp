@@ -13,6 +13,15 @@
 #include<vector>
 namespace micagent {
 uint32_t Network_Util::DEFAULT_INTERFACES=INADDR_ANY;
+void Network_Util::DefaultInit()
+{
+    auto &interface=Network_Util::Instance();
+    auto netinterface=interface.get_net_interface_info();
+    for(uint32_t i=0;i<netinterface.size();i++){
+        if(i==0)interface.SetDefaultInterface(netinterface[i].ip);
+        interface.SetNetInterface(i,netinterface[i].ip);
+    }
+}
 bool Network_Util::SetNetInterface(uint32_t index,const string&address){
     lock_guard<mutex> locker(m_mutex);
     if(index>=MAX_INTERFACES)return false;
@@ -518,6 +527,15 @@ bool Network_Util::get_peer_addr(SOCKET sockfd,struct sockaddr_in *addr)
 {
     socklen_t addrlen = sizeof(struct sockaddr_in);
     return getpeername(sockfd, (struct sockaddr *)addr, &addrlen) == 0;
+}
+string Network_Util::parase_domain(const string &domain_info)
+{
+    char ip[20]={0};
+    auto ret=gethostbyname(domain_info.c_str());
+    if(ret)return inet_ntop(AF_INET,ret->h_addr_list[0],ip,20);
+    else {
+        return string();
+    }
 }
 bool Network_Util::check_is_multicast(uint32_t net_ip)
 {

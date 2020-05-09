@@ -13,6 +13,7 @@
 #include<atomic>
 #include<functional>
 #include<thread>
+#include<future>
 #if defined(__linux) || defined(__linux__)
 #elif defined(WIN32) || defined(_WIN32)
 #endif
@@ -86,6 +87,12 @@ public:
     static string get_local_name();
     /*获取log缓存*/
     string get_log_cache();
+    void register_handle();
+    void unregister_handle();
+    bool get_register_status()const{
+        DEBUG_LOCK
+                return m_registered;
+    }
 private:
     Logger();
     ~Logger();
@@ -98,6 +105,7 @@ private:
     /*log处理线程*/
     void run();
     shared_ptr<thread>m_thread;
+    atomic<bool> m_registered;
     condition_variable m_conn;
     /*停止标识*/
     atomic<bool> m_stop;
@@ -140,7 +148,7 @@ private:
     /*标准输出开关*/
     atomic_bool m_log_to_std;
 #ifdef DEBUG
-    mutex m_debug_mutex;
+    mutable mutex m_debug_mutex;
 #endif
 };
 }

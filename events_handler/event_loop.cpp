@@ -2,28 +2,31 @@
 namespace micagent {
 EventLoop::EventLoop(int32_t thread_pool_size,uint32_t trigger_threads,uint32_t capacity,uint32_t thread_nums):\
     m_index(0),m_timer_queue(new TimerQueue()),m_thread_pool(new thread_pool(thread_pool_size)),\
-    m_trigger_queue(new trigger_queue(trigger_threads,capacity))
+    m_trigger_queue(new trigger_queue(trigger_threads,capacity)),m_is_stop(false)
 {
     if(thread_nums<1)thread_nums=thread::hardware_concurrency()+1;
     for(uint32_t i=0;i<thread_nums;i++)
     {
         m_TaskSchedulers.push_back(make_shared<eventloop_task>(i));
+        m_TaskSchedulers[i]->start();
     }
 }
 EventLoop::~EventLoop()
 {
-    stop();
+    if(!m_is_stop)stop();
+}
+void EventLoop::stop()
+{
+    if(m_is_stop)return;
+    m_is_stop.exchange(true);
+    m_thread_pool->stop();
+    m_timer_queue->stop();
+    m_trigger_queue->stop();
+    for(auto i : m_TaskSchedulers)i->stop();
     m_timer_queue.reset();
     m_trigger_queue.reset();
     m_thread_pool.reset();
     m_TaskSchedulers.clear();
-}
-void EventLoop::stop()
-{
-    m_thread_pool->stop();
-    m_timer_queue->stop();
-    m_trigger_queue->stop();
-    for(auto i : m_TaskSchedulers)i->m_task_scheduler->stop();
 }
 bool EventLoop::add_thread_task(const ThreadTask &task)
 {
@@ -37,6 +40,10 @@ TimerId EventLoop::addTimer(const TimerEvent& event, uint32_t msec)
 void EventLoop::removeTimer(TimerId timerId)
 {
     if(m_timer_queue->get_run_status())m_timer_queue->removeTimer(timerId);
+}
+void EventLoop::blockRemoveTimer(TimerId timerId)
+{
+    if(m_timer_queue->get_run_status())m_timer_queue->blockRemoveTimer(timerId);
 }
 bool EventLoop::add_trigger_event(const TriggerEvent & event)
 {

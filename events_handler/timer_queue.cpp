@@ -33,6 +33,17 @@ void TimerQueue::removeTimer(TimerId timerId)
     std::lock_guard<std::mutex> locker(_mutex);
     _remove_set.insert(timerId);
 }
+void TimerQueue::blockRemoveTimer(TimerId timerId)
+{
+    std::lock_guard<std::mutex> locker(m_block_mutex);
+    auto iter = _timers.find(timerId);
+    if (iter != _timers.end())
+    {
+        int64_t timeout = iter->second->getNextTimeout();
+        _events.erase(std::pair<int64_t, TimerId>(timeout, timerId));
+        _timers.erase(timerId);
+    }
+}
 void TimerQueue::loop(){
     {
         DEBUG_LOCK
@@ -66,6 +77,7 @@ void TimerQueue::stop(){
 }
 int64_t TimerQueue::getTimeRemaining()
 {
+    std::lock_guard<std::mutex> locker(m_block_mutex);
     if (_timers.empty())
     {
         return -1;
@@ -81,6 +93,7 @@ int64_t TimerQueue::getTimeRemaining()
 
 void TimerQueue::handleTimerEvent()
 {
+    std::lock_guard<std::mutex> locker2(m_block_mutex);
     {//同步缓存数据
         std::lock_guard<std::mutex> locker(_mutex);
         /*copy data*/

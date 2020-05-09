@@ -12,11 +12,12 @@ static  int kcp_output(const char *buf, int len, struct IKCPCB *kcp, void *user)
 {
     (void )(kcp);
     kcp_interface *interface=static_cast<kcp_interface *>(user);
-    return interface->raw_send(buf,len);
+    auto ptr=interface->shared_from_this();
+    return ptr->raw_send(buf,len);
 }
 
-kcp_interface::kcp_interface(int fd,unsigned int conv_id,EventLoop *event_loop,RecvDataCallback recvCB,void *data,ClearCallback clearCB,uint32_t max_frame_size)
-    :m_udp_channel(new Channel(fd)),m_conv_id(conv_id),m_have_cleared(false),m_loop(event_loop),m_clear_CB(clearCB),m_recvCB(recvCB),m_data(data),m_frame_size(max_frame_size)
+kcp_interface::kcp_interface(int fd,unsigned int conv_id,EventLoop *event_loop,RecvDataCallback recvCB,void *data,uint32_t max_frame_size)
+    :m_udp_channel(new Channel(fd)),m_conv_id(conv_id),m_loop(event_loop),m_recvCB(recvCB),m_data(data),m_frame_size(max_frame_size)
 {
     if(!m_loop)throw runtime_error("event_loop is invalid!");
     m_kcp.reset(new kcp_save(ikcp_create(conv_id,this)));
@@ -59,7 +60,6 @@ void kcp_interface::start_work()
     //读到的数据输入kcp进行处理
     auto interface=shared_from_this();
     m_udp_channel->setReadCallback([interface](Channel *chn){
-        if(interface->get_clear_status())return true;
         shared_ptr<char[]> buf(new char[IKCP_MTU_DEF]);
         auto ret=recv(chn->fd(),buf.get(),IKCP_MTU_DEF,0);
         if(ret==0)return false;
@@ -80,40 +80,23 @@ void kcp_interface::start_work()
         }
         return true;
     });
-    m_udp_channel->setCloseCallback([interface](Channel *chn){
-        (void)chn;
-        interface->clear();
-        return true;
-    });
     m_loop->updateChannel(m_udp_channel);
+}
+void kcp_interface::exit_work()
+{
+    lock_guard<mutex>locker(m_mutex);
+    if(m_udp_channel)m_loop->removeChannel(m_udp_channel);
+    m_udp_channel.reset();
 }
 int kcp_interface::send_userdata(const char *buf,int len)
 {
     lock_guard<mutex>locker(m_mutex);
-    if(get_clear_status())return -1;
     if(len>MAX_FRAMESIZE)len=MAX_FRAMESIZE;
     return ikcp_send(this->m_kcp->kcp_ptr(),buf,len);
 }
 int kcp_interface::raw_send(const char *buf,int len)
 {
-    if(get_clear_status())return -1;
     return ::send(this->m_udp_channel->fd(),buf,len,0);
-}
-void kcp_interface::clear()
-{
-    if(!get_clear_status())
-    {
-        {
-            DEBUG_LOCK
-            m_have_cleared=true;
-        }
-        {
-            lock_guard<mutex>locker(m_mutex);
-            if(m_udp_channel)m_loop->removeChannel(m_udp_channel->fd());
-            if(!m_clear_CB)return;
-        }
-        m_clear_CB();
-    }
 }
 
 kcp_interface::~kcp_interface()
@@ -124,9 +107,7 @@ kcp_interface::~kcp_interface()
 std::shared_ptr<kcp_interface> kcp_manager::AddConnection(SOCKET fd,uint32_t conv_id,RecvDataCallback recvCB,void *m_data,uint32_t max_frame_size)
 {
     if(!get_init_status()||fd==INVALID_SOCKET)return nullptr;
-    std::shared_ptr<kcp_interface> interface(new kcp_interface(fd,conv_id,m_event_loop,recvCB,m_data,[fd,this](){
-        this->CloseConnection(fd);
-    },max_frame_size));
+    std::shared_ptr<kcp_interface> interface(new kcp_interface(fd,conv_id,m_event_loop,recvCB,m_data,max_frame_size));
     std::lock_guard<std::mutex> locker(m_mutex);
     m_conv_map.insert(std::make_pair(conv_id,fd));
     m_kcp_map.insert(std::make_pair(fd,interface));
@@ -148,9 +129,7 @@ std::shared_ptr<kcp_interface> kcp_manager::AddConnection(uint16_t send_port,std
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = inet_addr(ip.c_str());
     ::connect(fd, (struct sockaddr*)&addr, addrlen);//绑定对端信息
-    std::shared_ptr<kcp_interface> interface(new kcp_interface(fd,conv_id,m_event_loop,recvCB,m_data,[fd,this](){
-        this->CloseConnection(fd);
-    },max_frame_size));
+    std::shared_ptr<kcp_interface> interface(new kcp_interface(fd,conv_id,m_event_loop,recvCB,m_data,max_frame_size));
     std::lock_guard<std::mutex> locker(m_mutex);
     m_conv_map.insert(std::make_pair(conv_id,fd));
     m_kcp_map.insert(std::make_pair(fd,interface));
@@ -159,28 +138,33 @@ std::shared_ptr<kcp_interface> kcp_manager::AddConnection(uint16_t send_port,std
 
 void kcp_manager::StartUpdateLoop()
 {
-    m_event_loop->addTimer(std::bind(&kcp_manager::UpdateLoop,this),10);
+    lock_guard<mutex>locker(m_mutex);
+    if(m_loop_timer==0)m_loop_timer=m_event_loop->addTimer(std::bind(&kcp_manager::UpdateLoop,this),10);
 }
 void kcp_manager::StopUpdateLoop()
 {
-    DEBUG_LOCK
-    m_init.exchange(false);
+    {
+        DEBUG_LOCK
+                m_init.exchange(false);
+    }
+    if(m_loop_timer>0)m_event_loop->blockRemoveTimer(m_loop_timer);
+    m_loop_timer=0;
 }
 bool kcp_manager::UpdateLoop()
 {
-    multimap<uint32_t,SOCKET>tmp_map;
+    auto time_now=Timer::getTimeNow();
     {
-        std::lock_guard<std::mutex> locker(m_mutex);
-        tmp_map=m_conv_map;
-    }
-    for(auto i : tmp_map)
-    {
-        std::unique_lock<std::mutex> locker(m_mutex);
-        auto iter=m_kcp_map.find(i.second);
-        if(iter!=std::end(m_kcp_map)){
-            if(locker.owns_lock())locker.unlock();
-            iter->second->update(Timer::getTimeNow());
+        lock_guard<mutex>locker(m_mutex);
+        for(auto iter=std::begin(m_kcp_map);iter!=std::end(m_kcp_map);){
+            if(!iter->second->update(time_now)){
+                iter->second->exit_work();
+                m_kcp_map.erase(iter++);
+            }
+            else {
+                iter++;
+            }
         }
     }
+
     return get_init_status();
 }

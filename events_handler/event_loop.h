@@ -42,6 +42,11 @@ public:
      */
     void removeTimer(TimerId timerId);
     /**
+     * @brief blockRemoveTimer 移除定时器任务
+     * @param timerId 定时器id
+     */
+    void blockRemoveTimer(TimerId timerId);
+    /**
      * @brief add_trigger_event 添加trigger事件
      * @param event
      * @return
@@ -101,21 +106,29 @@ private:
     struct eventloop_task:public enable_shared_from_this<eventloop_task>{
         shared_ptr<TaskScheduler> m_task_scheduler;
         shared_ptr<thread> m_thread;
-        eventloop_task(int _id){
+        atomic<bool> m_init;
+        eventloop_task(int _id):m_init(false){
 #if 1&&(defined(__linux) || defined(__linux__))
             m_task_scheduler.reset(new EpollTaskScheduler(_id));
 #elif 0||defined(WIN32) || defined(_WIN32)
             m_task_scheduler.reset(new SelectTaskScheduler(_id));
 #endif
-
-
-            m_thread.reset(new thread([this](){
-                this->m_task_scheduler->start();
-            }));
         }
-        ~eventloop_task(){
+        void start(){
+            if(!m_init){
+                m_thread.reset(new thread([this](){
+                    this->m_task_scheduler->start();
+                }));
+                m_init=true;
+            }
+        }
+        void stop(){
             if(m_task_scheduler)m_task_scheduler->stop();
             if(m_thread&&m_thread->joinable())m_thread->join();
+            m_init=false;
+        }
+        ~eventloop_task(){
+            if(m_init)stop();
         }
     };
     /**
@@ -126,6 +139,7 @@ private:
      * @brief m_fd_map 缓存fd与TaskScheduler的对应信息
      */
     unordered_map<SOCKET,int> m_fd_map;
+    atomic_bool m_is_stop;
 };
 }
 #endif // EVENT_LOOP_H

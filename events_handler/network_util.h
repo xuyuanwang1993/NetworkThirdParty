@@ -66,6 +66,8 @@ public:
     static Network_Util&Instance(){static Network_Util instance;return instance; }
     /*配置设备工作默认ip*/
     static void SetDefaultInterface(const string&address){DEFAULT_INTERFACES=inet_addr(address.c_str());}
+    /*默认初始化*/
+    static void DefaultInit();
     /*配置网卡ip*/
     bool SetNetInterface(uint32_t index,const string&address);
     /*关闭socket*/
@@ -145,6 +147,8 @@ public:
     string get_peer_ip(SOCKET sockfd);
     /*获取对端address*/
     bool get_peer_addr(SOCKET sockfd,struct sockaddr_in *addr);
+    /*域名解析*/
+    string parase_domain(const string &domain_info);
 private:
     Network_Util();
     ~Network_Util();

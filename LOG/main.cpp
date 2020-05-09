@@ -11,6 +11,7 @@ using namespace std;
 #include<thread>
 #include<algorithm>
 int main(){
+	micagent::Logger::Instance().register_handle();
 	atomic_int sleep_time(1000);
 	std::cout << micagent::Logger::get_local_name() << endl;
 	atomic_bool is_exit(false);
@@ -153,6 +154,7 @@ int main(){
         cout<<" input your choice:"<<endl;
     }
 MY_END:
+    //micagent::Logger::Instance().unregister_handle();
     is_exit.exchange(true);
     t1.join();
     t2.join();
