@@ -155,6 +155,23 @@ bool Network_Util::make_blocking(SOCKET sockfd, uint32_t write_timeout_millsecon
     }
     return result;
 }
+bool Network_Util::set_write_timeout(SOCKET sockfd,uint32_t write_timeout_millseconds)
+{
+    if (write_timeout_millseconds > 0) {
+#ifdef SO_SNDTIMEO
+#if defined(__WIN32__) || defined(_WIN32)
+        DWORD msto = (DWORD)write_timeout_millseconds;
+        setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&msto, sizeof(msto) );
+#else
+        struct timeval tv;
+        tv.tv_sec = write_timeout_millseconds/1000;
+        tv.tv_usec = (write_timeout_millseconds%1000)*1000;
+        setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof tv);
+#endif
+#endif
+    }
+    return true;
+}
 bool Network_Util::make_noblocking(SOCKET sockfd)
 {
 #if defined(__linux) || defined(__linux__)
@@ -228,8 +245,8 @@ void Network_Util::set_recv_buf_size(SOCKET sockfd, socklen_t buf_size)
 }
 socklen_t Network_Util::get_recv_buf_size(SOCKET sockfd)
 {
-	socklen_t curSize;
-	socklen_t sizeSize = sizeof curSize;
+    socklen_t curSize;
+    socklen_t sizeSize = sizeof curSize;
     if(getsockopt(sockfd, SOL_SOCKET, SO_RCVBUF,(char*)&curSize, &sizeSize) < 0)return 0;
     return curSize;
 }
@@ -239,8 +256,8 @@ void Network_Util::set_send_buf_size(SOCKET sockfd, socklen_t buf_size)
 }
 socklen_t Network_Util::get_send_buf_size(SOCKET sockfd)
 {
-	socklen_t curSize;
-	socklen_t sizeSize = sizeof curSize;
+    socklen_t curSize;
+    socklen_t sizeSize = sizeof curSize;
     if(getsockopt(sockfd, SOL_SOCKET, SO_SNDBUF,(char*)&curSize, &sizeSize) < 0)return 0;
     return curSize;
 }
@@ -274,6 +291,13 @@ uint8_t Network_Util::get_ttl(SOCKET sockfd)
     socklen_t lenTTL=sizeof(curTTL);
     if(getsockopt(sockfd,IPPROTO_IP,IP_TTL,(char   *)&curTTL,&lenTTL)==0)return curTTL;
     return 0;
+}
+int Network_Util::get_socket_error(SOCKET fd)
+{
+    int err;
+    socklen_t len = sizeof err;
+    getsockopt(fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
+    return err;
 }
 bool Network_Util::set_ttl(SOCKET sockfd, uint8_t ttl)
 {
@@ -449,7 +473,7 @@ const vector<Network_Util::net_interface_info> & Network_Util::get_net_interface
                 delete pIpAdapterInfo;
                 break;
             }
-			auto p_iter = pIpAdapterInfo;
+            auto p_iter = pIpAdapterInfo;
             while (p_iter)
             {
                 IP_ADDR_STRING *pIpAddrString = &(p_iter->IpAddressList);
@@ -464,12 +488,12 @@ const vector<Network_Util::net_interface_info> & Network_Util::get_net_interface
                             p_iter->Address[4], p_iter->Address[5]);
                         if(pIpAdapterInfo->Type== MIB_IF_TYPE_ETHERNET)m_net_interface_info_cache.push_back(net_interface_info("MIB_IF_TYPE_ETHERNET", pIpAddrString->IpAddress.String,buffer));
                         else if(pIpAdapterInfo->Type == IF_TYPE_IEEE80211)m_net_interface_info_cache.push_back(net_interface_info("IF_TYPE_IEEE80211", pIpAddrString->IpAddress.String,buffer));
-						else m_net_interface_info_cache.push_back(net_interface_info("UNKNOWN", pIpAddrString->IpAddress.String));
-						break;
+                        else m_net_interface_info_cache.push_back(net_interface_info("UNKNOWN", pIpAddrString->IpAddress.String));
+                        break;
                     }
                     pIpAddrString = pIpAddrString->Next;
                 };
-				p_iter = p_iter->Next;
+                p_iter = p_iter->Next;
             }
 
             delete []pIpAdapterInfo;

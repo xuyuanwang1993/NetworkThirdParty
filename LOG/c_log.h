@@ -58,6 +58,7 @@ class Logger{
     const int MAX_LOG_CACHE_CNT=500;
     const int WAIT_TIME=1000;//ms
     const int MAX_WRITE_ERROR_TRY=100;
+    const int MAX_LOG_QUEUE_SIZE=100000;
 public:
     Logger &operator=(const Logger &) = delete;
     Logger(const Logger &) = delete;
@@ -84,7 +85,7 @@ public:
     /*标准输出开关*/
     void set_log_to_std(bool flag);
     /*获取当前本地时间*/
-    static string get_local_name();
+    static string get_local_time();
     /*获取log缓存*/
     string get_log_cache();
     void register_handle();

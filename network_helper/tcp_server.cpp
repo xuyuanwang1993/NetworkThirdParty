@@ -27,11 +27,12 @@ void tcp_server::register_handle(EventLoop *loop)
     if(!m_registered){
         Network_Util::Instance().listen(m_listen_channel->fd(),20);
         m_loop=loop;
+        init_server();
         auto interface=shared_from_this();
         m_listen_channel->setReadCallback([interface](Channel *chn){
             auto fd=Network_Util::Instance().accept(chn->fd());
             if(fd!=INVALID_SOCKET){
-                interface->add_connection(fd);
+                interface->add_connection(interface->new_connection(fd));
             }
             return true;
         });
@@ -49,16 +50,21 @@ void tcp_server::unregister_handle()
         m_loop=nullptr;
     }
 }
-void tcp_server::add_connection(SOCKET fd)
+void tcp_server::add_connection(shared_ptr<tcp_connection> conn)
 {
-    if(!m_registered)return;
-    auto new_conn=make_shared<tcp_connection>(fd);
-    new_conn->set_disconnect_callback([this](shared_ptr<tcp_connection> conn){
+    if(!m_registered||!conn)return;
+    conn->set_disconnect_callback([this](shared_ptr<tcp_connection> conn){
+        MICAGENT_LOG(LOG_INFO,"remove %u   %s",conn->fd(),Logger::get_local_time().c_str());
         this->remove_connection(conn->fd());
     });
-    new_conn->register_handle(m_loop);
+    conn->register_handle(m_loop);
     lock_guard<mutex>locker(m_mutex);
-    m_connections.emplace(fd,new_conn);
+    MICAGENT_LOG(LOG_INFO,"add %u   %s",conn->fd(),Logger::get_local_time().c_str());
+    m_connections.emplace(conn->fd(),conn);
+}
+shared_ptr<tcp_connection>tcp_server::new_connection(SOCKET fd)
+{
+    return make_shared<tcp_connection>(fd);
 }
 void tcp_server::remove_connection(SOCKET fd)
 {

@@ -19,6 +19,9 @@ class rc4_interface
         int i;
         int j;
         uint8_t sbox[256];
+        rc4_sbox():i(0),j(0){
+            memset(sbox,0,256);
+        }
     };
 public:
     rc4_interface(get_timestamp_func time_func=nullptr,string dev_ip="0.0.0.0",string mac="ff:ff:ff:ff:ff:ff"):m_time_func(time_func) {
@@ -47,7 +50,7 @@ public:
     inline int decrypt(const char *src, char *des,uint64_t src_size,uint64_t des_size,uint64_t src_key){
         /*safety check*/
         if(src_size<8||src_size-8>des_size)return -1;
-        uint32_t pt, check;
+        uint32_t pt=0, check=0;
         uint64_t h;
         struct rc4_sbox rs;
         memcpy(&pt, src, 4);
@@ -68,9 +71,9 @@ public:
     }
     static uint64_t generate_key(const string &ip="0.0.0.0",const string &mac="ff:ff:ff:ff:ff:ff"){
         MD5_CTX md5_ctx;
-        unsigned char* aHash = (unsigned char *)malloc(sizeof(unsigned char)*16);
+        unsigned char aHash[16]={0};
         MD5Init(&md5_ctx);
-        MD5Update(&md5_ctx,(unsigned char *)ip.c_str(),mac.length());
+        MD5Update(&md5_ctx,(unsigned char *)ip.c_str(),ip.length());
         MD5Update(&md5_ctx,(unsigned char *)mac.c_str(),mac.length());
         MD5Final(aHash,&md5_ctx);
         return hash_key(( char *)aHash,16);

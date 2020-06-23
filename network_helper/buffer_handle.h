@@ -15,6 +15,7 @@ using ReadBufferCallback=function<void(const char *,uint32_t)>;
  * @brief The buffer_handle class 用于处理网络IO的数据接收与发送
  */
 class buffer_handle{
+protected:
     /**
      * @brief MAX_BUFFER_CAPACITY 最大buffer块容量
      */

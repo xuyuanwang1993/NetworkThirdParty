@@ -58,6 +58,7 @@ name.sin_family = AF_INET;\
 name.sin_port = htons(port);\
 name.sin_addr.s_addr = inet_addr(ip);
 
+#define NETWORK Network_Util::Instance()
 class Network_Util{
     static constexpr  uint32_t MAX_INTERFACES=20;
     static  uint32_t DEFAULT_INTERFACES;
@@ -86,8 +87,10 @@ public:
     bool make_blocking(SOCKET sockfd,uint32_t write_timeout_millseconds=0);
     /*设置非阻塞模式*/
     bool make_noblocking(SOCKET sockfd);
+    /*设置写超时*/
+    bool set_write_timeout(SOCKET sockfd,uint32_t write_timeout_millseconds=0);
     /*设置TCP的keepalive*/
-    bool set_tcp_keepalive(SOCKET sockfd,bool flag,uint32_t try_seconds=180,uint32_t max_tries=5,uint32_t try_interval=60);
+    bool set_tcp_keepalive(SOCKET sockfd,bool flag,uint32_t try_seconds=30,uint32_t max_tries=4,uint32_t try_interval=5);
     /*忽略sigpipe*/
     void set_ignore_sigpipe(SOCKET sockfd);
     /*设置接收buf*/
@@ -106,6 +109,8 @@ public:
     bool bind(SOCKET sockfd,uint16_t port=0,uint32_t index=MAX_INTERFACES);
     /*获取TTL值*/
     uint8_t get_ttl(SOCKET sockfd);
+    /*获取socket错误信息*/
+    int get_socket_error(SOCKET fd);
     /*设置TTL值*/
     bool set_ttl(SOCKET sockfd,uint8_t ttl=64);
     /*设置组播发送网络接口地址*/

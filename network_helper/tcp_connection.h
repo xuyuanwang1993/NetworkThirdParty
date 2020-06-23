@@ -9,10 +9,17 @@ namespace micagent {
 using namespace std;
 class tcp_connection:public enable_shared_from_this<tcp_connection>
 {
+    /**
+     *disconnectCallBack 连接断开回调函数
+     */
     using disconnectCallBack=function<void(shared_ptr<tcp_connection>)>;
 public:
     tcp_connection(SOCKET _fd);
     virtual ~tcp_connection();
+    /**
+     * @brief register_handle 向loop中注册this指针
+     * @param loop
+     */
     void register_handle(EventLoop *loop);
     void unregister_handle(EventLoop *loop);
     void set_disconnect_callback(const disconnectCallBack&cb ){

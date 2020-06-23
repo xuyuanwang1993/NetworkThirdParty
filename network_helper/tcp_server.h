@@ -12,15 +12,17 @@ public:
     void unregister_handle();
     string get_ip()const{return m_server_ip;}
     uint16_t get_port()const{return m_server_port;}
+    void add_connection(shared_ptr<tcp_connection> conn);
+    virtual shared_ptr<tcp_connection>new_connection(SOCKET fd);
 protected:
-    virtual void add_connection(SOCKET fd);
+    virtual void init_server(){
+    }
     void remove_connection(SOCKET fd);
-private:
+    EventLoop *m_loop;
     atomic<bool> m_registered;
     mutex m_mutex;
     string m_server_ip;
     uint16_t m_server_port;
-    EventLoop *m_loop;
     ChannelPtr m_listen_channel;
     unordered_map<SOCKET,shared_ptr<tcp_connection>>m_connections;
 };

@@ -40,19 +40,18 @@ int buffer_handle::send_fd(SOCKET fd,sockaddr_in *addr,int timeout)
         auto packet_iter=begin(m_packet_list);
         if(!addr){
             ret=::send(fd,packet_iter->read_ptr(),packet_iter->filled_size(),0);
+            if(packet_iter->read_ptr()[0]!='$')MICAGENT_LOG(LOG_ERROR,"rtsp send %s",packet_iter->read_ptr());
         }
         else {
             ret=sendto(fd,packet_iter->read_ptr(),packet_iter->filled_size(),0,(sockaddr *)addr,sizeof (sockaddr_in));
         }
         if (ret > 0)
         {
+            success=true;
             if(!m_is_stream)m_packet_list.pop_front();
             else {
                 packet_iter->retrieve(ret);
-                if(packet_iter->filled_size()==0){
-                    success=true;
-                    if(m_packet_list.size()!=1)m_packet_list.pop_front();
-                }
+                if(packet_iter->filled_size()==0)m_packet_list.pop_front();
             }
         }
         else if (ret < 0)
@@ -69,7 +68,6 @@ int buffer_handle::send_fd(SOCKET fd,sockaddr_in *addr,int timeout)
 
     if(timeout > 0)
         Network_Util::Instance().make_noblocking(fd);
-
     return ret;
 }
 bool buffer_handle::append(const char *buf ,uint32_t buf_len)
@@ -94,7 +92,7 @@ uint32_t buffer_handle::read_packet(char *save_buf,uint32_t buf_len)
     auto read_iter=begin(m_packet_list);
     if(read_iter==end(m_packet_list)||!read_iter->finished())return 0;
     auto read_len=read_iter->read_packet(save_buf,buf_len);
-    if(m_packet_list.size()>1||!m_is_stream)m_packet_list.pop_front();
+    if(read_iter->filled_size()==0)m_packet_list.pop_front();
     return read_len;
 }
 bool buffer_handle::insert_packet(const char *buf,uint32_t buf_len)
