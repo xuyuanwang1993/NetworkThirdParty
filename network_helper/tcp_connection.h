@@ -30,7 +30,7 @@ public:
     friend class tcp_server;
 protected:
     virtual bool handle_read(){
-        shared_ptr<char[]>buf(new char[1024]);
+        shared_ptr<char>buf(new char[1024],std::default_delete<char[]>());
         auto len=recv(m_channel->fd(),buf.get(),1024,0);
         if(len>0){
             send(m_channel->fd(),buf.get(),len,0);

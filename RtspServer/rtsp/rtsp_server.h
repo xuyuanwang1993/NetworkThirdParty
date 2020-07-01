@@ -10,6 +10,7 @@ class rtsp_connection;
 class rtsp_server:public tcp_server{
     static constexpr uint32_t MIN_FRAME_RATE=5;
     static constexpr int64_t CONNECTION_TIME_OUT=120*1000;//120s
+    static constexpr uint32_t MAX_MEDIA_FRAME_SIZE=1024*1024;
     friend class rtsp_connection;
 public:
     rtsp_server(uint16_t listen_port=554,uint32_t netinterface_index=UINT32_MAX);
@@ -72,7 +73,7 @@ protected:
         if(m_remove_timer_id!=INVALID_TIMER_ID){
             m_loop->removeTimer(m_remove_timer_id);
         }
-        auto weak_this=weak_from_this();
+        weak_ptr<tcp_server> weak_this=shared_from_this();
         m_remove_timer_id=m_loop->addTimer([weak_this](){
             auto strong=weak_this.lock();
             if(!strong)return false;

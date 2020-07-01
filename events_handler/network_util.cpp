@@ -11,6 +11,7 @@
 #elif defined(WIN32) || defined(_WIN32)
 #endif
 #include<vector>
+#include<cstdio>
 namespace micagent {
 uint32_t Network_Util::DEFAULT_INTERFACES=INADDR_ANY;
 void Network_Util::DefaultInit()

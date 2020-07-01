@@ -42,6 +42,8 @@ void rtsp_server::removeMediaSession(string suffix)
 }
 bool rtsp_server::updateFrame(MediaSessionId session_id,MediaChannelId id,const AVFrame &frame)
 {
+//safety_check
+    if(frame.size>MAX_MEDIA_FRAME_SIZE)return false;
     shared_ptr<media_session>session_ptr(nullptr);
     {
         lock_guard<mutex>locker(m_session_mutex);
@@ -70,6 +72,7 @@ bool rtsp_server::addProxySession(const string &url_sufix,shared_ptr<proxy_sessi
     auto session_ptr=lookMediaSession(url_sufix);
     if(!session_ptr||!session)return false;
     else {
+        lock_guard<mutex>locker(m_session_mutex);
         session_ptr->addProxySession(session);
         return true;
     }
@@ -81,6 +84,7 @@ void rtsp_server::remove_invalid_connection()
     for(auto iter=m_connections.begin();iter!=m_connections.end();){
         auto time_diff=rtsp_connection::diff_alive_time(dynamic_cast<rtsp_connection *>(iter->second.get()),time_now);
         if(time_diff>CONNECTION_TIME_OUT){
+            MICAGENT_LOG(LOG_FATALERROR,"%d   is timeout for %ld",iter->first,time_diff);
             iter->second->unregister_handle(m_loop);
             m_connections.erase(iter++);
         }

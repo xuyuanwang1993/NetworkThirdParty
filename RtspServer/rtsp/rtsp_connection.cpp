@@ -1,4 +1,5 @@
-﻿#include "rtsp_connection.h"
+﻿#define _GLIBCXX_USE_C99 1
+#include "rtsp_connection.h"
 #include "rtsp_server.h"
 #include "rtsp_helper.h"
 #include "rtp_connection.h"
@@ -14,7 +15,7 @@ bool rtsp_connection::handle_read()
     }
     if(ret>0){
         auto size=m_read_buf->get_packet_nums();
-        shared_ptr<char[]>buf(new char[8092]);
+        shared_ptr<char>buf(new char[8092],std::default_delete<char[]>());
         for(uint32_t i=0;i<size;i++){
             memset(buf.get(),0,8092);
             auto len=m_read_buf->read_packet(buf.get(),8092);
@@ -29,6 +30,7 @@ bool rtsp_connection::handle_write()
 {
     lock_guard<mutex>locker(m_mutex);
      if(m_send_buf->send_fd(fd())<0)return false;
+     m_last_alive_time=Timer::getTimeNow();
     if(m_send_buf->get_first_packet_size()!=0){
         if(!m_channel->isWriting()){
             m_channel->enableWriting();
@@ -265,8 +267,7 @@ bool rtsp_connection::handleCmdPlay(map<string ,string>&handle_map)
             m_rtpConnPtr->startPlay();
             auto url=handle_map.find("url");
             if(url!=handle_map.end())m_url=url->second;
-            m_url="";
-            response=rtsp_helper::buildPlayRes(m_rtpConnPtr->get_rtp_Info(m_url).c_str(),session_id,cseq->second);
+            response=rtsp_helper::buildPlayRes(m_rtpConnPtr->get_rtp_Info(m_url).c_str(),session_id,cseq->second,rtsp_server::CONNECTION_TIME_OUT/1000);
         }
     }while(0);
     return send_message(response);

@@ -21,6 +21,7 @@ class Channel;
 //在读写的回调函数中 如主动调用了错误处理回调函数，应返回false，this指针为当前channel指针
 using EventCallBack=function<bool(Channel *)>;
 using ChannelPtr=shared_ptr<Channel>;
+using ChannelPtrW=weak_ptr<Channel>;
 class Channel
 {
 public:

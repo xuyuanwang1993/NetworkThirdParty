@@ -10,7 +10,7 @@ using namespace std;
 using neb::CJsonObject;
 class rtsp_pusher:public proxy_session_base ,public enable_shared_from_this<rtsp_pusher>{
 //连接最大超时时间
-    static constexpr uint32_t MAX_WAIT_TIME=10*60*1000;//10 min
+    static constexpr uint32_t MAX_WAIT_TIME=30*1000;//30s
 //连接最小超时时间
     static constexpr uint32_t MIN_WAIT_TIME=5000;//5s
 public:

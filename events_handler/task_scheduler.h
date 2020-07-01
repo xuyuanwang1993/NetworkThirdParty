@@ -88,7 +88,7 @@ protected:
      * @param fd 触发事件的fd
      * @param events
      */
-    void handle_channel_events(SOCKET fd,int events);
+    bool handle_channel_events(SOCKET fd,int events);
     /**
      * @brief wake_up 调度器唤醒
      */
@@ -105,7 +105,7 @@ protected:
     /**
      * @brief m_channel_map SOCKET:channel信息map
      */
-    unordered_map<SOCKET,ChannelPtr> m_channel_map;
+    unordered_map<SOCKET,ChannelPtrW> m_channel_map;
     /**
      * @brief m_wakeup_channel 唤醒通道
      */

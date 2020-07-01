@@ -100,7 +100,7 @@ protected:
        uint32_t read_index;
        /*是否写入完毕*/
        bool is_finished;
-       BufferPacket(uint32_t len):buf(new char[len]),buf_len(len),write_index(0),read_index(0),is_finished(false){}
+       BufferPacket(uint32_t len):buf(new char[len],std::default_delete<char[]>()),buf_len(len),write_index(0),read_index(0),is_finished(false){}
        /*可用长度*/
        uint32_t availiable_size()const{return buf_len-write_index;}
        /*可读长度*/
@@ -146,7 +146,7 @@ protected:
                memcpy(new_buf+filled_size(),input_buf,input_len);
                read_index=0;
                write_index=buf_len;
-               buf.reset(new_buf);
+               buf.reset(new_buf,std::default_delete<char[]>());
            }
            return true;
        }

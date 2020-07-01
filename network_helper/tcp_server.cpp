@@ -2,6 +2,7 @@
 using namespace micagent;
 tcp_server::~tcp_server(){
     MICAGENT_MARK("tcp_server exit!");
+    unregister_handle();
 }
 tcp_server::tcp_server(uint16_t listen_port,uint32_t netinterface_index):m_registered(false)
 {
@@ -28,8 +29,10 @@ void tcp_server::register_handle(EventLoop *loop)
         Network_Util::Instance().listen(m_listen_channel->fd(),20);
         m_loop=loop;
         init_server();
-        auto interface=shared_from_this();
-        m_listen_channel->setReadCallback([interface](Channel *chn){
+        weak_ptr<tcp_server>weak_this=shared_from_this();
+        m_listen_channel->setReadCallback([weak_this](Channel *chn){
+            auto interface=weak_this.lock();
+            if(!interface)return false;
             auto fd=Network_Util::Instance().accept(chn->fd());
             if(fd!=INVALID_SOCKET){
                 interface->add_connection(interface->new_connection(fd));
@@ -46,8 +49,6 @@ void tcp_server::unregister_handle()
     if(m_registered){
         m_registered.exchange(false);
         m_loop->removeChannel(m_listen_channel);
-        m_listen_channel->setReadCallback(nullptr);
-        m_loop=nullptr;
     }
 }
 void tcp_server::add_connection(shared_ptr<tcp_connection> conn)

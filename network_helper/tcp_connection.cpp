@@ -14,26 +14,32 @@ void tcp_connection::register_handle(EventLoop *loop)
     if(!loop)MICAGENT_MARK("loop is nullptr!");
     else {
         if(!m_registered){
-            m_mutex.lock();
-            auto interface=shared_from_this();
-            m_channel->setReadCallback([interface](Channel *chn){
+            weak_ptr<tcp_connection>weak_this(shared_from_this());
+            m_channel->setReadCallback([weak_this](Channel *chn){
                 (void)chn;
+                auto interface=weak_this.lock();
+                if(!interface)return false;
                 return interface->handle_read();
             });
-            m_channel->setWriteCallback([interface](Channel *chn){
-            (void)chn;
+            m_channel->setWriteCallback([weak_this](Channel *chn){
+                (void)chn;
+                auto interface=weak_this.lock();
+                if(!interface)return false;
                 return interface->handle_write();
             });
-            m_channel->setCloseCallback([interface](Channel *chn){
-            (void)chn;
+            m_channel->setCloseCallback([weak_this](Channel *chn){
+                (void)chn;
+                auto interface=weak_this.lock();
+                if(!interface)return false;
                 return interface->handle_close();
             });
-            m_channel->setErrorCallback([interface](Channel *chn){
-            (void)chn;
+            m_channel->setErrorCallback([weak_this](Channel *chn){
+                (void)chn;
+                auto interface=weak_this.lock();
+                if(!interface)return false;
                 return interface->handle_error();
             });
             m_channel->enableReading();
-            m_mutex.unlock();
             loop->updateChannel(m_channel);
             m_registered.exchange(true);
         }
@@ -46,13 +52,6 @@ void tcp_connection::unregister_handle(EventLoop *loop)
         if(m_registered){
             loop->removeChannel(m_channel);
             m_registered.exchange(false);
-            m_mutex.lock();
-            m_channel->setReadCallback(nullptr);
-            m_channel->setCloseCallback(nullptr);
-            m_channel->setErrorCallback(nullptr);
-            m_channel->setWriteCallback(nullptr);
-            m_disconnect_CB=nullptr;
-            m_mutex.unlock();
         }
     }
 }

@@ -39,7 +39,7 @@ void proxy_server::remove_invalid_connection()
         }
     }
 }
-void proxy_server::udp_data_input(const pair<shared_ptr<char[]>,uint16_t>&buf_pair)
+void proxy_server::udp_data_input(const pair<shared_ptr<char>,uint16_t>&buf_pair)
 {
     //根据stream_token进行分流，分别输入不同的转发连接中
     auto stream_token=ProxyInterface::get_stream_token(buf_pair.first.get(),buf_pair.second);

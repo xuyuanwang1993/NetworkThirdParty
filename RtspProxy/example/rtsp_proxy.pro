@@ -33,11 +33,12 @@ HEADERS += \
     ../../json_config/CJsonObject.hpp \
     ../../json_config/cJSON.h \
     ../../network_helper/tcp_connection_helper.h \
-    ../../RtspServer/example/file_reader.h
+    ../../RtspServer/example/file_reader.h \
+    h264parsesps.h
 
 LIBS+= -lpthread
 
-QMAKE_CXXFLAGS += -g
+QMAKE_CXXFLAGS +=
 
 SOURCES += \
     main.cpp \
@@ -72,7 +73,8 @@ SOURCES += \
     ../../json_config/CJsonObject.cpp \
     ../../json_config/cJSON.c \
     ../../network_helper/tcp_connection_helper.cpp \
-    ../../RtspServer/example/file_reader.cpp
+    ../../RtspServer/example/file_reader.cpp \
+    H264ParseSPS.c
 
 INCLUDEPATH += ..\
 ../../LOG \

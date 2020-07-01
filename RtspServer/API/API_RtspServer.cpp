@@ -1,4 +1,5 @@
-﻿#include "API_RtspServer.h"
+﻿#define _GLIBCXX_USE_C99 1
+#include "API_RtspServer.h"
 #include <iostream>
 #include "tcp_server.h"
 #include "aac_source.h"
@@ -12,7 +13,6 @@
 #include "media.h"
 #include "network_util.h"
 #include "rtsp_server.h"
-#include "file_reader.h"
 #ifdef VSPROJECT_EXPORTS
 #include "pch.h"
 #endif // VSPROJECT_EXPORTS

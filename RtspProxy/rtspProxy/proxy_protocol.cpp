@@ -91,12 +91,13 @@ static inline void encode_proxy_header( ProxyHeader&header, char *buf){
 }
 ProxyInterface::ProxyInterface(uint32_t token,PTransMode mode,POUTPUT_CALLBACK tcp_callback,POUTPUT_CALLBACK udp_callback,PFRAME_CALLBACK recv_callback)
     :m_stream_token(token),m_mode(mode),m_tcp_callback(tcp_callback),m_udp_callback(udp_callback),m_recv_callback(recv_callback)\
-    ,m_last_send_frame_seq(P_INVALID_SEQ),m_last_wait_confirmed_frame_seq(P_INVALID_SEQ),m_last_confirmed_flush_frame_seq(P_INVALID_SEQ)\
+    ,m_last_send_frame_seq(P_INVALID_SEQ),m_last_confirmed_flush_frame_seq(P_INVALID_SEQ)\
     ,m_min_recv_frame_seq(P_INVALID_SEQ){
 
 }
 bool ProxyInterface::send_frame(shared_ptr<ProxyFrame> frame)
 {
+    if(frame->data_len>MAX_FRAME_SIZE)return false;
 #if FRAGMENT_CACHE_CHECK
     {
         //检查发送缓存是否溢出，溢出则清空缓存
@@ -123,7 +124,6 @@ bool ProxyInterface::send_frame(shared_ptr<ProxyFrame> frame)
 }
 bool ProxyInterface::send_control_command(const void *buf,uint16_t buf_len)
 {
-    printf("send    %s\r\n",(const char *)buf);
     unique_lock<mutex>locker(m_mutex);
 #if FRAGMENT_CACHE_CHECK
     //检查发送缓存是否溢出，溢出则清空缓存
@@ -148,7 +148,7 @@ bool ProxyInterface::send_control_command(const void *buf,uint16_t buf_len)
     {
         header.fragment_seq=i;
         header.data_len=(i==header.fragment_count-1)?(buf_len-PROXY_FRAGMENT_SIZE*i):PROXY_FRAGMENT_SIZE;
-        shared_ptr<char[]>send_buf(new char[P_HEADER_SIZE+header.data_len+1]);
+        shared_ptr<char>send_buf(new char[P_HEADER_SIZE+header.data_len+1],std::default_delete<char[]>());
         encode_proxy_header(header,send_buf.get());
         memcpy(send_buf.get()+P_HEADER_SIZE,static_cast<const char *>(buf)+header.fragment_seq*PROXY_FRAGMENT_SIZE,header.data_len);
         if(locker.owns_lock())locker.unlock();
@@ -259,7 +259,7 @@ bool ProxyInterface::raw_tcp_handle_packet(shared_ptr<ProxyFrame> frame)
     {
         header.fragment_seq=i;
         header.data_len=(i==header.fragment_count-1)?(frame->data_len-PROXY_FRAGMENT_SIZE*i):PROXY_FRAGMENT_SIZE;
-        shared_ptr<char[]>send_buf(new char[P_HEADER_SIZE+header.data_len+1]);
+        shared_ptr<char>send_buf(new char[P_HEADER_SIZE+header.data_len+1],std::default_delete<char[]>());
         encode_proxy_header(header,send_buf.get());
         memcpy(send_buf.get()+P_HEADER_SIZE,frame->data_buf.get()+header.fragment_seq*PROXY_FRAGMENT_SIZE,header.data_len);
         if(locker.owns_lock())locker.unlock();
@@ -286,7 +286,7 @@ bool ProxyInterface::raw_udp_handle_packet(shared_ptr<ProxyFrame> frame)
     {
         header.fragment_seq=i;
         header.data_len=(i==header.fragment_count-1)?(frame->data_len-PROXY_FRAGMENT_SIZE*i):PROXY_FRAGMENT_SIZE;
-        shared_ptr<char[]>send_buf(new char[P_HEADER_SIZE+header.data_len+1]);
+        shared_ptr<char>send_buf(new char[P_HEADER_SIZE+header.data_len+1],std::default_delete<char[]>());
         encode_proxy_header(header,send_buf.get());
         memcpy(send_buf.get()+P_HEADER_SIZE,frame->data_buf.get()+header.fragment_seq*PROXY_FRAGMENT_SIZE,header.data_len);
         if(locker.owns_lock())locker.unlock();
@@ -313,7 +313,7 @@ bool ProxyInterface::raw_hybrid_handle_packet(shared_ptr<ProxyFrame> frame)
     {
         header.fragment_seq=i;
         header.data_len=(i==header.fragment_count-1)?(frame->data_len-PROXY_FRAGMENT_SIZE*i):PROXY_FRAGMENT_SIZE;
-        shared_ptr<char[]>send_buf(new char[P_HEADER_SIZE+header.data_len+1]);
+        shared_ptr<char>send_buf(new char[P_HEADER_SIZE+header.data_len+1],std::default_delete<char[]>());
         encode_proxy_header(header,send_buf.get());
         memcpy(send_buf.get()+P_HEADER_SIZE,frame->data_buf.get()+header.fragment_seq*PROXY_FRAGMENT_SIZE,header.data_len);
         if(locker.owns_lock())locker.unlock();
@@ -349,12 +349,11 @@ bool ProxyInterface::graded_tcp_handle_packet(shared_ptr<ProxyFrame> frame)
         while(!m_packet_chache.empty()){
             m_packet_chache.pop();
         }
-        m_last_wait_confirmed_frame_seq=header.frame_seq;
         for(uint16_t i=0;i<header.fragment_count;i++)
         {
             header.fragment_seq=i;
             header.data_len=(i==header.fragment_count-1)?(frame->data_len-PROXY_FRAGMENT_SIZE*i):PROXY_FRAGMENT_SIZE;
-            shared_ptr<char[]>send_buf(new char[P_HEADER_SIZE+header.data_len+1]);
+            shared_ptr<char>send_buf(new char[P_HEADER_SIZE+header.data_len+1],std::default_delete<char[]>());
             encode_proxy_header(header,send_buf.get());
             memcpy(send_buf.get()+P_HEADER_SIZE,frame->data_buf.get()+header.fragment_seq*PROXY_FRAGMENT_SIZE,header.data_len);
             if(locker.owns_lock())locker.unlock();
@@ -364,7 +363,7 @@ bool ProxyInterface::graded_tcp_handle_packet(shared_ptr<ProxyFrame> frame)
     }
     else {
         //非刷新帧，检查是否可发送
-        if(m_last_wait_confirmed_frame_seq==m_last_confirmed_flush_frame_seq){
+        if(m_last_confirmed_flush_frame_seq+MAX_GRADED_CACHE_SIZE>header.frame_seq){
             //刷新帧已确认
             while(!m_packet_chache.empty()){
                 auto frame_cache=m_packet_chache.front();
@@ -377,7 +376,7 @@ bool ProxyInterface::graded_tcp_handle_packet(shared_ptr<ProxyFrame> frame)
             {
                 header.fragment_seq=i;
                 header.data_len=(i==header.fragment_count-1)?(frame->data_len-PROXY_FRAGMENT_SIZE*i):PROXY_FRAGMENT_SIZE;
-                shared_ptr<char[]>send_buf(new char[P_HEADER_SIZE+header.data_len+1]);
+                shared_ptr<char>send_buf(new char[P_HEADER_SIZE+header.data_len+1],std::default_delete<char[]>());
                 encode_proxy_header(header,send_buf.get());
                 memcpy(send_buf.get()+P_HEADER_SIZE,frame->data_buf.get()+header.fragment_seq*PROXY_FRAGMENT_SIZE,header.data_len);
                 if(locker.owns_lock())locker.unlock();
@@ -386,6 +385,8 @@ bool ProxyInterface::graded_tcp_handle_packet(shared_ptr<ProxyFrame> frame)
             }
         }
         else {
+        //I帧未确认，判断流量异常，丢弃非I帧的所有输入
+            return false;
             //刷新帧待确认，将当前帧加入缓存
 #ifdef DEBUG
             //printf("graded_tcp send add cache frames %u \r\n",header.frame_seq);
@@ -426,12 +427,11 @@ bool ProxyInterface::graded_hybrid_handle_packet(shared_ptr<ProxyFrame> frame)
         {
             m_packet_chache.pop();
         }
-        m_last_wait_confirmed_frame_seq=header.frame_seq;
         for(uint16_t i=0;i<header.fragment_count;i++)
         {
             header.fragment_seq=i;
             header.data_len=(i==header.fragment_count-1)?(frame->data_len-PROXY_FRAGMENT_SIZE*i):PROXY_FRAGMENT_SIZE;
-            shared_ptr<char[]>send_buf(new char[P_HEADER_SIZE+header.data_len+1]);
+            shared_ptr<char>send_buf(new char[P_HEADER_SIZE+header.data_len+1],std::default_delete<char[]>());
             encode_proxy_header(header,send_buf.get());
             memcpy(send_buf.get()+P_HEADER_SIZE,frame->data_buf.get()+header.fragment_seq*PROXY_FRAGMENT_SIZE,header.data_len);
             if(locker.owns_lock())locker.unlock();
@@ -442,7 +442,7 @@ bool ProxyInterface::graded_hybrid_handle_packet(shared_ptr<ProxyFrame> frame)
     else {
         if(!m_udp_callback)return  false;
         //非刷新帧，检查是否可发送
-        if(m_last_wait_confirmed_frame_seq==m_last_confirmed_flush_frame_seq){
+        if(m_last_confirmed_flush_frame_seq+MAX_GRADED_CACHE_SIZE>header.frame_seq){
             //刷新帧已确认
             while(!m_packet_chache.empty()){
                 auto frame_cache=m_packet_chache.front();
@@ -458,7 +458,7 @@ bool ProxyInterface::graded_hybrid_handle_packet(shared_ptr<ProxyFrame> frame)
             {
                 header.fragment_seq=i;
                 header.data_len=(i==header.fragment_count-1)?(frame->data_len-PROXY_FRAGMENT_SIZE*i):PROXY_FRAGMENT_SIZE;
-                shared_ptr<char[]>send_buf(new char[P_HEADER_SIZE+header.data_len+1]);
+                shared_ptr<char>send_buf(new char[P_HEADER_SIZE+header.data_len+1],std::default_delete<char[]>());
                 encode_proxy_header(header,send_buf.get());
                 memcpy(send_buf.get()+P_HEADER_SIZE,frame->data_buf.get()+header.fragment_seq*PROXY_FRAGMENT_SIZE,header.data_len);
                 if(locker.owns_lock())locker.unlock();
@@ -472,6 +472,8 @@ bool ProxyInterface::graded_hybrid_handle_packet(shared_ptr<ProxyFrame> frame)
             }
         }
         else {
+            //I帧未确认，判断流量异常，丢弃非I帧的所有输入
+            return false;
             //刷新帧待确认，将当前帧加入缓存
 #ifdef DEBUG
             //printf("graded_hybrid send add cache frames %u \r\n",header.frame_seq);

@@ -57,16 +57,20 @@ bool TaskScheduler::handleEvent()
 {
     return  false;
 }
-void TaskScheduler::handle_channel_events(SOCKET fd,int events)
+bool TaskScheduler::handle_channel_events(SOCKET fd,int events)
 {
-    if(events==0)return;
+    if(events==0)return true;
     unique_lock<mutex> locker(m_mutex);
     auto channel=m_channel_map.find(fd);
     if(channel!=std::end(m_channel_map)){
-        auto channel_tmp=channel->second;
+        auto channel_ptr=channel->second.lock();
         if(locker.owns_lock())locker.unlock();
-        channel_tmp->handleEvent(events);
+        if(channel_ptr)channel_ptr->handleEvent(events);
+        else {
+            return false;
+        }
     }
+    return  true;
 }
 void TaskScheduler::wake_up()
 {
@@ -217,7 +221,10 @@ bool SelectTaskScheduler::handleEvent()
             if(FD_ISSET(fd,&read_sets))events|=EVENT_IN;
             if(FD_ISSET(fd,&write_sets))events|=EVENT_OUT;
             if(FD_ISSET(fd,&exception_sets))events|=EVENT_HUP;
-            handle_channel_events(fd,events);
+            if(!handle_channel_events(fd,events))
+            {
+                removeChannel(fd);
+            }
         }
     }
     else {
@@ -271,12 +278,17 @@ void EpollTaskScheduler::updateChannel(Channel *channel)
         lock_guard<mutex> locker(m_mutex);
         auto iter=m_channel_map.find(fd);
         if(iter!=std::end(m_channel_map)) {
+            auto ptr=iter->second.lock();
+            if(!ptr){
+                m_channel_map.erase(iter);
+                return;
+            }
             if(channel->isNoneEvent()){
-                update(EPOLL_CTL_DEL, iter->second);
+                update(EPOLL_CTL_DEL, ptr);
                 m_channel_map.erase(iter);
             }
             else {
-                update(EPOLL_CTL_MOD, iter->second);
+                update(EPOLL_CTL_MOD, ptr);
                 wake_up();
             }
         }
@@ -304,7 +316,12 @@ void EpollTaskScheduler::removeChannel(SOCKET fd)
         lock_guard<mutex> locker(m_mutex);
         auto iter=m_channel_map.find(fd);
         if(iter!=end(m_channel_map)){
-            update(EPOLL_CTL_DEL, iter->second);
+            auto ptr=iter->second.lock();
+            if(!ptr){
+                m_channel_map.erase(iter);
+                return;
+            }
+            update(EPOLL_CTL_DEL, ptr);
             m_channel_map.erase(iter);
         }
     }
@@ -329,7 +346,10 @@ bool EpollTaskScheduler::handleEvent()
     else m_last_handle_none=true;
     for(int n=0; n<numEvents; n++)
     {
-        this->handle_channel_events(events[n].data.fd,static_cast<int>(events[n].events));
+        if(!this->handle_channel_events(events[n].data.fd,static_cast<int>(events[n].events)))
+        {
+            removeChannel(events[n].data.fd);
+        }
     }
     return true;
 #else

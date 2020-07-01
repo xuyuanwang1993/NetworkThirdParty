@@ -86,7 +86,6 @@ int main(int argc,char *argv[]){
     std::thread t([&](){
         int bufSize = 500000;
         uint8_t *frameBuf = new uint8_t[bufSize];
-        AVFrame frame;
         while(1)
         {
             auto timePoint = std::chrono::steady_clock::now();
@@ -101,8 +100,11 @@ int main(int argc,char *argv[]){
                 break;
             }
             auto time_now2=std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch()).count();
-            int sleep_time=40-time_now2+time_now;
-            if(sleep_time>0)Timer::sleep(sleep_time);
+            int sleep_time=40-(time_now2-time_now);
+            if(frameBuf[4]==0x65||frameBuf[4]==0x61||frameBuf[4]==0x26||frameBuf[4]==0x02)
+            {
+                if(sleep_time>0)Timer::sleep(sleep_time);
+            }
         }
         std::cout<<"exit send_thread"<<std::endl;
     } );

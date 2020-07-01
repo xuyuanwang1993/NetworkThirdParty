@@ -1,4 +1,5 @@
-﻿#include "tcp_server.h"
+﻿#define _GLIBCXX_USE_C99 1
+#include "tcp_server.h"
 #include <iostream>
 #include <arpa/inet.h>
 #include "MD5.h"
@@ -14,12 +15,16 @@
 #include "h265_source.h"
 #include "file_reader.h"
 #include "proxy_server.h"
+#include "h264parsesps.h"
+
 using namespace std;
 using namespace micagent;
 using neb::CJsonObject;
 // ip port stream_name   file_name mode
 int main(int argc,char *argv[]){
     Logger::Instance().set_log_to_std(true);
+    //Logger::Instance().set_log_path("",to_string(argc));
+    Logger::Instance().set_clear_flag(true);
     Logger::Instance().register_handle();
     shared_ptr<EventLoop> loop(new EventLoop());
     if(argc==6)
@@ -45,16 +50,18 @@ int main(int argc,char *argv[]){
         int bufSize = 500000;
         uint8_t *frameBuf = new uint8_t[bufSize];
         AVFrame frame;
+        auto last_time=Timer::getTimeNow();
+        long sleep_time=0;
+        int counts=0;
+        double fps=25;
         while(1)
         {
-            auto timePoint = std::chrono::steady_clock::now();
-            auto time_now=std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch()).count();
-            bool bEndOfFrame;
+            last_time=Timer::getTimeNow();
             int frameSize = file.readFrame(frameBuf, bufSize);
             if(frameSize > 0)
             {
                 frame.size=frameSize-4;
-                frame.buffer.reset(new uint8_t[frame.size]);
+                frame.buffer.reset(new uint8_t[frame.size],std::default_delete<uint8_t[]>());
                 memcpy(frame.buffer.get(),frameBuf+4,frameSize-4);
                 pusher->proxy_frame(channel_0,frame);
                     //break;
@@ -63,10 +70,11 @@ int main(int argc,char *argv[]){
             {
                 break;
             }
-            auto timePoint2 = std::chrono::steady_clock::now();
-            auto time_now2=std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch()).count();
-            int sleep_time=40-time_now2+time_now;
-            if(sleep_time>0)Timer::sleep(sleep_time);
+            if(frame.buffer.get()[0]==0x65||frame.buffer.get()[0]==0x61||frame.buffer.get()[0]==0x26||frame.buffer.get()[0]==0x02)
+            {
+                sleep_time=1000/25-(Timer::getTimeNow()-last_time);
+                if(sleep_time>0)Timer::sleep(sleep_time);
+            }
         }
         std::cout<<"exit send_thread"<<std::endl;
     }
@@ -76,7 +84,7 @@ int main(int argc,char *argv[]){
     else {
         shared_ptr<rtsp_server>server(new rtsp_server(58554));
         server->register_handle(loop.get());
-        shared_ptr<proxy_server>pro_server(new proxy_server());
+        shared_ptr<proxy_server>pro_server(new proxy_server(8555));
         pro_server->set_rtsp_server(server);
         pro_server->register_handle(loop.get());
         while (getchar()!='8') continue;

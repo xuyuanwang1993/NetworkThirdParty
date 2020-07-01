@@ -5,6 +5,8 @@
 #include<sstream>
 #include<iostream>
 #include<string.h>
+#include<cstdio>
+#include<cstdlib>
 #if defined(__linux) || defined(__linux__)
 #include <sys/stat.h>
 #include<unistd.h>
@@ -58,6 +60,8 @@ constexpr static int log_color[] = {
 };
 #endif
 string Logger::get_local_time(){
+    static mutex time_mutex;
+    lock_guard<mutex>locker(time_mutex);
     std::ostringstream stream;
     auto now = chrono::system_clock::now();
     time_t tt = chrono::system_clock::to_time_t(now);
@@ -81,7 +85,7 @@ void Logger::log(int level,const char *file,const char *func,int line,const char
         DEBUG_LOCK
          if(level<m_level||level>LOG_BREAK_POINT)return;
     }
-    shared_ptr<char[]>buf(new char[MAX_LOG_MESSAGE_SIZE]);
+    shared_ptr<char>buf(new char[MAX_LOG_MESSAGE_SIZE],std::default_delete<char[]>());
     {
         std::lock_guard<mutex> locker(m_mutex);
         int use_len=snprintf(buf.get(),MAX_LOG_MESSAGE_SIZE,"[%s][%s %s %d]",log_strings[level],file,func,line);

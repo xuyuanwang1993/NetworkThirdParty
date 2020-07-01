@@ -27,13 +27,10 @@ rtsp_pusher::rtsp_pusher(tcp_connection_helper *helper,PTransMode mode,const str
 void rtsp_pusher::proxy_frame(MediaChannelId id,const AVFrame &frame)
 {
     lock_guard<mutex>locker(m_mutex);
-    if(!m_tcp_channel)reset_connection();
-    else {
         if(m_is_setup){
             shared_ptr<ProxyFrame>proxy_frame(new ProxyFrame(frame.buffer.get(),frame.size,m_media_info[id],0,id));
             m_proxy_interface->send_frame(proxy_frame);
         }
-    }
 }
 void rtsp_pusher::parse_source_info(const vector<media_source_info>&media_source_info)
 {
@@ -99,7 +96,7 @@ void rtsp_pusher::reset_connection()
                 }
             }
         },m_last_time_out);
-        m_last_time_out*=2;
+        m_last_time_out+=1000;
         m_last_time_out=m_last_time_out>MAX_WAIT_TIME?MAX_WAIT_TIME:m_last_time_out;
     }
 }
@@ -113,6 +110,9 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
             NETWORK.close_socket(fd);
             return ;
         }
+        Network_Util::Instance().set_ignore_sigpipe(fd);
+        Network_Util::Instance().set_tcp_keepalive(fd,true);
+        m_last_time_out=MIN_WAIT_TIME;
         m_is_connecting=false;
         m_tcp_channel.reset(new Channel(fd));
         auto weak_this=weak_from_this();
@@ -128,7 +128,7 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
             }
             if(ret>0){
                 auto size=strong->m_recv_buf->get_packet_nums();
-                shared_ptr<char[]>buf(new char[8092]);
+                shared_ptr<char>buf(new char[8092],std::default_delete<char[]>());
                 for(uint32_t i=0;i<size;i++){
                     memset(buf.get(),0,8092);
                     auto len=strong->m_recv_buf->read_packet(buf.get(),8092);
@@ -180,7 +180,22 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
     }
     else {
         lock_guard<mutex>locker(m_mutex);
-        reset_connection();
+        auto weak_this=weak_from_this();
+        auto loop=m_connection_helper->get_loop();
+        if(!loop)throw runtime_error("event loop was quit!");
+        MICAGENT_LOG(LOG_WARNNING,"connect %s  %hu  error for %s!  wait %u ms!",m_des_ip.c_str(),m_des_port,strerror(errno),m_last_time_out);
+        loop->addTimer([weak_this](){
+            auto strong=weak_this.lock();
+            if(strong){
+                lock_guard<mutex>locker(strong->m_mutex);
+                auto wait_next=strong->m_last_time_out+1000;
+                strong->m_last_time_out=MIN_WAIT_TIME;
+                strong->m_is_connecting=false;
+                strong->reset_connection();
+                strong->m_last_time_out=wait_next>MAX_WAIT_TIME?MAX_WAIT_TIME:wait_next;
+            }
+            return false;
+        },m_last_time_out);
     }
 }
 bool rtsp_pusher::handle_proxy_request(const shared_ptr<ProxyFrame>&frame)

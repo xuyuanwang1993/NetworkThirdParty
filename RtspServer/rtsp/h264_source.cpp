@@ -21,7 +21,6 @@ h264_source::h264_source(uint32_t frameRate)
 }
 bool h264_source::check_frames(AVFrame &frame)
 {
-    return true;
     auto buf=frame.buffer.get();
     bool ret=false;
     do{

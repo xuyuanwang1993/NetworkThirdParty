@@ -50,7 +50,7 @@ bool rtsp_message::insert_packet(const char *buf,uint32_t buf_len)
         else {
             m_packet_list.push_back(BufferPacket(buf_len));
             m_packet_list.rbegin()->append(buf,buf_len);
-            rbegin(m_packet_list)->set_finished();
+            (m_packet_list.rbegin())->set_finished();
             if(m_packet_list.size()>MAX_TCP_MSS_CACHE){
                 for(auto iter=m_packet_list.begin();iter!=m_packet_list.end();){
                     if(iter->read_ptr()[0]=='$')m_packet_list.erase(iter++);

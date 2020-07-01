@@ -1,5 +1,6 @@
 ﻿#ifndef HTTP_REQUEST_H
 #define HTTP_REQUEST_H
+#define _GLIBCXX_USE_C99 1
 #include <string>
 #include"timer_queue.h"
 #include "c_log.h"

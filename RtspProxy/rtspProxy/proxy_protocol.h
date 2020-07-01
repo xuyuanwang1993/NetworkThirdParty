@@ -115,9 +115,10 @@ struct ProxyFrame{
     //帧序列号
     uint16_t frame_seq;
     //帧数据缓存
-    shared_ptr<char[]>data_buf;
-    ProxyFrame(const void *buf=nullptr,uint32_t len=0,uint8_t type=PNONE,uint8_t frame_type=CONTROL_COMMAND,uint8_t channel=0,uint32_t token=0,uint16_t seq=0):\
-        media_type(type),frame_type(frame_type),media_channel(channel),stream_token(token),data_len(len),timestamp(p_timer_help::getTimesTamp()),frame_seq(seq),data_buf(new char[data_len+1]){
+    shared_ptr<char>data_buf;
+    ProxyFrame(const void *buf=nullptr,uint32_t len=0,uint8_t type=PNONE,uint8_t _frame_type=CONTROL_COMMAND,uint8_t channel=0,uint32_t token=0,uint16_t seq=0):\
+        media_type(type),frame_type(_frame_type),media_channel(channel),stream_token(token),data_len(len),timestamp(p_timer_help::getTimesTamp()),frame_seq(seq),data_buf(new char[data_len+1]\
+        ,std::default_delete<char[]>()){
         if(data_len>0&&buf)memcpy(data_buf.get(),buf,data_len);
     }
 };
@@ -141,10 +142,10 @@ using PFRAME_CALLBACK=function<void(shared_ptr<ProxyFrame>)>;
 //tcp按流传输的数据解析
 struct PStreamParse{
     //未完成的分包数据缓存
-    shared_ptr<char[]>buf_cache;
+    shared_ptr<char >buf_cache;
     //缓存长度
     uint16_t last_buf_len;
-    PStreamParse():buf_cache(new char[PROXY_FRAGMENT_SIZE+sizeof(ProxyHeader)+1]),last_buf_len(0){
+    PStreamParse():buf_cache(new char[PROXY_FRAGMENT_SIZE+sizeof(ProxyHeader)+1],std::default_delete<char[]>()),last_buf_len(0){
 
     }
     //协议解析当前包的数据长度
@@ -163,19 +164,16 @@ struct PStreamParse{
      * @param buf_len
      * @return 返回完整的协议数据包
      */
-    queue<pair<shared_ptr<char[]>,uint16_t>>insert_buf(const char *buf,uint16_t buf_len)
+    queue<pair<shared_ptr<char>,uint16_t>>insert_buf(const char *buf,uint16_t buf_len)
     {
-        queue<pair<shared_ptr<char[]>,uint16_t>> ret;
+        queue<pair<shared_ptr<char>,uint16_t>> ret;
         if(buf_len==0)return  ret;
         uint16_t new_data_len=last_buf_len+buf_len;
-        shared_ptr<char>new_buf(new char[new_data_len]);
+        shared_ptr<char>new_buf(new char[new_data_len],std::default_delete<char[]>());
         if(last_buf_len>0)memcpy(new_buf.get(),buf_cache.get(),last_buf_len);
         memcpy(new_buf.get()+last_buf_len,buf,buf_len);
         if(new_buf.get()[0]!='$'){
             //不符合规则的包丢弃
-#ifdef DEBUG
-            printf("false stream input  %c %d!\r\n",new_buf.get()[0],new_buf.get()[0]);
-#endif
             return ret;
         }
         uint16_t use_len=0;
@@ -185,7 +183,7 @@ struct PStreamParse{
             last_buf_len+=sizeof (ProxyHeader);
             if(new_data_len>=last_buf_len)
             {
-                shared_ptr<char []>data(new char[last_buf_len+1]);
+                shared_ptr<char >data(new char[last_buf_len+1],std::default_delete<char[]>());
                 memcpy(data.get(),new_buf.get()+use_len,last_buf_len);
                 ret.push(make_pair(data,last_buf_len));
                 use_len+=last_buf_len;
@@ -212,6 +210,10 @@ class ProxyInterface{
     static constexpr uint16_t MAX_WINDOW_SIZE=MAX_ORDER_CACHE_SIZE*2;
     //发送缓存最大分片数目
     static constexpr uint16_t MAX_FRAGMENT_CACHE_SIZE=20000;
+    //发送缓存最大分片数目
+    static constexpr uint16_t MAX_GRADED_CACHE_SIZE=100;
+    //帧最大长度
+    static constexpr uint32_t MAX_FRAME_SIZE=1024*1024;
     //接收缓存帧结构定义
     struct ProxyFrameCache{
         //应用层媒体类型
@@ -231,7 +233,7 @@ class ProxyInterface{
         //已接收的分片序列号set
         set<uint16_t>m_fragment_seq_set;
         //帧缓存
-        shared_ptr<char[]>m_buf_chache;
+        shared_ptr<char>m_buf_chache;
         ProxyFrameCache(const ProxyHeader&head):media_type(head.media_type),\
             media_channel(head.media_channel),\
             frame_type(head.frame_type),\
@@ -239,7 +241,7 @@ class ProxyInterface{
             frame_seq(head.frame_seq),\
             fragment_count(head.fragment_count),\
             timestamp(head.timestamp),\
-            m_buf_chache(new char[frame_len+1]){
+            m_buf_chache(new char[frame_len+1],std::default_delete<char[]>()){
 
         }
         //判断帧是否组包完成
@@ -257,10 +259,10 @@ class ProxyInterface{
         //数据长度
         uint16_t data_len;
         //数据缓存
-        shared_ptr<char[]>buf;
+        shared_ptr<char>buf;
         //是否使用tcp传输
         bool using_tcp;
-        ProxyFragmentPacket(uint16_t _data_len,bool _tcp=true):data_len(_data_len),buf(new char[data_len+1]),using_tcp(_tcp){
+        ProxyFragmentPacket(uint16_t _data_len,bool _tcp=true):data_len(_data_len),buf(new char[data_len+1],std::default_delete<char[]>()),using_tcp(_tcp){
             buf.get()[0]='$';
         }
     };
@@ -378,10 +380,6 @@ private:
      * @brief m_last_send_frame_seq 本次发送序列号
      */
     uint16_t m_last_send_frame_seq;
-    /**
-     * @brief m_last_wait_confirmed_frame_seq 最近一次未确认的帧序号
-     */
-    uint16_t m_last_wait_confirmed_frame_seq;
     //最近一次确认的帧序号
     uint16_t m_last_confirmed_flush_frame_seq;
     //control部分 recv

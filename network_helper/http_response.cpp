@@ -1,5 +1,7 @@
-﻿#include "http_response.h"
+﻿#define _GLIBCXX_USE_C99 1
+#include "http_response.h"
 #include <algorithm>
+#include <string>
 namespace micagent {
 http_response::http_response(const string &status,const string &info):m_status(status),m_info(info),m_body_len(-1),m_body(string())\
 ,m_buf_cache(string()),m_error_string("success"),m_error_status(0)

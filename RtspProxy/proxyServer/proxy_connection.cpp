@@ -6,6 +6,7 @@
 #include "h265_source.h"
 #include "aac_source.h"
 #include "g711a_source.h"
+#define _GLIBCXX_USE_C99 1
 using namespace micagent;
 //{
 //100,    //Not Need Authorization
@@ -106,7 +107,7 @@ bool proxy_connection::handle_read()
     }
     if(ret>0){
         auto size=m_recv_buf->get_packet_nums();
-        shared_ptr<char[]>buf(new char[8092]);
+        shared_ptr<char>buf(new char[8092],std::default_delete<char[]>());
         for(uint32_t i=0;i<size;i++){
             memset(buf.get(),0,8092);
             auto len=m_recv_buf->read_packet(buf.get(),8092);
@@ -173,7 +174,7 @@ bool proxy_connection::handle_proxy_request(const shared_ptr<ProxyFrame>&frame)
     CJsonObject object(string(frame->data_buf.get(),frame->data_len));
     string cmd;
     if(!object.Get("cmd",cmd))return false;
-    MICAGENT_LOG(LOG_INFO,"server recv %s",frame->data_buf.get());
+    MICAGENT_LOG(LOG_INFO,"server recv %s",string(frame->data_buf.get(),frame->data_len).c_str());
     if(cmd=="get_authorized_info")
     {
         handle_get_authorized_info(object);
@@ -190,9 +191,9 @@ bool proxy_connection::handle_proxy_request(const shared_ptr<ProxyFrame>&frame)
         handle_tear_down_stream(object);
     }
     else {
-        CJsonObject object;
-        build_json_response(cmd,0,P_NOT_SUPPORTED_COMMAND,"Not Supported Command",object);
-        auto response=object.ToString();
+        CJsonObject object2;
+        build_json_response(cmd,0,P_NOT_SUPPORTED_COMMAND,"Not Supported Command",object2);
+        auto response=object2.ToString();
         m_proxy_interface->send_control_command(response.c_str(),response.length());
     }
     return true;

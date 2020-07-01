@@ -13,7 +13,7 @@ using namespace std;
 int main(){
 	micagent::Logger::Instance().register_handle();
 	atomic_int sleep_time(1000);
-	std::cout << micagent::Logger::get_local_name() << endl;
+	std::cout << micagent::Logger::get_local_time() << endl;
 	atomic_bool is_exit(false);
     std::thread t1([&](){
     int count1=0;

@@ -36,6 +36,7 @@ rtp_connection::   ~rtp_connection()
 }
 bool rtp_connection::sendRtpPacket(MediaChannelId id,RtpPacket packet)
 {
+    lock_guard<mutex>locker(m_mutex);
     if(m_is_closed)return false;
     if(!m_mediaChannelInfo[id].isSetup)return true;
     setRtpHeader(id,packet);
@@ -51,7 +52,16 @@ bool rtp_connection::sendRtpPacket(MediaChannelId id,RtpPacket packet)
         int ret = send(m_rtpfd[id], (const char*)packet.data.get()+4, packet.size-4, 0);
         if(ret < 0)
         {
-            stopPlay();
+        //close
+            if(!m_is_closed)
+            {
+                m_is_closed = true;
+                for(int chn=0; chn<MAX_MEDIA_CHANNEL; chn++)
+                {
+                    m_mediaChannelInfo[chn].isPlay = false;
+                    m_mediaChannelInfo[chn].isRecord = false;
+                }
+            }
             return false;
         }
         return true;
@@ -59,14 +69,17 @@ bool rtp_connection::sendRtpPacket(MediaChannelId id,RtpPacket packet)
 }
 void rtp_connection::setClockRate(MediaChannelId channelId, uint32_t clockRate)
 {
+    lock_guard<mutex>locker(m_mutex);
     m_mediaChannelInfo[channelId].clockRate = clockRate;
 }
 void rtp_connection::setPayloadType(MediaChannelId channelId, uint32_t payload)
 {
+    lock_guard<mutex>locker(m_mutex);
     m_mediaChannelInfo[channelId].rtpHeader.payload = payload;
 }
 bool rtp_connection::setupRtpOverTcp(MediaChannelId channelId, uint16_t rtpChannel, uint16_t rtcpChannel)
 {
+    lock_guard<mutex>locker(m_mutex);
     m_mediaChannelInfo[channelId].rtpChannel = rtpChannel;
     m_mediaChannelInfo[channelId].rtcpChannel = rtcpChannel;
     m_rtpfd[channelId] = m_rtsp_connection->fd();
@@ -77,7 +90,7 @@ bool rtp_connection::setupRtpOverTcp(MediaChannelId channelId, uint16_t rtpChann
 }
 bool rtp_connection::setupRtpOverUdp(MediaChannelId channelId, uint16_t rtpPort, uint16_t rtcpPort)
 {
-
+    lock_guard<mutex>locker(m_mutex);
     m_mediaChannelInfo[channelId].rtpPort = rtpPort;
     m_mediaChannelInfo[channelId].rtcpPort = rtcpPort;
 
@@ -123,6 +136,7 @@ bool rtp_connection::setupRtpOverUdp(MediaChannelId channelId, uint16_t rtpPort,
 }
 bool rtp_connection::setupRtpOverMulticast(MediaChannelId channelId, std::string ip, uint16_t port)
 {
+    lock_guard<mutex>locker(m_mutex);
     std::random_device rd;
     for (int n = 0; n <= 10; n++)
     {
@@ -146,18 +160,22 @@ bool rtp_connection::setupRtpOverMulticast(MediaChannelId channelId, std::string
 }
 SOCKET rtp_connection::get_rtcp_fd(MediaChannelId channel_id)const
 {
+    lock_guard<mutex>locker(m_mutex);
     return m_rtcpfd[channel_id];
 }
 uint16_t rtp_connection::get_rtp_port(MediaChannelId channel_id)const
 {
+    lock_guard<mutex>locker(m_mutex);
     return m_localRtpPort[channel_id];
 }
 uint16_t rtp_connection::get_rtcp_port(MediaChannelId channel_id)const
 {
+    lock_guard<mutex>locker(m_mutex);
     return m_localRtcpPort[channel_id];
 }
 void rtp_connection::startPlay()
 {
+    lock_guard<mutex>locker(m_mutex);
     for(int chn=0; chn<MAX_MEDIA_CHANNEL; chn++)
     {
         if (m_mediaChannelInfo[chn].isSetup)
@@ -168,6 +186,7 @@ void rtp_connection::startPlay()
 }
 void rtp_connection::stopPlay()
 {
+    lock_guard<mutex>locker(m_mutex);
     if(!m_is_closed)
     {
         m_is_closed = true;
@@ -180,17 +199,18 @@ void rtp_connection::stopPlay()
 }
 string rtp_connection::get_rtp_Info(const string &url)
 {
+    lock_guard<mutex>locker(m_mutex);
     if(url.empty())return string();
     char buf[2048] = { 0 };
     snprintf(buf, 1024, "RTP-Info: ");
 
     int numChannel = 0;
 
-    auto timePoint = chrono::time_point_cast<chrono::milliseconds>(chrono::steady_clock::now());
+    auto timePoint = chrono::time_point_cast<chrono::microseconds>(chrono::steady_clock::now());
     auto ts = timePoint.time_since_epoch().count();
     for (int chn = 0; chn<MAX_MEDIA_CHANNEL; chn++)
     {
-        uint32_t rtpTime = (uint32_t)(ts*m_mediaChannelInfo[chn].clockRate / 1000);
+        uint32_t rtpTime = (uint32_t)((ts+500)/1000000*m_mediaChannelInfo[chn].clockRate);
         if (m_mediaChannelInfo[chn].isSetup)
         {
             if (numChannel != 0)

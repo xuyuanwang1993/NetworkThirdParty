@@ -31,7 +31,7 @@ HEADERS += \
 
 LIBS+= -lpthread
 
-QMAKE_CXXFLAGS += -g
+QMAKE_CXXFLAGS += -g -std=c++11
 
 SOURCES += \
     main.cpp \

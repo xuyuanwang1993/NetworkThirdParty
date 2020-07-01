@@ -68,7 +68,7 @@ void file_reader_base::show_a_frame_info(size_t index,size_t max_out_put_size)co
         size_t next_frame_pos=index+1==m_frame_begin_poses.size()?m_file_size:m_frame_begin_poses[static_cast<size_t>(index+1)];
         size_t frame_size=next_frame_pos-m_frame_begin_poses[static_cast<size_t>(index)];
         frame_size=max_out_put_size>frame_size?frame_size:max_out_put_size;
-        std::shared_ptr<unsigned char>read_buf(new unsigned char[frame_size]);
+        std::shared_ptr<unsigned char>read_buf(new unsigned char[frame_size],std::default_delete< unsigned char[]>());
         ret=fread(read_buf.get(),1,frame_size,m_fp);
         if(ret!=frame_size)
         {
@@ -142,7 +142,7 @@ void file_reader_base::parase_stream_info()
         m_file_size=static_cast<size_t>(read_size);
         size_t bytes_used=0;
         read_size=0;
-        std::shared_ptr<unsigned char>read_buf(new unsigned char[DEFAULT_STREAM_BUF_SIZE]);
+        std::shared_ptr<unsigned char>read_buf(new unsigned char[DEFAULT_STREAM_BUF_SIZE],std::default_delete< unsigned char[]>());
         while(bytes_used!=m_file_size-5)
         {
             read_size=fread(read_buf.get(),1,DEFAULT_STREAM_BUF_SIZE,m_fp);
@@ -152,15 +152,10 @@ void file_reader_base::parase_stream_info()
             {
                 if(read_buf.get()[i]==0x00&&read_buf.get()[i+1]==0x00&&read_buf.get()[i+2]==0x00&&read_buf.get()[i+3]==0x01)
                 {
+                    //printf("read_buf.get()[i+4]  %02x %02x %02x\r\n",read_buf.get()[i+3],read_buf.get()[i+4],read_buf.get()[i+5]);
                     m_frame_begin_poses.push_back(bytes_used+i);
                     m_frame_info_map[read_buf.get()[i+4]].push_back(bytes_used+i);
                     i+=4;
-                }
-                else if(read_buf.get()[i]==0x00&&read_buf.get()[i+1]==0x00&&read_buf.get()[i+2]==0x01)
-                {
-                    m_frame_begin_poses.push_back(bytes_used+i);
-                    m_frame_info_map[read_buf.get()[i+3]].push_back(bytes_used+i);
-                    i+=3;
                 }
                 else {
                     i++;
@@ -173,7 +168,7 @@ void file_reader_base::parase_stream_info()
         struct timeval time_over;
         gettimeofday(&time_over,nullptr);
         double ms=(time_over.tv_sec-time_now.tv_sec)*1000+(time_over.tv_usec-time_now.tv_usec)/1000;
-        MICAGENT_LOG1(PRINT_GREEN "parase_stream_info using time %lf milliseconds!",ms);
+        MICAGENT_LOG1(PRINT_GREEN "parase_stream_info using time %lf milliseconds!" PRINT_NONE,ms);
     }while(0);
 
 }

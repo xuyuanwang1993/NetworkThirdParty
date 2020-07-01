@@ -1,19 +1,21 @@
-﻿#include "rtsp_helper.h"
+﻿#define _GLIBCXX_USE_C99 1
+#include "rtsp_helper.h"
 #include <arpa/inet.h>
 #include <random>
 #include <cstring>
 #include "MD5.h"
 #include <algorithm>
 #include "c_log.h"
+#define LIB_STRING_FOR_MICAGENT  "micagent"
 using namespace micagent;
 const char rtsp_helper::kCRLF[] = "\r\n";
 string rtsp_helper::buildOptionRes(const string & CSeq)
 {
-    char buf[128]={0};
-    snprintf(buf, 128,
+    char buf[256]={0};
+    snprintf(buf, 256,
             "RTSP/1.0 200 OK\r\n"
             "CSeq: %s\r\n"
-            "Public: OPTIONS, DESCRIBE, SETUP, TEARDOWN, PLAY\r\n"
+            "Public: OPTIONS, DESCRIBE, SETUP, TEARDOWN, PLAY, GET_PARAMETER\r\n"
             "\r\n",CSeq.c_str());
     return string(buf);
 }
@@ -181,16 +183,16 @@ string rtsp_helper::buildSetupTcpRes(uint16_t rtpChn, uint16_t rtcpChn, uint32_t
     return string(buf);
 }
 
-string rtsp_helper::buildPlayRes( const char* rtpInfo, uint32_t sessionId,const string & CSeq)
+string rtsp_helper::buildPlayRes(const char* rtpInfo, uint32_t sessionId, const string & CSeq, int time_out)
 {
     char buf[4096]={0};
     snprintf(buf, 4096,
             "RTSP/1.0 200 OK\r\n"
             "CSeq: %s\r\n"
             "Range: npt=0.000-\r\n"
-            "Session: %u; timeout=60\r\n",
+            "Session: %u; timeout=%d\r\n",
             CSeq.c_str(),
-            sessionId);
+            sessionId,time_out);
 
     if (rtpInfo != nullptr&&rtpInfo[0]!='\0')
     {
@@ -222,10 +224,10 @@ string rtsp_helper::buildGetParamterRes(uint32_t sessionId,const string & CSeq)
             "RTSP/1.0 200 OK\r\n"
             "CSeq: %s\r\n"
             "Session: %u\r\n"
-            "\r\n",
+            "Content-Length: %lu\r\n"
+            "\r\n%s",
             CSeq.c_str(),
-            sessionId);
-
+            sessionId,strlen(LIB_STRING_FOR_MICAGENT),LIB_STRING_FOR_MICAGENT);
     return string(buf);
 }
 

@@ -8,7 +8,7 @@ TimerQueue::TimerQueue():_is_running(false)
 }
 TimerId TimerQueue::addTimer(const TimerEvent& event, uint32_t ms)
 {
-    TimerId ret=0;
+    TimerId ret=INVALID_TIMER_ID;
     {
         std::lock_guard<std::mutex> locker(_mutex);
         int64_t timeout = Timer::getTimeNow();
@@ -42,6 +42,13 @@ void TimerQueue::blockRemoveTimer(TimerId timerId)
         int64_t timeout = iter->second->getNextTimeout();
         _events.erase(std::pair<int64_t, TimerId>(timeout, timerId));
         _timers.erase(timerId);
+    }
+    iter=_timers_cache.find(timerId);
+    if(iter!=_timers_cache.end())
+    {
+        int64_t timeout = iter->second->getNextTimeout();
+        _events_cache.erase(std::pair<int64_t, TimerId>(timeout, timerId));
+        _timers_cache.erase(timerId);
     }
 }
 void TimerQueue::loop(){

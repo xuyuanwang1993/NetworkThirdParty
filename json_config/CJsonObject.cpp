@@ -46,7 +46,7 @@ CJsonObject* CJsonObject::CreateInstance(const std::string& path)
 			//文件大小不超过2M
 			if (len <= 0 || len > 2 * 1024 * 1024)break;
 			if (fseek(fp, 0, SEEK_SET) != 0)break;
-			std::shared_ptr<char>buf(new char[len]);
+            std::shared_ptr<char>buf(new char[len],std::default_delete<char[]>());
 			auto read_len = fread(buf.get(), len, 1, fp);
 			//未全部读取，不进行解析
 			if (read_len == 0 && !feof(fp))break;

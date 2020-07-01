@@ -3,6 +3,7 @@
 #include "media.h"
 #include "rtp.h"
 #include "network_util.h"
+#include <mutex>
 namespace micagent {
 class rtsp_connection;
 class rtp_connection{
@@ -43,6 +44,7 @@ private:
     uint16_t m_localRtpPort[MAX_MEDIA_CHANNEL];
     uint16_t m_localRtcpPort[MAX_MEDIA_CHANNEL];
     bool m_is_closed;
+    mutable mutex m_mutex;
 };
 }
 #endif // RTP_CONNECTION_H

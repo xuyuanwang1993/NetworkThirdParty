@@ -9,7 +9,7 @@ buffer_handle::buffer_handle(uint32_t capacity,ReadBufferCallback callback,bool 
 }
 int buffer_handle::read_fd(SOCKET fd)
 {
-    shared_ptr<char> buf(new char[m_per_read_size]);
+    shared_ptr<char> buf(new char[m_per_read_size],std::default_delete<char[]>());
     int len=0;
     if(m_is_stream){
         len=recv(fd,buf.get(),m_per_read_size,0);
@@ -39,8 +39,8 @@ int buffer_handle::send_fd(SOCKET fd,sockaddr_in *addr,int timeout)
         success =false;
         auto packet_iter=begin(m_packet_list);
         if(!addr){
+            if(packet_iter->filled_size()>0&&packet_iter->read_ptr()[0]!='$')MICAGENT_LOG(LOG_ERROR,"rtsp send %s",string(packet_iter->read_ptr(),packet_iter->filled_size()).c_str());
             ret=::send(fd,packet_iter->read_ptr(),packet_iter->filled_size(),0);
-            if(packet_iter->read_ptr()[0]!='$')MICAGENT_LOG(LOG_ERROR,"rtsp send %s",packet_iter->read_ptr());
         }
         else {
             ret=sendto(fd,packet_iter->read_ptr(),packet_iter->filled_size(),0,(sockaddr *)addr,sizeof (sockaddr_in));
@@ -100,21 +100,21 @@ bool buffer_handle::insert_packet(const char *buf,uint32_t buf_len)
     if(buf_len>MAX_PACKET_SIZE)throw "buffer_handle insert_packet over flow!";
     lock_guard<mutex>locker(m_mutex);
     if(m_packet_list.size()>m_capacity||buf_len==0)return false;
-    if(m_packet_list.empty()||rbegin(m_packet_list)->finished())m_packet_list.push_back(BufferPacket(buf_len));
+    if(m_packet_list.empty()||(m_packet_list.rbegin())->finished())m_packet_list.push_back(BufferPacket(buf_len));
     if(!m_is_stream){
-        auto iter=rbegin(m_packet_list);
+        auto iter=m_packet_list.rbegin();
         iter->set_finished();
         return iter->append(buf,buf_len);
     }
     else {
-        auto iter=rbegin(m_packet_list);
+        auto iter=m_packet_list.rbegin();
         //TCP粘包分包，\r\n\r\n做分隔符
         auto filled_len=iter->filled_size();
         //处理临界状态
         if(filled_len>0){
             uint32_t left_len=filled_len<4?filled_len:3;
             uint32_t right_len=buf_len>3?3:buf_len;
-            shared_ptr<char>first_check(new char[left_len+right_len]);
+            shared_ptr<char>first_check(new char[left_len+right_len],std::default_delete<char[]>());
             memcpy(first_check.get(),iter->read_ptr()+filled_len-left_len,left_len);
             memcpy(first_check.get()+left_len,buf,right_len);
             auto ret=search(first_check.get(),first_check.get()+left_len+right_len,m_crlf,m_crlf+m_crlf_len);

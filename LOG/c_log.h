@@ -43,9 +43,9 @@ enum LOG_LEVEL{
 using MAX_LOG_CACHE_CALLBACK=function<void (const string&)>;
 class Logger{
 #if defined(__linux) || defined(__linux__)
-    const char LINE_END[2]="\n";
+    const char LINE_END[2]={'\n','\0'};
 #elif defined(WIN32) || defined(_WIN32)
-    const char LINE_END[3]="\r\n";
+    const char LINE_END[3]={'\r','\n','\0'};
 #endif
      const uint64_t MAX_LOG_MESSAGE_SIZE=4*1024;//4k
     const int  MAX_TRACE_SIZE=100;
@@ -154,7 +154,11 @@ private:
 };
 }
 #undef MICAGENT_LOG
+#ifndef MICAGENT_ARM
 #define MICAGENT_LOG(level,fmt,...) micagent::Logger::Instance().log(level,__FILE__, __FUNCTION__,__LINE__, fmt, ##__VA_ARGS__)
+#else
+#define MICAGENT_LOG(level,fmt,...)
+#endif
 #ifdef DEBUG
 #define MICAGENT_MARK(fmt,...) micagent::Logger::Instance().log(micagent::LOG_BREAK_POINT,__FILE__, __FUNCTION__,__LINE__, fmt, ##__VA_ARGS__)
 #else

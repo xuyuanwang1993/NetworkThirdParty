@@ -45,7 +45,7 @@ private:
                 auto strong=dynamic_cast<proxy_server *>(strong_ptr.get());
                 do{
                     if(!strong)break;
-                    shared_ptr<char[]>buf(new char[1500]);
+                    shared_ptr<char>buf(new char[1500],std::default_delete<char[]>());
                     auto ret=recvfrom(chn->fd(),buf.get(),1500,0,nullptr,nullptr);
                     if(ret>0)
                     {
@@ -81,7 +81,7 @@ private:
     }
 
     //udp数据处理
-    void udp_data_input(const pair<shared_ptr<char[]>,uint16_t>&buf_pair);
+    void udp_data_input(const pair<shared_ptr<char>,uint16_t>&buf_pair);
     //添加udp发送索引
     void add_udp_map(uint32_t stream_token,SOCKET fd)
     {
@@ -99,7 +99,7 @@ private:
     mutex m_data_mutex;
     condition_variable m_data_cv;
     //数据队列
-    queue<pair<shared_ptr<char []>,uint16_t>>m_data_queue;
+    queue<pair<shared_ptr<char >,uint16_t>>m_data_queue;
     shared_ptr<thread>m_udp_data_handle_thread;
     //rtsp数据处理接口
     //创建流 删除流 推送数据
