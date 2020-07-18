@@ -1,0 +1,8 @@
+./rtsp_proxy 192.168.2.111 8555 local D1.h265 0
+./rtsp_proxy <ip> <port><stream_name><file_name><mode>
+mode:
+0 tcp
+1 udp
+2 hybrid
+3 g_tcp
+4 g_hybrid

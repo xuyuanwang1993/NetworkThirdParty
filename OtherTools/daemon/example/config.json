@@ -1,0 +1,21 @@
+{
+	"program_save_path":	"/tmp/daemon_instance",
+	"task_list":	[{
+			"path":	"/home/microcreat/Desktop/github/NetworkThirdParty/OtherTools/daemon/test1_for_port_listen/",
+			"pro_name":	"check_port_owner.sh",
+			"cmd_options":	"9000 listen_test tcp",
+			"wait_time":	5
+		},
+		{
+			"path":	"/home/microcreat/Desktop/github/NetworkThirdParty/OtherTools/daemon/test1_for_port_listen/",
+			"pro_name":	"listen_test",
+			"cmd_options":	"hello  nihao",
+			"wait_time":	0
+		},
+		{
+			"path":	"/home/microcreat/Desktop/github/NetworkThirdParty/OtherTools/daemon/normal_programs/",
+			"pro_name":	"normal_programe",
+			"cmd_options":	"",
+			"wait_time":	0
+		}]
+}
