@@ -30,7 +30,7 @@ bool proxy_message::insert_packet(const char *buf,uint32_t buf_len)
         else {
             m_packet_list.push_back(BufferPacket(buf_len));
             m_packet_list.rbegin()->append(buf,buf_len);
-            rbegin(m_packet_list)->set_finished();
+           m_packet_list.rbegin()->set_finished();
         }
     }while(0);
     return ret;

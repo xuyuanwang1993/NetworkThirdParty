@@ -4,7 +4,7 @@
 /*
  * 参考live555
  */
- #include <cstdint>
+#include <cstdint>
 #include <cstring>
 #include<string>
 #include<vector>
@@ -53,10 +53,10 @@ typedef enum{
     UDP=SOCK_DGRAM
 }SOCKET_TYPE;
 #define MAKE_ADDR(name,ip,port) sockaddr_in name; \
-bzero(&name,sizeof(name));\
-name.sin_family = AF_INET;\
-name.sin_port = htons(port);\
-name.sin_addr.s_addr = inet_addr(ip);
+    bzero(&name,sizeof(name));\
+    name.sin_family = AF_INET;\
+    name.sin_port = htons(port);\
+    name.sin_addr.s_addr = inet_addr(ip);
 
 #define NETWORK Network_Util::Instance()
 class Network_Util{
@@ -79,6 +79,33 @@ public:
     bool connect(SOCKET sockfd,string ip,uint16_t port,uint32_t time_out_ms=0);
     /*连接socket*/
     bool connect(SOCKET sockfd,const sockaddr_in &addr,uint32_t time_out_ms=0);
+    /*超时发送*/
+    inline ssize_t time_out_sendto(SOCKET sockfd,const void *buf,size_t buf_len,int flags,const struct sockaddr * addr,socklen_t len,uint32_t time_out_ms=0)
+    {
+
+        if (time_out_ms > 0)
+        {
+            make_noblocking(sockfd);
+            fd_set fdWrite;
+            FD_ZERO(&fdWrite);
+            FD_SET(sockfd, &fdWrite);
+            struct timeval tv = { time_out_ms / 1000, time_out_ms % 1000 * 1000 };
+            select(sockfd + 1, nullptr, &fdWrite, nullptr, &tv);
+            if (FD_ISSET(sockfd, &fdWrite))
+            {
+                auto ret= sendto(sockfd,buf,buf_len,flags,addr,len);
+                make_blocking(sockfd,time_out_ms);
+                return ret;
+            }
+            else {
+                make_blocking(sockfd,time_out_ms);
+                return -1;
+            }
+        }
+        else {
+            return sendto(sockfd,buf,buf_len,flags,addr,len);
+        }
+    }
     /*监听*/
     bool listen(SOCKET sockfd,int32_t size=10);
     /*accept建立连接*/
@@ -96,11 +123,11 @@ public:
     /*设置接收buf*/
     void set_recv_buf_size(SOCKET sockfd, socklen_t buf_size);
     /*获取接收buf大小*/
-	socklen_t get_recv_buf_size(SOCKET sockfd);
+    socklen_t get_recv_buf_size(SOCKET sockfd);
     /*设置发送buf*/
     void set_send_buf_size(SOCKET sockfd, socklen_t buf_size);
     /*获取发送buf大小*/
-	socklen_t get_send_buf_size(SOCKET sockfd);
+    socklen_t get_send_buf_size(SOCKET sockfd);
     /*设置地址复用*/
     void set_reuse_addr(SOCKET sockfd);
     /*设置端口复用*/

@@ -21,6 +21,7 @@ h264_source::h264_source(uint32_t frameRate)
 }
 bool h264_source::check_frames(AVFrame &frame)
 {
+    return true;
     auto buf=frame.buffer.get();
     bool ret=false;
     do{
@@ -75,14 +76,12 @@ bool h264_source::handleFrame(MediaChannelId channelId, AVFrame frame)
     if(!check_frames(frame))return true;
     uint8_t *frameBuf  = frame.buffer.get();
     uint32_t frameSize = frame.size;
-    if(frame.timestamp == 0)
-        frame.timestamp = getTimeStamp();
-
+    auto timestamp=getTimeStamp(frame.timestamp);
     if (frameSize <= MAX_RTP_PAYLOAD_SIZE)
     {
         RtpPacket rtpPkt;
         rtpPkt.type = frame.type;
-        rtpPkt.timestamp = frame.timestamp;
+        rtpPkt.timestamp = timestamp;
         rtpPkt.size = frameSize + 4 + RTP_HEADER_SIZE;
         rtpPkt.last = 1;
         memcpy(rtpPkt.data.get()+4+RTP_HEADER_SIZE, frameBuf, frameSize); // 预留12字节 rtp header
@@ -107,7 +106,7 @@ bool h264_source::handleFrame(MediaChannelId channelId, AVFrame frame)
         {
             RtpPacket rtpPkt;
             rtpPkt.type = frame.type;
-            rtpPkt.timestamp = frame.timestamp;
+            rtpPkt.timestamp = timestamp;
             rtpPkt.size = 4 + RTP_HEADER_SIZE + MAX_RTP_PAYLOAD_SIZE;
             rtpPkt.last = 0;
 
@@ -129,7 +128,7 @@ bool h264_source::handleFrame(MediaChannelId channelId, AVFrame frame)
         {
             RtpPacket rtpPkt;
             rtpPkt.type = frame.type;
-            rtpPkt.timestamp = frame.timestamp;
+            rtpPkt.timestamp = timestamp;
             rtpPkt.size = 4 + RTP_HEADER_SIZE + 2 + frameSize;
             rtpPkt.last = 1;
 
@@ -147,8 +146,14 @@ bool h264_source::handleFrame(MediaChannelId channelId, AVFrame frame)
     return true;
 }
 
-uint32_t h264_source::getTimeStamp()
+uint32_t h264_source::getTimeStamp(int64_t micro_time_now)
 {
-    auto timePoint = chrono::time_point_cast<chrono::microseconds>(chrono::steady_clock::now());
-    return (uint32_t)((timePoint.time_since_epoch().count() + 500) / 1000 * 90 );
+    if(micro_time_now==0)
+    {
+        auto timePoint = chrono::time_point_cast<chrono::microseconds>(chrono::steady_clock::now());
+        return (uint32_t)((timePoint.time_since_epoch().count() + 500) / 1000 * 90 );
+    }
+    else {
+        return (uint32_t)((micro_time_now + 500) / 1000 * 90 );
+    }
 }

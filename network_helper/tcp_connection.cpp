@@ -5,9 +5,10 @@ tcp_connection::tcp_connection(SOCKET _fd):m_channel(new Channel(_fd)),m_registe
     Network_Util::Instance().make_noblocking(_fd);
     Network_Util::Instance().set_ignore_sigpipe(_fd);
     Network_Util::Instance().set_tcp_keepalive(_fd,true);
+    MICAGENT_MARK("tcp_connection %d new! %s %hu %p\r\n",m_channel->fd(),NETWORK.get_peer_ip(_fd).c_str(),NETWORK.get_peer_port(_fd),this);
 }
 tcp_connection::~tcp_connection(){
-    MICAGENT_MARK("tcp_connection %d exit!",m_channel->fd());
+    MICAGENT_MARK("tcp_connection %d exit %s %hu %p\r\n!",m_channel->fd(),NETWORK.get_peer_ip(fd()).c_str(),NETWORK.get_peer_port(fd()),this);
 }
 void tcp_connection::register_handle(EventLoop *loop)
 {
@@ -40,8 +41,8 @@ void tcp_connection::register_handle(EventLoop *loop)
                 return interface->handle_error();
             });
             m_channel->enableReading();
-            loop->updateChannel(m_channel);
             m_registered.exchange(true);
+            loop->updateChannel(m_channel);
         }
     }
 }

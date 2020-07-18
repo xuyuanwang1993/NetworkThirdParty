@@ -2,7 +2,7 @@
 #define DNS_CLIENT_H
 #include "event_loop.h"
 #include "CJsonObject.hpp"
-#include "rc4.h"
+#include "rc4_interface.h"
 #define TO_STRING(x) #x
 namespace micagent {
 using namespace std;

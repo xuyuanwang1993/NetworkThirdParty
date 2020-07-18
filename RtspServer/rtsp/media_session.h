@@ -9,6 +9,11 @@
 #include "network_util.h"
 #include "media_source.h"
 #include <list>
+//#define SAVE_FILE_TEST
+#ifdef SAVE_FILE_TEST
+#define SAVE_FILE_ACCESS
+#define SAVE_FILE_PRFIX "stream_"
+#endif
 namespace micagent {
 class MulticastAddr
 {
@@ -23,7 +28,8 @@ public:
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         std::string addrPtr;
-        struct sockaddr_in addr = { 0 };
+        struct sockaddr_in addr;
+        memset(&addr,0,sizeof (addr));
         std::random_device rd;
         for (int n = 0; n <= 10; n++)
         {
@@ -120,6 +126,9 @@ private:
     uint16_t m_multicastPort[MAX_MEDIA_CHANNEL];
 
     string m_sdp;
+#ifdef  SAVE_FILE_ACCESS
+    FILE *m_save_fp;
+#endif
 };
 }
 

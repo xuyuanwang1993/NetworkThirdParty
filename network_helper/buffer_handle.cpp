@@ -20,6 +20,7 @@ int buffer_handle::read_fd(SOCKET fd)
         len=recvfrom(fd,buf.get(),m_per_read_size,0,(sockaddr *)&addr,&add_len);
     }
     if(len>0){
+        //printf("%s \r\n",string(buf.get(),len).c_str());
         if(m_callback)m_callback(buf.get(),len);
         else {
             insert_packet(buf.get(),len);
@@ -43,7 +44,7 @@ int buffer_handle::send_fd(SOCKET fd,sockaddr_in *addr,int timeout)
             ret=::send(fd,packet_iter->read_ptr(),packet_iter->filled_size(),0);
         }
         else {
-            ret=sendto(fd,packet_iter->read_ptr(),packet_iter->filled_size(),0,(sockaddr *)addr,sizeof (sockaddr_in));
+            ret=NETWORK.time_out_sendto(fd,packet_iter->read_ptr(),packet_iter->filled_size(),0,(struct sockaddr *)addr,sizeof (sockaddr_in),1);
         }
         if (ret > 0)
         {

@@ -1,4 +1,5 @@
 ﻿#include "proxy_protocol.h"
+#include "c_log.h"
 using namespace micagent;
 
 static inline char *m_encode8u(char *p, uint8_t c)
@@ -98,6 +99,7 @@ ProxyInterface::ProxyInterface(uint32_t token,PTransMode mode,POUTPUT_CALLBACK t
 bool ProxyInterface::send_frame(shared_ptr<ProxyFrame> frame)
 {
     if(frame->data_len>MAX_FRAME_SIZE)return false;
+#ifdef DELAY_SEND_CACHE
 #if FRAGMENT_CACHE_CHECK
     {
         //检查发送缓存是否溢出，溢出则清空缓存
@@ -108,6 +110,7 @@ bool ProxyInterface::send_frame(shared_ptr<ProxyFrame> frame)
             }
         }
     }
+#endif
 #endif
     switch (m_mode) {
     case RAW_TCP:
@@ -121,10 +124,12 @@ bool ProxyInterface::send_frame(shared_ptr<ProxyFrame> frame)
     case GRADED_HYBRID:
         return graded_hybrid_handle_packet(frame);
     }
+    return false;
 }
 bool ProxyInterface::send_control_command(const void *buf,uint16_t buf_len)
 {
     unique_lock<mutex>locker(m_mutex);
+#ifdef DELAY_SEND_CACHE
 #if FRAGMENT_CACHE_CHECK
     //检查发送缓存是否溢出，溢出则清空缓存
     if(m_packet_chache.size()>MAX_FRAGMENT_CACHE_SIZE){
@@ -132,6 +137,7 @@ bool ProxyInterface::send_control_command(const void *buf,uint16_t buf_len)
             m_packet_chache.pop();
         }
     }
+#endif
 #endif
     if(!m_tcp_callback||buf_len==0)return false;
     ProxyHeader header;
@@ -162,12 +168,16 @@ bool ProxyInterface::protocol_input(const void *buf,uint32_t buf_len)
     const char *tmp=static_cast<const char *>(buf);
     //check
     if(tmp[0]!='$'||buf_len<(sizeof (ProxyHeader))){
+        MICAGENT_MARK("");
         return false;
     }
     ProxyHeader header;
     decode_proxy_header(header,tmp);
     //check
-    if(header.data_len+sizeof (ProxyHeader)!=buf_len)return false;
+    if(header.data_len+sizeof (ProxyHeader)!=buf_len){
+        MICAGENT_MARK("");
+        return false;
+    }
     {
         lock_guard<mutex>locker(m_mutex);
         if(header.frame_type==FRAME_ACK){
@@ -185,19 +195,24 @@ bool ProxyInterface::protocol_input(const void *buf,uint32_t buf_len)
                         iter=iter2.first;
                     }
                     else {
+                        MICAGENT_MARK("%hu",header.frame_seq);
                         //插入失败
                         return false;
                     }
                 }
                 else {
                     //过期数据
+                    MICAGENT_MARK("%hu",header.frame_seq);
                     return false;
                 }
             }
             iter->second->insert_fragment(header,tmp+sizeof (header));
             if(!iter->second->is_finished()){
                 //网络质量很差的时候，清空缓存帧，避免内存耗用
-                if(m_recv_frame_chache.size()>=MAX_WINDOW_SIZE)m_recv_frame_chache.clear();
+                if(m_recv_frame_chache.size()>=MAX_WINDOW_SIZE){
+                    MICAGENT_MARK("%hu",header.frame_seq);
+                    m_recv_frame_chache.clear();
+                }
                 return true;
             }
         }
@@ -228,6 +243,21 @@ uint32_t ProxyInterface::get_stream_token(const void *buf,uint32_t buf_len)
     m_decode32u(static_cast<const char *>(buf)+POFFSETOF(ProxyHeader,stream_token),&token);
     return token;
 }
+void ProxyInterface::dump_header_info(const void *buf,uint32_t buf_len)
+{
+    if(buf_len<sizeof (ProxyHeader))
+    {
+        printf("false header input len %u!\r\n",buf_len);
+        return ;
+    }
+    ProxyHeader header;
+    const char *tmp=static_cast<const char *>(buf);
+    decode_proxy_header(header,tmp);
+    printf("packet_len(%u),data_len(%hu),frame_len(%u),frame_seq(%hu),timestamp(%u),check_byte(%02x),fragment_count(%hu),frame_type(%02x),media_type(%02x),fragment_seq(%hu),stream_token(%u),media_channel(%02x)",\
+    buf_len,header.data_len,header.frame_len,header.frame_seq,header.timestamp,\
+    header.check_byte,header.fragment_count,header.frame_type,header.media_type,header.fragment_seq,header.stream_token,header.media_channel);
+    printf("\r\n");
+}
 void ProxyInterface::response_frame(uint16_t seq)
 {
     if(!m_tcp_callback)return;
@@ -255,6 +285,7 @@ bool ProxyInterface::raw_tcp_handle_packet(shared_ptr<ProxyFrame> frame)
     header.stream_token=m_stream_token;
     header.media_channel=frame->media_channel;
     header.fragment_count=(frame->data_len+P_FRAME_OFFSET)/PROXY_FRAGMENT_SIZE;
+    MICAGENT_LOG(LOG_INFO,"send_frame %hu size:%u %02x",header.frame_seq,header.frame_len,frame->data_buf.get()[0]);
     for(uint16_t i=0;i<header.fragment_count;i++)
     {
         header.fragment_seq=i;
@@ -342,6 +373,7 @@ bool ProxyInterface::graded_tcp_handle_packet(shared_ptr<ProxyFrame> frame)
     header.media_channel=frame->media_channel;
     header.fragment_count=(frame->data_len+P_FRAME_OFFSET)/PROXY_FRAGMENT_SIZE;
     if(header.frame_type==FLUSH_FRAME){
+#ifdef DELAY_SEND_CACHE
         //刷新帧，清空缓存
 #ifdef DEBUG
         if(!m_packet_chache.empty())printf("graded_tcp send clear cache frames counts %lu \r\n",m_packet_chache.size());
@@ -349,6 +381,7 @@ bool ProxyInterface::graded_tcp_handle_packet(shared_ptr<ProxyFrame> frame)
         while(!m_packet_chache.empty()){
             m_packet_chache.pop();
         }
+#endif
         for(uint16_t i=0;i<header.fragment_count;i++)
         {
             header.fragment_seq=i;
@@ -364,6 +397,7 @@ bool ProxyInterface::graded_tcp_handle_packet(shared_ptr<ProxyFrame> frame)
     else {
         //非刷新帧，检查是否可发送
         if(m_last_confirmed_flush_frame_seq+MAX_GRADED_CACHE_SIZE>header.frame_seq){
+#ifdef DELAY_SEND_CACHE
             //刷新帧已确认
             while(!m_packet_chache.empty()){
                 auto frame_cache=m_packet_chache.front();
@@ -372,6 +406,7 @@ bool ProxyInterface::graded_tcp_handle_packet(shared_ptr<ProxyFrame> frame)
                 m_tcp_callback(frame_cache.get()->buf.get(),frame_cache->data_len);
                 if(!locker.owns_lock())locker.lock();
             }
+#endif
             for(uint16_t i=0;i<header.fragment_count;i++)
             {
                 header.fragment_seq=i;
@@ -385,12 +420,14 @@ bool ProxyInterface::graded_tcp_handle_packet(shared_ptr<ProxyFrame> frame)
             }
         }
         else {
+#ifndef DELAY_SEND_CACHE
         //I帧未确认，判断流量异常，丢弃非I帧的所有输入
             return false;
+#else
             //刷新帧待确认，将当前帧加入缓存
 #ifdef DEBUG
             //printf("graded_tcp send add cache frames %u \r\n",header.frame_seq);
-#endif
+#endif //DEBUG
             for(uint16_t i=0;i<header.fragment_count;i++)
             {
                 header.fragment_seq=i;
@@ -400,6 +437,7 @@ bool ProxyInterface::graded_tcp_handle_packet(shared_ptr<ProxyFrame> frame)
                 memcpy(packet->buf.get()+P_HEADER_SIZE,frame->data_buf.get()+header.fragment_seq*PROXY_FRAGMENT_SIZE,header.data_len);
                 m_packet_chache.push(move(packet));
             }
+#endif //DELAY_SEND_CACHE
         }
     }
     return true;
@@ -419,6 +457,7 @@ bool ProxyInterface::graded_hybrid_handle_packet(shared_ptr<ProxyFrame> frame)
     header.media_channel=frame->media_channel;
     header.fragment_count=(frame->data_len+P_FRAME_OFFSET)/PROXY_FRAGMENT_SIZE;
     if(header.frame_type==FLUSH_FRAME){
+#ifdef DELAY_SEND_CACHE
         //刷新帧，清空缓存
 #ifdef DEBUG
         if(!m_packet_chache.empty())printf("graded_hybrid send clear cache frames counts %lu \r\n",m_packet_chache.size());
@@ -427,6 +466,7 @@ bool ProxyInterface::graded_hybrid_handle_packet(shared_ptr<ProxyFrame> frame)
         {
             m_packet_chache.pop();
         }
+#endif
         for(uint16_t i=0;i<header.fragment_count;i++)
         {
             header.fragment_seq=i;
@@ -444,6 +484,7 @@ bool ProxyInterface::graded_hybrid_handle_packet(shared_ptr<ProxyFrame> frame)
         //非刷新帧，检查是否可发送
         if(m_last_confirmed_flush_frame_seq+MAX_GRADED_CACHE_SIZE>header.frame_seq){
             //刷新帧已确认
+#ifdef DELAY_SEND_CACHE
             while(!m_packet_chache.empty()){
                 auto frame_cache=m_packet_chache.front();
                 m_packet_chache.pop();
@@ -454,6 +495,7 @@ bool ProxyInterface::graded_hybrid_handle_packet(shared_ptr<ProxyFrame> frame)
                 }
                 if(!locker.owns_lock())locker.lock();
             }
+#endif
             for(uint16_t i=0;i<header.fragment_count;i++)
             {
                 header.fragment_seq=i;
@@ -472,8 +514,10 @@ bool ProxyInterface::graded_hybrid_handle_packet(shared_ptr<ProxyFrame> frame)
             }
         }
         else {
+#ifndef DELAY_SEND_CACHE
             //I帧未确认，判断流量异常，丢弃非I帧的所有输入
             return false;
+#else
             //刷新帧待确认，将当前帧加入缓存
 #ifdef DEBUG
             //printf("graded_hybrid send add cache frames %u \r\n",header.frame_seq);
@@ -488,6 +532,7 @@ bool ProxyInterface::graded_hybrid_handle_packet(shared_ptr<ProxyFrame> frame)
                 memcpy(packet->buf.get()+P_HEADER_SIZE,frame->data_buf.get()+header.fragment_seq*PROXY_FRAGMENT_SIZE,header.data_len);
                 m_packet_chache.push(move(packet));
             }
+#endif
         }
     }
     return true;
@@ -500,7 +545,7 @@ void ProxyInterface::raw_tcp_handle_packet(uint16_t seq)
     auto iter=m_recv_frame_chache.find(seq);
     if(iter!=m_recv_frame_chache.end()){
         auto &cache= iter->second;
-        shared_ptr<ProxyFrame>frame(new ProxyFrame(cache->m_buf_chache.get(),cache->frame_len,cache->media_type,cache->frame_type,cache->media_channel,m_stream_token,cache->frame_seq));
+        shared_ptr<ProxyFrame>frame(new ProxyFrame(cache->m_buf_chache.get(),cache->frame_len,cache->media_type,cache->frame_type,cache->media_channel,m_stream_token,cache->frame_seq,cache->timestamp));
         m_recv_frame_chache.clear();
         m_min_recv_frame_seq=seq;
         locker.unlock();
@@ -509,81 +554,11 @@ void ProxyInterface::raw_tcp_handle_packet(uint16_t seq)
 }
 void ProxyInterface::raw_udp_handle_packet(uint16_t seq)
 {
-    unique_lock<mutex>locker(m_mutex);
-    for(auto iter=m_recv_frame_chache.begin();iter!=m_recv_frame_chache.end();)
-    {
-        if(iter->second->frame_seq>seq)break;
-        auto seq_diff=seq-iter->second->frame_seq;
-        if(seq_diff>UINT16_MAX/2){
-            //比当前接收帧序号靠后的帧
-            iter++;
-        }
-        else{
-            if(seq_diff>MAX_ORDER_CACHE_SIZE){
-                //移除无效帧
-#ifdef DEBUG
-                printf("******************raw_udp recv  erase cache frames %u *****%d**********\r\n",iter->second->frame_seq,iter->second->fragment_count-iter->second->m_fragment_seq_set.size());
-#endif
-                m_recv_frame_chache.erase(iter++);
-            }
-            else {
-                if(!iter->second->is_finished()){
-                    //接收未完全的缓存
-                    break;
-                }
-                else {
-                    //接收完成直接返回应用层
-                    m_min_recv_frame_seq=iter->second->frame_seq;
-                    auto &cache= iter->second;
-                    shared_ptr<ProxyFrame>frame(new ProxyFrame(cache->m_buf_chache.get(),cache->frame_len,cache->media_type,cache->frame_type,cache->media_channel,m_stream_token,cache->frame_seq));
-                    m_recv_frame_chache.erase(iter++);
-                    locker.unlock();
-                    if(m_recv_callback)m_recv_callback(frame);
-                    locker.lock();
-                }
-            }
-        }
-    }
+    cache_handle_recv_packet(seq);
 }
 void ProxyInterface::raw_hybrid_handle_packet(uint16_t seq)
 {
-    unique_lock<mutex>locker(m_mutex);
-    auto tmp=m_recv_frame_chache.find(seq);
-    if(tmp==m_recv_frame_chache.end())return;
-    for(auto iter=m_recv_frame_chache.begin();iter!=m_recv_frame_chache.end();)
-    {
-        if(iter->second->frame_seq>seq)break;
-        auto seq_diff=seq-iter->second->frame_seq;
-        if(seq_diff>UINT16_MAX/2){
-            //比当前接收帧序号靠后的帧
-            iter++;
-        }
-        else{
-            if(seq_diff>MAX_ORDER_CACHE_SIZE){
-                //移除无效帧
-#ifdef DEBUG
-                printf("******************raw_hybrid recv  erase cache frames %u *****%d**********\r\n",iter->second->frame_seq,iter->second->fragment_count-iter->second->m_fragment_seq_set.size());
-#endif
-                m_recv_frame_chache.erase(iter++);
-            }
-            else {
-                if(!iter->second->is_finished()){
-                    //接收未完全的缓存
-                    break;
-                }
-                else {
-                    //接收完成直接返回应用层
-                    m_min_recv_frame_seq=iter->second->frame_seq;
-                    auto &cache= iter->second;
-                    shared_ptr<ProxyFrame>frame(new ProxyFrame(cache->m_buf_chache.get(),cache->frame_len,cache->media_type,cache->frame_type,cache->media_channel,m_stream_token,cache->frame_seq));
-                    m_recv_frame_chache.erase(iter++);
-                    locker.unlock();
-                    if(m_recv_callback)m_recv_callback(frame);
-                    locker.lock();
-                }
-            }
-        }
-    }
+    cache_handle_recv_packet(seq);
 }
 void ProxyInterface::graded_tcp_handle_packet(uint16_t seq)
 {
@@ -591,7 +566,7 @@ void ProxyInterface::graded_tcp_handle_packet(uint16_t seq)
     auto tmp=m_recv_frame_chache.find(seq);
     if(tmp==m_recv_frame_chache.end())return;
     auto &cache= tmp->second;
-    shared_ptr<ProxyFrame>frame(new ProxyFrame(cache->m_buf_chache.get(),cache->frame_len,cache->media_type,cache->frame_type,cache->media_channel,m_stream_token,cache->frame_seq));
+    shared_ptr<ProxyFrame>frame(new ProxyFrame(cache->m_buf_chache.get(),cache->frame_len,cache->media_type,cache->frame_type,cache->media_channel,m_stream_token,cache->frame_seq,cache->timestamp));
     m_recv_frame_chache.erase(tmp);
     m_min_recv_frame_seq=seq;
     auto type=tmp->second->frame_type;
@@ -604,46 +579,15 @@ void ProxyInterface::graded_tcp_handle_packet(uint16_t seq)
 }
 void ProxyInterface::graded_hybrid_handle_packet(uint16_t seq)
 {
-    unique_lock<mutex>locker(m_mutex);
-    auto tmp=m_recv_frame_chache.find(seq);
-    if(tmp==m_recv_frame_chache.end())return;
-    if(tmp->second->frame_type==FLUSH_FRAME){
-        locker.unlock();
-        response_frame(seq);
-        locker.lock();
-    }
-    for(auto iter=m_recv_frame_chache.begin();iter!=m_recv_frame_chache.end();)
     {
-        if(iter->second->frame_seq>seq)break;
-        auto seq_diff=seq-iter->second->frame_seq;
-        if(seq_diff>UINT16_MAX/2){
-            //比当前接收帧序号靠后的帧
-            iter++;
-        }
-        else{
-            if(seq_diff>MAX_ORDER_CACHE_SIZE){
-                //移除无效帧
-#ifdef DEBUG
-                printf("******************graded_hybrid recv  erase cache frames %u *****%d**********\r\n",iter->second->frame_seq,iter->second->fragment_count-iter->second->m_fragment_seq_set.size());
-#endif
-                m_recv_frame_chache.erase(iter++);
-            }
-            else {
-                if(!iter->second->is_finished()){
-                    //接收未完全的缓存
-                    break;
-                }
-                else {
-                    //接收完成直接返回应用层
-                    m_min_recv_frame_seq=iter->second->frame_seq;
-                    auto &cache= iter->second;
-                    shared_ptr<ProxyFrame>frame(new ProxyFrame(cache->m_buf_chache.get(),cache->frame_len,cache->media_type,cache->frame_type,cache->media_channel,m_stream_token,cache->frame_seq));
-                    m_recv_frame_chache.erase(iter++);
-                    locker.unlock();
-                    if(m_recv_callback)m_recv_callback(frame);
-                    locker.lock();
-                }
-            }
+        unique_lock<mutex>locker(m_mutex);
+        auto tmp=m_recv_frame_chache.find(seq);
+        if(tmp==m_recv_frame_chache.end())return;
+        if(tmp->second->frame_type==FLUSH_FRAME){
+            locker.unlock();
+            response_frame(seq);
         }
     }
+
+   cache_handle_recv_packet(seq);
 }

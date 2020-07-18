@@ -23,11 +23,15 @@ public:
     void register_handle(EventLoop *loop);
     void unregister_handle(EventLoop *loop);
     void set_disconnect_callback(const disconnectCallBack&cb ){
-        lock_guard<mutex>locker(m_mutex);
         m_disconnect_CB=cb;
     }
     SOCKET fd()const{return m_channel->fd();}
     friend class tcp_server;
+    void set_fd_reuse(bool status=false)
+    {
+        lock_guard<mutex>locker(m_mutex);
+        if(m_channel)m_channel->set_cycle(status);
+    }
 protected:
     virtual bool handle_read(){
         shared_ptr<char>buf(new char[1024],std::default_delete<char[]>());

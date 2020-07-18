@@ -27,7 +27,10 @@ HEADERS += \
     ../rtsp/media_session.h \
     file_reader.h \
     ../../network_helper/tcp_connection_helper.h \
-    ../API/API_RtspServer.h
+    ../API/API_RtspServer.h \
+    ../../json_config/CJsonObject.hpp \
+    ../../json_config/cJSON.h \
+    ../../OtherTools/DelayControl/delay_control.h
 
 LIBS+= -lpthread
 
@@ -60,15 +63,19 @@ SOURCES += \
     ../rtsp/media_session.cpp \
     file_reader.cpp \
     ../../network_helper/tcp_connection_helper.cpp \
-    ../API/API_RtspServer.cpp
+    ../API/API_RtspServer.cpp \
+    ../../json_config/CJsonObject.cpp \
+    ../../json_config/cJSON.c \
+    ../../OtherTools/DelayControl/delay_control.cpp
 
 INCLUDEPATH += ..\
 ../../LOG \
 ../../events_handler \
-../../network_helper/\
-../rtsp\
-../../OtherTools/MD5/\
+../../network_helper/ \
+../rtsp \
+../../OtherTools/MD5/ \
 ../API/ \
+../../OtherTools/DelayControl/ \
 
 CONFIG-=qt
 

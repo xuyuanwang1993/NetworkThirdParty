@@ -24,6 +24,8 @@ public:
     void open_connection(const vector<media_source_info>&media_source_info);
     //关闭连接
     void close_connection();
+    //修改目标ip 端口信息
+    void reset_net_info(string ip,uint16_t des_port);
 private:
     rtsp_pusher(tcp_connection_helper *helper,PTransMode mode,const string &des_name,const string &des_ip ,uint16_t des_port,const string &user_name,const string &pass_word);
     //解析媒体源信息
@@ -46,7 +48,7 @@ private:
     void handle_get_authorized_info_ack(CJsonObject &object);
     void handle_authorization_ack(CJsonObject &object);
     void handle_set_up_stream_ack(CJsonObject &object);
-    void handle_tear_down_stream_ack(CJsonObject &object);
+    void handle_tear_down_stream_ack();
 private:
     //初始化参数
     //连接辅助

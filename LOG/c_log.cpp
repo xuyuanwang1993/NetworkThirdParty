@@ -85,7 +85,8 @@ void Logger::log(int level,const char *file,const char *func,int line,const char
         DEBUG_LOCK
          if(level<m_level||level>LOG_BREAK_POINT)return;
     }
-    shared_ptr<char>buf(new char[MAX_LOG_MESSAGE_SIZE],std::default_delete<char[]>());
+    shared_ptr<char>buf(new char[MAX_LOG_MESSAGE_SIZE+1],std::default_delete<char[]>());
+    buf.get()[MAX_LOG_MESSAGE_SIZE]='\0';
     {
         std::lock_guard<mutex> locker(m_mutex);
         int use_len=snprintf(buf.get(),MAX_LOG_MESSAGE_SIZE,"[%s][%s %s %d]",log_strings[level],file,func,line);

@@ -31,7 +31,7 @@ queue<string>spilt_by_space(const string&buf){
 int main(int argc,char *argv[])
 {
     if(argc<2)exit(-1);
-    EventLoop eventloop;
+    EventLoop eventloop(0,1);
     UpnpMapper::Instance().Init(&eventloop,argv[1]);
     print_help();
     while(1){

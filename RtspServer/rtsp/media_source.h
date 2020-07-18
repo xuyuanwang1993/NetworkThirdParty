@@ -16,7 +16,7 @@ class media_source
 public:
     typedef std::function<bool (MediaChannelId channelId, RtpPacket pkt)> SendFrameCallback;
 
-    media_source():m_sendFrameCallback(nullptr) {}
+    media_source():m_sendFrameCallback(nullptr){}
     virtual ~media_source();
 
     virtual MediaType getMediaType() const
@@ -35,7 +35,7 @@ public:
 
     virtual bool handleFrame(MediaChannelId channelId, AVFrame frame) = 0;
 
-    virtual uint32_t getTimeStamp()=0;
+    virtual uint32_t getTimeStamp(int64_t micro_time_now=0)=0;
 
     virtual void setSendFrameCallback(const SendFrameCallback &cb)
     { m_sendFrameCallback = cb; }

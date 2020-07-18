@@ -31,7 +31,18 @@ void tcp_connection_helper::OpenConnection(string ip,uint16_t port,CONNECTION_CA
             {
                 status=CONNECTION_SUCCESS;
                 chn->set_cycle(true);
+                NETWORK.set_tcp_keepalive(chn->fd(),true);
             }
+            m_loop->removeChannel(chn->fd());
+            if(callback)callback(status,chn->fd());
+            return true;
+        });
+        channel->enableReading();
+        channel->setReadCallback([this,callback,timer_id](Channel  *chn){
+            if(timer_id!=INVALID_TIMER_ID){
+                m_loop->blockRemoveTimer(timer_id);
+            }
+            CONNECTION_STATUS status=CONNECTION_FAILED;
             m_loop->removeChannel(chn->fd());
             if(callback)callback(status,chn->fd());
             return true;

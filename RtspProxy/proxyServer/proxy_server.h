@@ -29,7 +29,7 @@ private:
         if(m_remove_timer_id!=INVALID_TIMER_ID){
             m_loop->removeTimer(m_remove_timer_id);
         }
-        auto weak_this=weak_from_this();
+        weak_ptr<tcp_server>weak_this(shared_from_this());
         m_remove_timer_id=m_loop->addTimer([weak_this](){
             auto strong=weak_this.lock();
             if(!strong)return false;
@@ -91,7 +91,6 @@ private:
     //移除udp发送索引
     void remove_udp_map(uint32_t stream_token)
     {
-        lock_guard<mutex>locker(m_mutex);
         m_udp_connections_map.erase(stream_token);
     }
     //udp数据通道

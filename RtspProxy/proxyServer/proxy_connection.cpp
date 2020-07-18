@@ -88,7 +88,7 @@ using namespace micagent;
 //seq : 4
 //}
 proxy_connection::proxy_connection(SOCKET fd,proxy_server *server):tcp_connection (fd),m_proxy_server(server),m_recv_buf(new proxy_message(false)),m_send_buf(new proxy_message(true))\
-,m_is_authorized(false),m_is_setup(false),m_stream_token(INVALID_MediaSessionId),m_last_alive_time(Timer::getTimeNow())
+,m_is_authorized(false),m_is_setup(false),m_stream_token(INVALID_MediaSessionId),m_last_alive_time(Timer::getTimeNow()),m_last_send_timestamp(p_timer_help::getTimesTamp()),m_last_recv_timestamp(m_last_send_timestamp)
 {
     //初始化转发实例，默认只接受TCP包，进行控制命令处理
     m_proxy_interface.reset(new ProxyInterface(0,RAW_TCP,[this](const void *buf,uint32_t buf_len){
@@ -113,6 +113,7 @@ bool proxy_connection::handle_read()
             auto len=m_recv_buf->read_packet(buf.get(),8092);
             if(len==0)break;
             //此处会调用帧输出回调函数
+            //ProxyInterface::dump_header_info(buf.get(),len);
             if(!m_proxy_interface->protocol_input(buf.get(),len))break;
             m_last_alive_time=Timer::getTimeNow();
         }
@@ -164,6 +165,7 @@ bool proxy_connection::handle_proxy_frame(shared_ptr<ProxyFrame> frame)
         return handle_proxy_request(frame);
     }
     else {
+        //MICAGENT_LOG(LOG_INFO,"media_data  %hu size %u %02x",frame->frame_seq,frame->data_len,frame->data_buf.get()[0]);
         return handle_proxy_media_data(frame);
     }
 }
@@ -206,6 +208,7 @@ bool proxy_connection::handle_proxy_media_data(const shared_ptr<ProxyFrame>&fram
     else {
         AVFrame new_frame(frame->data_len);
         memcpy(new_frame.buffer.get(),frame->data_buf.get(),frame->data_len);
+        new_frame.timestamp=frame->timestamp;
         return  rtsp_server->updateFrame(m_stream_token,static_cast<MediaChannelId>(frame->media_channel),new_frame);
     }
 }

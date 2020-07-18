@@ -10,7 +10,7 @@ bool rtsp_connection::handle_read()
     lock_guard<mutex>locker(m_mutex);
     auto ret=m_read_buf->read_fd(fd());
     if(ret<=0){
-        MICAGENT_LOG(LOG_INFO,"%s %d",strerror(errno),errno);
+        MICAGENT_LOG(LOG_INFO,"%s %d   fd:%d",strerror(errno),errno,fd());
         return false;
     }
     if(ret>0){

@@ -34,7 +34,8 @@ HEADERS += \
     ../../json_config/cJSON.h \
     ../../network_helper/tcp_connection_helper.h \
     ../../RtspServer/example/file_reader.h \
-    h264parsesps.h
+    h264parsesps.h \
+    ../../OtherTools/DelayControl/delay_control.h
 
 LIBS+= -lpthread
 
@@ -74,19 +75,21 @@ SOURCES += \
     ../../json_config/cJSON.c \
     ../../network_helper/tcp_connection_helper.cpp \
     ../../RtspServer/example/file_reader.cpp \
-    H264ParseSPS.c
+    H264ParseSPS.c \
+    ../../OtherTools/DelayControl/delay_control.cpp
 
 INCLUDEPATH += ..\
 ../../LOG \
 ../../events_handler \
-../../network_helper/\
-../../OtherTools/MD5/\
-../rtspProxy/\
-../../RtspServer/rtsp/\
-../proxyServer/\
-../proxyClient/\
-../../json_config/\
-../../RtspServer/example/\
+../../network_helper/ \
+../../OtherTools/MD5/ \
+../rtspProxy/ \
+../../RtspServer/rtsp/ \
+../proxyServer/ \
+../proxyClient/ \
+../../json_config/ \
+../../RtspServer/example/ \
+../../OtherTools/DelayControl \
 
 CONFIG-=qt
 

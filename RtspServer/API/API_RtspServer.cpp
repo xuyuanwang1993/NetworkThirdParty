@@ -33,7 +33,7 @@ void  Api_rtsp_server::Api_Rtsp_Server_Init_And_Start(std::weak_ptr<Api_rtsp_ser
     std::shared_ptr<micagent::EventLoop> eventLoop;
     if(!rtsp_handle->event_loop)
     {
-        eventLoop.reset(new micagent::EventLoop());
+        eventLoop.reset(new micagent::EventLoop(0,0,2000,0));
         rtsp_handle->event_loop=eventLoop;
     }
     else
@@ -51,6 +51,7 @@ void  Api_rtsp_server::Api_Rtsp_Server_Init_And_Start(std::weak_ptr<Api_rtsp_ser
     {
         server=rtsp_handle->server;
     }
+
     rtsp_handle->is_run=true;
     cout<<"success init Rtsp_server!"<<endl;
 }
@@ -68,11 +69,11 @@ bool Api_rtsp_server::Api_Rtsp_Server_AddAuthorization(std::weak_ptr<Api_rtsp_se
 uint32_t Api_rtsp_server::Api_Rtsp_Server_Add_Stream(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,std::string stream_name,Media_Info media_info)
  {
     auto rtsp_handle=handle.lock();
-    if(!rtsp_handle||!rtsp_handle->is_run)return 0;
+    if(!rtsp_handle||!rtsp_handle->is_run)return INVALID_MediaSessionId;
      if(stream_name.empty()||(media_info.viedo_type==DEFAULT&&media_info.audio_type==DEFAULT))
      {
          std::cout<<"illegal parameter! in"<<__FUNCTION__<<std::endl;
-         return 0;
+         return INVALID_MediaSessionId;
      }
      auto session = micagent::media_session::CreateNew(stream_name.c_str());
      if(media_info.viedo_type==H264)
@@ -110,11 +111,12 @@ void Api_rtsp_server::Api_Rtsp_Server_Remove_Stream(std::weak_ptr<Api_rtsp_serve
     rtsp_handle->server->removeMediaSession(session_id);
 }
 
-bool Api_rtsp_server::Api_Rtsp_Push_Frame(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,const void *tmp_buf,int buf_size,int channel_id)
+bool Api_rtsp_server::Api_Rtsp_Push_Frame(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,const void *tmp_buf,int buf_size,int channel_id,int64_t micro_time_now)
 {
     auto rtsp_handle=handle.lock();
     if(!rtsp_handle||!rtsp_handle->is_run) return false;
     micagent::AVFrame videoFrame = {0};
+    videoFrame.timestamp=micro_time_now;
     auto buf=static_cast<const char *>(tmp_buf);
     if(buf_size>4&&buf[0]==0x00&&buf[1]==0x00&&buf[2]==0x00&&buf[3]==0x01)
     {

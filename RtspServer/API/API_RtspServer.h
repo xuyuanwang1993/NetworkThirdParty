@@ -75,7 +75,7 @@ public:
         VIDEO_FRAME_B = 0x03,
         AUDIO_FRAME   = 0x11,
     }Frame_type;
-    static bool Api_Rtsp_Push_Frame(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,const void *tmp_buf,int buf_size,int channel_id=0);
+    static bool Api_Rtsp_Push_Frame(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,const void *tmp_buf,int buf_size,int channel_id=0,int64_t micro_time_now=0);
     static void Api_Rtsp_Add_Frame_Control(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,uint32_t frame_rate);
 private:
     Api_rtsp_server(){}

@@ -4,7 +4,7 @@ EventLoop::EventLoop(int32_t thread_pool_size,uint32_t trigger_threads,uint32_t 
     m_index(0),m_timer_queue(new TimerQueue()),m_thread_pool(new thread_pool(thread_pool_size)),\
     m_trigger_queue(new trigger_queue(trigger_threads,capacity)),m_is_stop(false)
 {
-    if(thread_nums<1)thread_nums=thread::hardware_concurrency()+1;
+    if(thread_nums==0)thread_nums=thread::hardware_concurrency()+1;
     for(uint32_t i=0;i<thread_nums;i++)
     {
         m_TaskSchedulers.push_back(make_shared<eventloop_task>(i));

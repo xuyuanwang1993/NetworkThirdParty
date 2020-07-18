@@ -57,7 +57,15 @@ uint32_t media_session::getClientsNums()const
 }
 bool media_session::updateFrame(MediaChannelId channel,const AVFrame &frame)
 {
-
+#ifdef SAVE_FILE_ACCESS
+    static uint8_t start_code[4]={0x00,0x00,0x00,0x01};
+    if(m_save_fp)
+    {
+        fwrite(start_code,1,4,m_save_fp);
+        fwrite(frame.buffer.get(),1,frame.size,m_save_fp);
+        fflush(m_save_fp);
+    }
+#endif
     lock_guard<mutex>locker(m_mutex);
     //转发
     for(auto iter=m_proxy_session_map.begin();iter!=m_proxy_session_map.end();)
@@ -76,6 +84,7 @@ bool media_session::updateFrame(MediaChannelId channel,const AVFrame &frame)
     if(m_media_source[channel]){
         return m_media_source[channel]->handleFrame(channel,frame);
     }
+    return false;
 }
 
 void media_session::initMulticast()
@@ -197,6 +206,13 @@ vector<media_source_info>media_session::get_media_source_info()const
 media_session::media_session(string rtsp_suffix):m_suffix(rtsp_suffix),m_session_id(generate_session_id()),m_is_multicast(false)\
   ,m_multicast_ip(""),m_sdp("")
 {
+#ifdef SAVE_FILE_ACCESS
+    m_save_fp=fopen((string(SAVE_FILE_PRFIX)+to_string(m_session_id)).c_str(),"w+");
+    if(!m_save_fp)
+    {
+        throw std::runtime_error("exec this program with root access!");
+    }
+#endif
     m_media_source.resize(MAX_MEDIA_CHANNEL);
     for(int n=0; n<MAX_MEDIA_CHANNEL; n++)
     {
@@ -206,4 +222,7 @@ media_session::media_session(string rtsp_suffix):m_suffix(rtsp_suffix),m_session
 media_session::~media_session()
 {
     if(m_is_multicast)MulticastAddr::instance().release(m_multicast_ip);
+#ifdef SAVE_FILE_ACCESS
+    if(m_save_fp)fclose(m_save_fp);
+#endif
 }

@@ -1,4 +1,4 @@
-/*
+﻿/*
  Copyright (c) 2009 Dave Gamble
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,11 +27,9 @@
 
 typedef int int32;
 typedef unsigned int uint32;
-#ifndef _WIN32
-    #if __WORDSIZE == 64
+#if !defined (_WIN32) &&__WORDSIZE == 64
         typedef long int64;
 		typedef unsigned long uint64;
-    #endif
 #else
     typedef long long int64;
 	typedef unsigned long long uint64;

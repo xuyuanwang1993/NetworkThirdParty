@@ -19,7 +19,7 @@ class thread_pool{
     /**
  * @brief MIN_THREAD_NUMS 最少工作线程数
  */
-    static constexpr int32_t MIN_THREAD_NUMS=2;
+    static constexpr int32_t MIN_THREAD_NUMS=0;
     /**
  * @brief MAX_THREAD_NUMS 最大工作线程数
  */

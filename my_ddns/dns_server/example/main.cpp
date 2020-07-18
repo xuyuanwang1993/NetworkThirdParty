@@ -3,7 +3,8 @@ using namespace std;
 using namespace micagent;
 int main()
 {
-    EventLoop loop;
+    printf("dns_server start!\r\n");
+    EventLoop loop(0,1);
     dns_server server(10000);
     server.config(&loop);
     server.start_work();

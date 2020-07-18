@@ -121,8 +121,14 @@ bool aac_source::handleFrame(MediaChannelId channelId, AVFrame frame)
     return true;
 }
 
-uint32_t aac_source::getTimeStamp()
+uint32_t aac_source::getTimeStamp(int64_t micro_time_now)
 {
-    auto timePoint = chrono::time_point_cast<chrono::microseconds>(chrono::steady_clock::now());
-    return (uint32_t)((timePoint.time_since_epoch().count()+500) / 1000 * m_sampleRate / 1000);
+    if(micro_time_now==0)
+    {
+        auto timePoint = chrono::time_point_cast<chrono::microseconds>(chrono::steady_clock::now());
+        return (uint32_t)((timePoint.time_since_epoch().count()+500) / 1000 * m_sampleRate / 1000);
+    }
+    else {
+        return (uint32_t)((micro_time_now+500) / 1000 * m_sampleRate / 1000);
+    }
 }

@@ -26,7 +26,10 @@ public:
             return time_base-conn->m_last_alive_time;
         }
     }
+    virtual ~ rtsp_connection(){
+    }
 protected:
+
     bool handle_read();
      bool handle_write();
      bool handle_error(){return handle_close();}

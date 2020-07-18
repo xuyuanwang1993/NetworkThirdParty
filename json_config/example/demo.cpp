@@ -1,4 +1,4 @@
-#include <string>
+﻿#include <string>
 #include <iostream>
 #include "CJsonObject.hpp"
 
@@ -89,9 +89,9 @@ int main()
     // std::cout << oJson.IsNull("test_float") << "\t" << oJson.IsNull("null_value") << std::endl;
     // oJson["test_float"].AddNull();
     // std::cout << oJson.ToString() << std::endl;
-	 using neb::CJsonObject;
+     //using neb::CJsonObject;
 	 //system("chcp 65001");
-	 auto object = CJsonObject::CreateInstance("test2.txt");
+     //auto object = CJsonObject::CreateInstance("test2.txt");
 	 //object->Add("test", 1);
 	 //object->Add("test2", 1.12346);
 	 //object->Add("test3", "ddadsa");
@@ -103,12 +103,30 @@ int main()
 	 //(*object)["array"].Add(1);
 	 //(*object)["array"].Add(2);
 	 //(*object)["array"].AddAsFirst(1);
-	 std::cout << "------------------------------------------------------------" << std::endl;
-	 std::cout << object->ToString() << std::endl;
-	 std::cout << "------------------------------------------------------------" << std::endl;
-	 std::cout << object->ToFormattedString() << std::endl;
-	 std::cout << "------------------------------------------------------------" << std::endl;
-	 object->SaveToFile();
+//	 std::cout << "------------------------------------------------------------" << std::endl;
+//	 std::cout << object->ToString() << std::endl;
+//	 std::cout << "------------------------------------------------------------" << std::endl;
+//	 std::cout << object->ToFormattedString() << std::endl;
+//	 std::cout << "------------------------------------------------------------" << std::endl;
+//	 object->SaveToFile();
+neb::CJsonObject object;
+object.Add("1",1);
+object.Add("2",1);
+object.Add("3",1);
+object.Add("4",1);
+object.Add("5",1);
+auto &object_test=object["test"];
+object_test.Add("test","test");
+object.Add("test",object_test);
+std::string key;
+std::cout<<object.GetKey(key);
+std::cout<<object.GetKey(key);
+std::cout<<object.GetKey(key);
+std::cout<<object.GetKey(key);
+std::cout<<object.GetKey(key);
+std::cout<<object.GetKey(key);
+std::cout<<object.ToFormattedString()<<std::endl;
+std::cout<<object_test.ToFormattedString()<<std::endl;
 	 return 0;
 }
 

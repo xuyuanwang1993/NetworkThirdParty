@@ -74,6 +74,10 @@ private:
      uint32_t m_stream_token;
      //上次在线时间
      atomic<int64_t> m_last_alive_time;
+     //上次发送时间戳
+     uint32_t m_last_send_timestamp;
+     //上次帧原始时间戳
+     uint32_t m_last_recv_timestamp;
 };
 }
 #endif // PROXY_CONNECTION_H

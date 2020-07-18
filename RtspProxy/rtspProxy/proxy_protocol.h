@@ -116,9 +116,9 @@ struct ProxyFrame{
     uint16_t frame_seq;
     //帧数据缓存
     shared_ptr<char>data_buf;
-    ProxyFrame(const void *buf=nullptr,uint32_t len=0,uint8_t type=PNONE,uint8_t _frame_type=CONTROL_COMMAND,uint8_t channel=0,uint32_t token=0,uint16_t seq=0):\
-        media_type(type),frame_type(_frame_type),media_channel(channel),stream_token(token),data_len(len),timestamp(p_timer_help::getTimesTamp()),frame_seq(seq),data_buf(new char[data_len+1]\
-        ,std::default_delete<char[]>()){
+    ProxyFrame(const void *buf=nullptr,uint32_t len=0,uint8_t type=PNONE,uint8_t _frame_type=CONTROL_COMMAND,uint8_t channel=0,uint32_t token=0,uint16_t seq=0,uint32_t time_stamp=0):\
+        media_type(type),frame_type(_frame_type),media_channel(channel),stream_token(token),data_len(len),timestamp(time_stamp),frame_seq(seq),data_buf(new char[data_len+1]\
+                                                                                                                                                                 ,std::default_delete<char[]>()){
         if(data_len>0&&buf)memcpy(data_buf.get(),buf,data_len);
     }
 };
@@ -172,6 +172,7 @@ struct PStreamParse{
         shared_ptr<char>new_buf(new char[new_data_len],std::default_delete<char[]>());
         if(last_buf_len>0)memcpy(new_buf.get(),buf_cache.get(),last_buf_len);
         memcpy(new_buf.get()+last_buf_len,buf,buf_len);
+        last_buf_len=0;
         if(new_buf.get()[0]!='$'){
             //不符合规则的包丢弃
             return ret;
@@ -179,24 +180,29 @@ struct PStreamParse{
         uint16_t use_len=0;
         while(new_data_len>=sizeof (ProxyHeader))
         {
-            get_data_len(new_buf.get()+use_len+POFFSETOF(ProxyHeader,data_len),&last_buf_len);
-            last_buf_len+=sizeof (ProxyHeader);
-            if(new_data_len>=last_buf_len)
+            if(new_buf.get()[use_len]!='$')break;
+            uint16_t packet_len=0;
+            get_data_len(new_buf.get()+use_len+POFFSETOF(ProxyHeader,data_len),&packet_len);
+            packet_len+=sizeof (ProxyHeader);
+            if(new_data_len>=packet_len)
             {
-                shared_ptr<char >data(new char[last_buf_len+1],std::default_delete<char[]>());
-                memcpy(data.get(),new_buf.get()+use_len,last_buf_len);
-                ret.push(make_pair(data,last_buf_len));
-                use_len+=last_buf_len;
-                new_data_len-=last_buf_len;
+                shared_ptr<char >data(new char[packet_len+1],std::default_delete<char[]>());
+                memcpy(data.get(),new_buf.get()+use_len,packet_len);
+                ret.push(make_pair(data,packet_len));
+                use_len+=packet_len;
+                new_data_len-=packet_len;
             }
             else {
                 break;
             }
         }
-        last_buf_len=0;
-        if(new_data_len>0)
+        if(new_data_len>PROXY_FRAGMENT_SIZE+sizeof(ProxyHeader))
+        {//packet recv error
+            return ret;
+        }
+        last_buf_len=new_data_len;
+        if(last_buf_len>0)
         {
-            last_buf_len=new_data_len;
             memcpy(buf_cache.get(),new_buf.get()+use_len,last_buf_len);
         }
         return ret;
@@ -293,6 +299,8 @@ public:
     void change_trans_mode(PTransMode mode){m_mode=mode;}
     //从协议包中读取流token
     static  uint32_t get_stream_token(const void *buf,uint32_t buf_len);
+    //输出头信息
+    static void dump_header_info(const void *buf,uint32_t buf_len);
 private:
     //264帧分析
     static PFrameType inline get_264_type(char first_byte){
@@ -330,6 +338,50 @@ private:
     bool inline circle_compare(uint16_t last,uint16_t present){
         return  present>=last||(last-present)>UINT16_MAX/2;
     }
+    inline void update_min_recv_frame_seq(uint16_t seq){
+        m_min_recv_frame_seq=seq;
+    }
+    inline void cache_handle_recv_packet(uint16_t seq)
+    {
+        unique_lock<mutex>locker(m_mutex);
+        for(auto iter=m_recv_frame_chache.begin();iter!=m_recv_frame_chache.end();)
+        {
+            if(iter->second->frame_seq>seq)break;
+            auto seq_diff=seq-iter->second->frame_seq;
+            if(seq_diff>UINT16_MAX/2){
+                //比当前接收帧序号靠后的帧
+                iter++;
+            }
+            else{
+                if(seq_diff>=MAX_ORDER_CACHE_SIZE){
+                    if(!iter->second->is_finished()){
+                        //接收未完全的缓存
+#ifdef DEBUG
+                        printf("******************cache recv  erase cache frames %u *****%lu**********\r\n",iter->second->frame_seq,iter->second->fragment_count-iter->second->m_fragment_seq_set.size());
+#endif
+                        update_min_recv_frame_seq(iter->second->frame_seq);
+                        m_recv_frame_chache.erase(iter++);
+                        continue;
+                    }
+                    else {
+                        //接收完成直接返回应用层
+                        m_min_recv_frame_seq=iter->second->frame_seq;
+                        auto &cache= iter->second;
+                        shared_ptr<ProxyFrame>frame(new ProxyFrame(cache->m_buf_chache.get(),cache->frame_len,cache->media_type,cache->frame_type,cache->media_channel,m_stream_token,cache->frame_seq,cache->timestamp));
+                        m_recv_frame_chache.erase(iter++);
+                        locker.unlock();
+                        if(m_recv_callback)m_recv_callback(frame);
+                        locker.lock();
+                    }
+                }
+                else {
+                    //缓存MAX_ORDER_CACHE_SIZE数目的帧
+                    break;
+                }
+            }
+
+        }
+    }
     //帧接收应答
     void response_frame(uint16_t seq);
     static constexpr uint16_t P_INVALID_SEQ=UINT16_MAX;
@@ -349,16 +401,6 @@ private:
     void raw_hybrid_handle_packet(uint16_t seq);
     void graded_tcp_handle_packet(uint16_t seq);
     void graded_hybrid_handle_packet(uint16_t seq);
-    //输出帧缓存信息
-    inline void dump_ProxyFrameCache_info(shared_ptr<ProxyFrameCache> cache)
-    {
-        printf("timestamp : %u  frame_size %u frame_seq : %hu set_size:%hu\r\n",cache->frame_seq,cache->frame_len,cache->fragment_count,cache->m_fragment_seq_set.size());
-        for(auto i:cache->m_fragment_seq_set)
-        {
-            printf("%hu ",i);
-        }
-        printf("\r\n");
-    }
     //线程锁
     mutex m_mutex;
     //流编号，初始化传入
@@ -375,7 +417,9 @@ private:
     /**
      * @brief m_packet_chache 发送部分分片缓存
      */
+#ifdef DELAY_SEND_CACHE
     queue<shared_ptr<ProxyFragmentPacket>> m_packet_chache;
+#endif
     /**
      * @brief m_last_send_frame_seq 本次发送序列号
      */

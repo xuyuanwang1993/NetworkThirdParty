@@ -1,7 +1,7 @@
 ﻿#ifndef DNS_SERVER_H
 #define DNS_SERVER_H
 #include "event_loop.h"
-#include "rc4.h"
+#include "rc4_interface.h"
 #include "CJsonObject.hpp"
 namespace micagent {
 using namespace std;

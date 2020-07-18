@@ -19,7 +19,7 @@ rtsp_pusher::rtsp_pusher(tcp_connection_helper *helper,PTransMode mode,const str
         return this->send_message(static_cast<const char *>(buf),buf_len);},[this](const void *buf,uint32_t buf_len){
         //UDP数据包发送处理
         if(m_udp_fd==INVALID_SOCKET)return false;
-        return ::sendto(m_udp_fd,buf,buf_len,0,(struct sockaddr *)&m_des_addr,sizeof(struct sockaddr_in))==buf_len;
+        return NETWORK.time_out_sendto(m_udp_fd,buf,buf_len,0,(struct sockaddr *)&m_des_addr,sizeof(struct sockaddr_in),1)==buf_len;
     },[this](shared_ptr<ProxyFrame>frame){
                                 return this->handle_proxy_request(frame);
                             }));
@@ -29,6 +29,7 @@ void rtsp_pusher::proxy_frame(MediaChannelId id,const AVFrame &frame)
     lock_guard<mutex>locker(m_mutex);
         if(m_is_setup){
             shared_ptr<ProxyFrame>proxy_frame(new ProxyFrame(frame.buffer.get(),frame.size,m_media_info[id],0,id));
+            proxy_frame->timestamp=static_cast<uint32_t>(frame.timestamp);
             m_proxy_interface->send_frame(proxy_frame);
         }
 }
@@ -68,12 +69,22 @@ void rtsp_pusher::close_connection()
     m_is_closed=true;
     if(m_tcp_channel)send_tear_down_stream();
 }
+void rtsp_pusher::reset_net_info(string ip,uint16_t des_port)
+{
+    lock_guard<mutex>locker(m_mutex);
+    m_des_ip=ip;
+    m_des_port=des_port;
+    m_des_addr.sin_addr.s_addr=inet_addr(m_des_ip.c_str());
+    m_des_addr.sin_port=htons(m_des_port);
+    reset_connection();
+}
 void rtsp_pusher::reset_connection()
 {
     if(!m_media_info_set||m_is_connecting||m_is_closed)return;
     m_is_connecting=true;
     if(m_tcp_channel){
         if(m_connection_helper){
+
             auto loop=m_connection_helper->get_loop();
             if(loop)loop->removeChannel(m_tcp_channel);
         }
@@ -83,7 +94,7 @@ void rtsp_pusher::reset_connection()
     m_is_setup=false;
     m_stream_token=INVALID_MediaSessionId;
     m_seq=0;
-    auto weak_this=weak_from_this();
+    weak_ptr<rtsp_pusher>weak_this(shared_from_this());
     if(m_connection_helper){
         m_connection_helper->OpenConnection(m_des_ip,m_des_port,[weak_this](CONNECTION_STATUS status,SOCKET fd){
             auto strong=weak_this.lock();
@@ -115,7 +126,7 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
         m_last_time_out=MIN_WAIT_TIME;
         m_is_connecting=false;
         m_tcp_channel.reset(new Channel(fd));
-        auto weak_this=weak_from_this();
+        weak_ptr<rtsp_pusher>weak_this(shared_from_this());
         m_tcp_channel->setReadCallback([weak_this](Channel *chn){
             auto strong=weak_this.lock();
             if(!strong)return false;
@@ -158,6 +169,7 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
             return true;
         });
         m_tcp_channel->setCloseCallback([weak_this](Channel *chn){
+        (void)chn;
             auto strong=weak_this.lock();
             if(!strong)return false;
             unique_lock<mutex>locker(strong->m_mutex);
@@ -165,6 +177,7 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
             return true;
         });
         m_tcp_channel->setErrorCallback([weak_this](Channel *chn){
+            (void)chn;
             auto strong=weak_this.lock();
             if(!strong)return false;
             unique_lock<mutex>locker(strong->m_mutex);
@@ -180,7 +193,7 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
     }
     else {
         lock_guard<mutex>locker(m_mutex);
-        auto weak_this=weak_from_this();
+        weak_ptr<rtsp_pusher>weak_this(shared_from_this());
         auto loop=m_connection_helper->get_loop();
         if(!loop)throw runtime_error("event loop was quit!");
         MICAGENT_LOG(LOG_WARNNING,"connect %s  %hu  error for %s!  wait %u ms!",m_des_ip.c_str(),m_des_port,strerror(errno),m_last_time_out);
@@ -221,7 +234,7 @@ bool rtsp_pusher::handle_proxy_request(const shared_ptr<ProxyFrame>&frame)
         handle_set_up_stream_ack(object);
     }
     else if (cmd=="tear_down_stream_ack") {
-        handle_tear_down_stream_ack(object);
+        handle_tear_down_stream_ack();
     }
     else {
         MICAGENT_LOG(LOG_ERROR,"unknown command %s",object.ToFormattedString().c_str());
@@ -364,7 +377,7 @@ void rtsp_pusher::handle_set_up_stream_ack(CJsonObject &object)
                 return this->send_message(static_cast<const char *>(buf),buf_len);},[this](const void *buf,uint32_t buf_len){
                 //UDP数据包发送处理
                 if(m_udp_fd==INVALID_SOCKET)return false;
-                return ::sendto(m_udp_fd,buf,buf_len,0,(struct sockaddr *)&m_des_addr,sizeof(struct sockaddr_in))==buf_len;
+                return NETWORK.time_out_sendto(m_udp_fd,buf,buf_len,0,(struct sockaddr *)&m_des_addr,sizeof(struct sockaddr_in),1)==buf_len;
             },[this](shared_ptr<ProxyFrame>frame){
                                         return this->handle_proxy_request(frame);
                                     }));
@@ -374,7 +387,7 @@ void rtsp_pusher::handle_set_up_stream_ack(CJsonObject &object)
         //错误处理，无,等待服务器超时断开连接
     }
 }
-void rtsp_pusher::handle_tear_down_stream_ack(CJsonObject &object)
+void rtsp_pusher::handle_tear_down_stream_ack()
 {
     //复位连接
     reset_connection();

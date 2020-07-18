@@ -53,6 +53,14 @@ public:
         return std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch()).count();
     }
     /**
+     * @brief getMicroTimeNow 获取从1970年到当前时间的微秒数
+     * @return
+     */
+    static int64_t getMicroTimeNow(){
+        auto timePoint = std::chrono::steady_clock::now();
+        return std::chrono::duration_cast<std::chrono::microseconds>(timePoint.time_since_epoch()).count();
+    }
+    /**
      * @brief setEventCallback 设置定时器的回调函数
      * @param event
      */

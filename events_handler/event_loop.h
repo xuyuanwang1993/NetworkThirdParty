@@ -17,7 +17,7 @@ public:
      * @param capacity trigger_queue工作容器容量
      * @param thread_nums IO处理的线程数
      */
-    EventLoop(int32_t thread_pool_size=32,uint32_t trigger_threads=2,uint32_t capacity=2000,uint32_t thread_nums=0);
+    EventLoop(int32_t thread_pool_size=2,uint32_t trigger_threads=2,uint32_t capacity=2000,uint32_t thread_nums=1);
     ~EventLoop();
     /**
      * @brief stop 停止所有事件循环

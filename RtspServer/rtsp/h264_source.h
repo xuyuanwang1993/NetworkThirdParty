@@ -27,7 +27,7 @@ public:
 
     bool handleFrame(MediaChannelId channelId, AVFrame frame);
 
-     uint32_t getTimeStamp();
+     uint32_t getTimeStamp(int64_t micro_time_now=0);
      h264_source(uint32_t frameRate=30);
 private:
      bool check_frames(AVFrame &frame);

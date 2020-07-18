@@ -32,7 +32,7 @@ public:
 
     bool handleFrame(MediaChannelId channelId, AVFrame frame);
 
-     uint32_t getTimeStamp();
+     uint32_t getTimeStamp(int64_t micro_time_now=0);
      aac_source(uint32_t sampleRate=44100, uint32_t channels=2, bool hasADTS=true);
 private:
     uint32_t m_sampleRate = 44100;   // 采样频率

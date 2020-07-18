@@ -35,7 +35,7 @@ void tcp_server::register_handle(EventLoop *loop)
             if(!interface)return false;
             auto fd=Network_Util::Instance().accept(chn->fd());
             if(fd!=INVALID_SOCKET){
-                interface->add_connection(interface->new_connection(fd));
+                    interface->add_connection(interface->new_connection(fd));
             }
             return true;
         });
@@ -58,10 +58,19 @@ void tcp_server::add_connection(shared_ptr<tcp_connection> conn)
         MICAGENT_LOG(LOG_INFO,"remove %u   %s",conn->fd(),Logger::get_local_time().c_str());
         this->remove_connection(conn->fd());
     });
-    conn->register_handle(m_loop);
     lock_guard<mutex>locker(m_mutex);
-    MICAGENT_LOG(LOG_INFO,"add %u   %s",conn->fd(),Logger::get_local_time().c_str());
-    m_connections.emplace(conn->fd(),conn);
+    auto rm_iter=m_connections.find(conn->fd());
+    if(rm_iter!=m_connections.end()){
+        MICAGENT_LOG(LOG_FATALERROR,"fd %d release error!",conn->fd());
+        if(rm_iter->second){
+            rm_iter->second->set_fd_reuse(true);
+            rm_iter->second->unregister_handle(m_loop);
+        }
+        m_connections.erase(rm_iter);
+    }
+    auto iter=m_connections.emplace(conn->fd(),conn);
+    MICAGENT_LOG(LOG_INFO,"add %u   %s   status:%d %lu",conn->fd(),Logger::get_local_time().c_str(),iter.second,m_connections.size());
+    conn->register_handle(m_loop);
 }
 shared_ptr<tcp_connection>tcp_server::new_connection(SOCKET fd)
 {

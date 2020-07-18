@@ -119,7 +119,7 @@ bool Network_Util::listen(SOCKET sockfd,int32_t size)
 }
 SOCKET Network_Util::accept(SOCKET sockfd,struct sockaddr_in*addr){
     socklen_t addrlen = sizeof (struct sockaddr_in);
-    SOCKET clientfd=-1;
+    SOCKET clientfd=INVALID_SOCKET;
     if(addr){
         clientfd = ::accept(sockfd, (struct sockaddr*)addr, &addrlen);
     }

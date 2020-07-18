@@ -16,7 +16,7 @@
 #include "file_reader.h"
 #include "proxy_server.h"
 #include "h264parsesps.h"
-
+#include "delay_control.h"
 using namespace std;
 using namespace micagent;
 using neb::CJsonObject;
@@ -38,42 +38,36 @@ int main(int argc,char *argv[]){
         shared_ptr<rtsp_pusher> pusher;
         pusher.reset(rtsp_pusher::CreateNew(tcp_helper,(PTransMode)stoi(mode),stream_name,ip,stoul(port)));
         shared_ptr<media_session> session(media_session::CreateNew("test"));
+        shared_ptr<delay_control_base> delay;
         if(strstr(file_name.c_str(),"h264")!=nullptr){
             session->setMediaSource(channel_0,h264_source::createNew(25));
+            delay.reset(new h264_delay_control());
         }
         else {
             session->setMediaSource(channel_0,h265_source::createNew(25));
+            delay.reset(new h265_delay_control());
         }
         session->addProxySession(pusher);
         micagent::file_reader_base file(file_name);
     std::thread t([&](){
-        int bufSize = 500000;
+        uint32_t bufSize = 500000;
         uint8_t *frameBuf = new uint8_t[bufSize];
         AVFrame frame;
-        auto last_time=Timer::getTimeNow();
-        long sleep_time=0;
-        int counts=0;
-        double fps=25;
         while(1)
         {
-            last_time=Timer::getTimeNow();
-            int frameSize = file.readFrame(frameBuf, bufSize);
+            auto frameSize = file.readFrame(frameBuf, bufSize);
             if(frameSize > 0)
             {
-                frame.size=frameSize-4;
+                frame.size=static_cast<uint32_t>(frameSize)-4;
                 frame.buffer.reset(new uint8_t[frame.size],std::default_delete<uint8_t[]>());
                 memcpy(frame.buffer.get(),frameBuf+4,frameSize-4);
+                frame.timestamp=delay->block_wait_next_due(frameBuf+4);
                 pusher->proxy_frame(channel_0,frame);
                     //break;
             }
             else
             {
                 break;
-            }
-            if(frame.buffer.get()[0]==0x65||frame.buffer.get()[0]==0x61||frame.buffer.get()[0]==0x26||frame.buffer.get()[0]==0x02)
-            {
-                sleep_time=1000/25-(Timer::getTimeNow()-last_time);
-                if(sleep_time>0)Timer::sleep(sleep_time);
             }
         }
         std::cout<<"exit send_thread"<<std::endl;

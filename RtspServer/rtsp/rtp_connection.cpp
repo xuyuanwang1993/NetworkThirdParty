@@ -130,8 +130,6 @@ bool rtp_connection::setupRtpOverUdp(MediaChannelId channelId, uint16_t rtpPort,
                  m_mediaChannelInfo[channelId].rtcpPort);
     NETWORK.connect(m_rtpfd[channelId],peer_ip,m_mediaChannelInfo[channelId].rtpPort);
     NETWORK.connect(m_rtcpfd[channelId],peer_ip,m_mediaChannelInfo[channelId].rtcpPort);
-    NETWORK.make_noblocking(m_rtpfd[channelId]);
-    NETWORK.make_noblocking(m_rtcpfd[channelId]);
     return true;
 }
 bool rtp_connection::setupRtpOverMulticast(MediaChannelId channelId, std::string ip, uint16_t port)

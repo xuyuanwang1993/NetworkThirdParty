@@ -36,53 +36,50 @@ public:
         }
     }
     void setReadCallback(const EventCallBack& cb)
-    { lock_guard<mutex> locker(m_mutex);m_readCallback = cb; }
+    { m_readCallback = cb; }
     void setWriteCallback(const EventCallBack& cb)
-    { lock_guard<mutex> locker(m_mutex);m_writeCallback = cb; }
+    { m_writeCallback = cb; }
     void setCloseCallback(const EventCallBack& cb)
-    { lock_guard<mutex> locker(m_mutex);m_closeCallback = cb; }
+    { m_closeCallback = cb; }
     void setErrorCallback(const EventCallBack& cb)
-    { lock_guard<mutex> locker(m_mutex);m_errorCallback = cb; }
+    { m_errorCallback = cb; }
 
     void setReadCallback(EventCallBack&& cb)
-    { lock_guard<mutex> locker(m_mutex);m_readCallback = std::move(cb); }
+    {m_readCallback = std::move(cb); }
     void setWriteCallback(EventCallBack&& cb)
-    { lock_guard<mutex> locker(m_mutex);m_writeCallback = std::move(cb); }
+    { m_writeCallback = std::move(cb); }
     void setCloseCallback(EventCallBack&& cb)
-    { lock_guard<mutex> locker(m_mutex);m_closeCallback = std::move(cb); }
+    { m_closeCallback = std::move(cb); }
     void setErrorCallback(EventCallBack&& cb)
-    { lock_guard<mutex> locker(m_mutex);m_errorCallback = std::move(cb); }
+    { m_errorCallback = std::move(cb); }
     /**
      * @brief fd 获取channel对应的fd
      * @return
      */
-    SOCKET fd() const { lock_guard<mutex> locker(m_mutex);return m_fd; }
-    int events() const { lock_guard<mutex> locker(m_mutex);return m_events; }
+    SOCKET fd() const { return m_fd; }
+    int events() const { return m_events; }
     void setEvents(int events) {
-        lock_guard<mutex> locker(m_mutex);m_events = events; }
+        m_events = events; }
 
     void enableReading()
-    {lock_guard<mutex> locker(m_mutex);
+    {
         m_events |= EVENT_IN; }
 
     void enableWriting()
-    { lock_guard<mutex> locker(m_mutex);
+    {
         m_events |= EVENT_OUT; }
 
     void disableReading()
-    {lock_guard<mutex> locker(m_mutex);
+    {
         m_events &= ~EVENT_IN; }
 
     void disableWriting()
-    {lock_guard<mutex> locker(m_mutex);
+    {
         m_events &= ~EVENT_OUT; }
 
-    bool isNoneEvent() const {
-        lock_guard<mutex> locker(m_mutex);return m_events == EVENT_NONE; }
-    bool isWriting() const {
-        lock_guard<mutex> locker(m_mutex);return (m_events & EVENT_OUT)!=0; }
-    bool isReading() const {
-        lock_guard<mutex> locker(m_mutex);return (m_events & EVENT_IN)!=0; }
+    bool isNoneEvent() const {return m_events == EVENT_NONE; }
+    bool isWriting() const {return (m_events & EVENT_OUT)!=0; }
+    bool isReading() const {return (m_events & EVENT_IN)!=0; }
 
     void handleEvent(int events)
     {//读写出现异常时会调用关闭回调函数
@@ -113,11 +110,8 @@ public:
      * @brief set_cycle 改变channel回收状态，若为false在channel析构时会关闭socket
      * @param state
      */
-    void set_cycle(bool state){
-        lock_guard<mutex> locker(m_mutex);
-        m_cycle_flag=state;}
+    void set_cycle(bool state){m_cycle_flag=state;}
 private:
-    mutable std::mutex m_mutex;
     bool m_cycle_flag;
     SOCKET m_fd;
     int m_events;

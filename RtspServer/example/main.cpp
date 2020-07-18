@@ -12,6 +12,7 @@
 #include "rtsp_server.h"
 #include "file_reader.h"
 #include "API_RtspServer.h"
+#include "delay_control.h"
 using namespace std;
 using namespace micagent;
 int main(int argc,char *argv[]){
@@ -20,7 +21,7 @@ int main(int argc,char *argv[]){
         printf("Usage: %s test.h264\n", argv[0]);
         return 0;
     }
-    Logger::Instance().set_log_to_std(true);
+    Logger::Instance().set_log_to_std(false);
     Logger::Instance().register_handle();
 #if 0
     EventLoop loop;
@@ -71,39 +72,46 @@ int main(int argc,char *argv[]){
     server->removeMediaSession(session_id);
 #else
     shared_ptr<Api_rtsp_server::Rtsp_Handle>handle(new Api_rtsp_server::Rtsp_Handle);
-    Api_rtsp_server::Api_Rtsp_Server_Init_And_Start(handle,554);
-    Api_rtsp_server::Api_Rtsp_Server_AddAuthorization(handle,"admin","micagent");
+    Api_rtsp_server::Api_Rtsp_Server_Init_And_Start(handle,8554);
+    //Api_rtsp_server::Api_Rtsp_Server_AddAuthorization(handle,"admin","micagent");
     Api_rtsp_server::Media_Info media_info;
     media_info.frameRate=25;
+    delay_control_base *delay=nullptr;
     if(strstr(argv[1],"h264")!=nullptr){
         media_info.viedo_type=Api_rtsp_server::H264;
+        delay=new h264_delay_control();
     }
     else {
         media_info.viedo_type=Api_rtsp_server::H265;
+        delay=new h265_delay_control();
     }
     auto session_id=Api_rtsp_server::Api_Rtsp_Server_Add_Stream(handle,"test",media_info);
     micagent::file_reader_base file(argv[1]);
     std::thread t([&](){
         int bufSize = 500000;
         uint8_t *frameBuf = new uint8_t[bufSize];
+        int send_count=1;
+        int64_t micro_time_now=0;
         while(1)
         {
-            auto timePoint = std::chrono::steady_clock::now();
-            auto time_now=std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch()).count();
             int frameSize = file.readFrame(frameBuf, bufSize);
             if(frameSize > 0)
             {
-                Api_rtsp_server::Api_Rtsp_Push_Frame(handle,session_id,frameBuf,frameSize);
+                if(delay)
+                {
+                    micro_time_now=delay->block_wait_next_due(&frameBuf[4]);
+                }
+                Api_rtsp_server::Api_Rtsp_Push_Frame(handle,session_id,frameBuf,frameSize,0,micro_time_now);
             }
             else
             {
                 break;
             }
-            auto time_now2=std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch()).count();
-            int sleep_time=40-(time_now2-time_now);
-            if(frameBuf[4]==0x65||frameBuf[4]==0x61||frameBuf[4]==0x26||frameBuf[4]==0x02)
+            send_count++;
+            if(send_count%5000000==0)
             {
-                if(sleep_time>0)Timer::sleep(sleep_time);
+                Api_rtsp_server::Api_Rtsp_Server_Remove_Stream(handle,session_id);
+                session_id=Api_rtsp_server::Api_Rtsp_Server_Add_Stream(handle,"test",media_info);
             }
         }
         std::cout<<"exit send_thread"<<std::endl;

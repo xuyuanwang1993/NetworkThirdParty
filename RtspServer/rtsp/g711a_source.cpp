@@ -47,13 +47,13 @@ bool g711a_source::handleFrame(MediaChannelId channelId, AVFrame frame)
     {
         return false;
     }
-
+    auto timestamp=getTimeStamp(frame.timestamp);
     uint8_t *frameBuf  = frame.buffer.get();
     uint32_t frameSize = frame.size;
 
     RtpPacket rtpPkt;
     rtpPkt.type = frame.type;
-    rtpPkt.timestamp = frame.timestamp;
+    rtpPkt.timestamp = timestamp;
     rtpPkt.size = frameSize + 4 + RTP_HEADER_SIZE;
     rtpPkt.last = 1;
 
@@ -65,9 +65,15 @@ bool g711a_source::handleFrame(MediaChannelId channelId, AVFrame frame)
     return true;
 }
 
-uint32_t g711a_source::getTimeStamp()
+uint32_t g711a_source::getTimeStamp(int64_t micro_time_now)
 {
-    auto timePoint = chrono::time_point_cast<chrono::microseconds>(chrono::steady_clock::now());
-    return (uint32_t)((timePoint.time_since_epoch().count()+500)/1000*8);
+    if(micro_time_now==0)
+    {
+        auto timePoint = chrono::time_point_cast<chrono::microseconds>(chrono::steady_clock::now());
+        return (uint32_t)((timePoint.time_since_epoch().count()+500)/1000*8);
+    }
+    else {
+        return (uint32_t)((micro_time_now+500)/1000*8);
+    }
 }
 
