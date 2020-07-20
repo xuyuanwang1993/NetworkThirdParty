@@ -8,7 +8,8 @@ HEADERS += \
     ../../../events_handler/pipe.h \
     ../../../events_handler/network_util.h \
     ../../../events_handler/io_channel.h \
-    ../../../events_handler/event_loop.h
+    ../../../events_handler/event_loop.h \
+    ../upnpmapper_mode.h
 SOURCES += \
     ../upnpmapper.cpp \
     ../../../LOG/c_log.cpp \
@@ -19,7 +20,8 @@ SOURCES += \
     ../../../events_handler/pipe.cpp \
     ../../../events_handler/network_util.cpp \
     ../../../events_handler/event_loop.cpp \
-    main.cpp
+    main.cpp \
+    ../upnpmapper_mode.cpp
 INCLUDEPATH += ../ \
 ../../../LOG \
 ../../../events_handler \

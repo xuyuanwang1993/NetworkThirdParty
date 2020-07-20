@@ -420,7 +420,7 @@ void DummySink::afterGettingFrame(void* clientData, unsigned frameSize, unsigned
 }
 
 // If you don't want to see debugging output for each received frame, then comment out the following line:
-#define DEBUG_PRINT_EACH_RECEIVED_FRAME 0
+#define DEBUG_PRINT_EACH_RECEIVED_FRAME 1
 
 void DummySink::afterGettingFrame(unsigned frameSize, unsigned numTruncatedBytes,
                                   struct timeval presentationTime, unsigned /*durationInMicroseconds*/) {
@@ -446,10 +446,11 @@ void DummySink::afterGettingFrame(unsigned frameSize, unsigned numTruncatedBytes
     }
     if(m_set_up&&frameSize>0)
     {
+
         Api_rtsp_server::Api_Rtsp_Push_Frame(g_handle,m_session_id,fReceiveBuffer,frameSize,0,presentationTime.tv_sec*1000*1000+presentationTime.tv_usec);
     }
     // We've just received a frame of data.  (Optionally) print out information about it:
-    //printf("%02x \r\n ",fReceiveBuffer[0]);
+    printf("%02x \r\n ",fReceiveBuffer[0]);
 #if DEBUG_PRINT_EACH_RECEIVED_FRAME
     if (fStreamId != NULL) envir() << "Stream \"" << fStreamId << "\"; ";
     envir() << fSubsession.mediumName() << "/" << fSubsession.codecName() << ":\tReceived " << frameSize << " bytes";

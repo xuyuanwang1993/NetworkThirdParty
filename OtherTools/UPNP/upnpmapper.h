@@ -22,7 +22,7 @@ class Upnp_Connection{
     friend class UpnpMapper;
 public:
     Upnp_Connection()=delete;
-    Upnp_Connection(UpnpMapper * server,EventLoop *taskScheduler, int sockfd,UPNP_COMMAND mode);
+    Upnp_Connection(UpnpMapper * server,EventLoop *loop, int sockfd,UPNP_COMMAND mode);
     ~Upnp_Connection();
     void start_work();
     void stop_work();

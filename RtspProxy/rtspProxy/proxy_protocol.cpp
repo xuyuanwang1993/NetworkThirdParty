@@ -372,7 +372,7 @@ bool ProxyInterface::graded_tcp_handle_packet(shared_ptr<ProxyFrame> frame)
     header.stream_token=m_stream_token;
     header.media_channel=frame->media_channel;
     header.fragment_count=(frame->data_len+P_FRAME_OFFSET)/PROXY_FRAGMENT_SIZE;
-    if(header.frame_type==FLUSH_FRAME){
+    if(header.frame_type==FLUSH_FRAME||header.frame_type==KEY_FRAME){
 #ifdef DELAY_SEND_CACHE
         //刷新帧，清空缓存
 #ifdef DEBUG
@@ -456,7 +456,7 @@ bool ProxyInterface::graded_hybrid_handle_packet(shared_ptr<ProxyFrame> frame)
     header.stream_token=m_stream_token;
     header.media_channel=frame->media_channel;
     header.fragment_count=(frame->data_len+P_FRAME_OFFSET)/PROXY_FRAGMENT_SIZE;
-    if(header.frame_type==FLUSH_FRAME){
+    if(header.frame_type==FLUSH_FRAME||header.frame_type==KEY_FRAME){
 #ifdef DELAY_SEND_CACHE
         //刷新帧，清空缓存
 #ifdef DEBUG
@@ -504,12 +504,7 @@ bool ProxyInterface::graded_hybrid_handle_packet(shared_ptr<ProxyFrame> frame)
                 encode_proxy_header(header,send_buf.get());
                 memcpy(send_buf.get()+P_HEADER_SIZE,frame->data_buf.get()+header.fragment_seq*PROXY_FRAGMENT_SIZE,header.data_len);
                 if(locker.owns_lock())locker.unlock();
-                if(header.frame_type==NORMAL_FRAME){
-                    if(!m_udp_callback(send_buf.get(),P_HEADER_SIZE+header.data_len))return false;
-                }
-                else {
-                    if(!m_tcp_callback(send_buf.get(),P_HEADER_SIZE+header.data_len))return false;
-                }
+                if(!m_udp_callback(send_buf.get(),P_HEADER_SIZE+header.data_len))return false;
                 if(!locker.owns_lock())locker.lock();
             }
         }

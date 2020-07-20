@@ -15,7 +15,7 @@ class tcp_connection_helper{
 public:
     static tcp_connection_helper *CreateNew(EventLoop *loop);
     void OpenConnection(string ip,uint16_t port,CONNECTION_CALLBACK callback,uint32_t time_out_ms=30);
-    ~tcp_connection_helper();
+    ~tcp_connection_helper(){}
     EventLoop *get_loop()const{return m_loop;}
 private:
     tcp_connection_helper(EventLoop *loop=nullptr):m_loop(loop){}
