@@ -22,7 +22,13 @@ SOURCES += \
     ../../../events_handler/event_loop.cpp \
     main.cpp \
     ../upnpmapper_mode.cpp
+ MOC_DIR +=.moc
+RCC_DIR +=.rcc
+OBJECTS_DIR +=.obj
+LIBS += -lpthread
+CONFIG-=qt
 INCLUDEPATH += ../ \
 ../../../LOG \
 ../../../events_handler \
+
 QMAKE_CXXFLAGS+= '-DDEBUG'

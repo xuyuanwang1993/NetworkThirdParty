@@ -7,6 +7,7 @@
 #include <vector>
 #include <mutex>
 #include"event_loop.h"
+#define UPNP_LOG_ON  0
 namespace micagent {
 using namespace std;
 using UPNPCALLBACK=std::function<void(bool)>;

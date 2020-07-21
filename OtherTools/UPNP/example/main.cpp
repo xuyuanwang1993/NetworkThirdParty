@@ -1,6 +1,8 @@
 ﻿#include "upnpmapper.h"
 #include <iostream>
 #include<queue>
+#include "upnpmapper_mode.h"
+#include"c_log.h"
 using namespace std;
 using namespace micagent;
 void print_help(){
@@ -28,7 +30,7 @@ queue<string>spilt_by_space(const string&buf){
     }
     return ret;
 }
-int main(int argc,char *argv[])
+int main2(int argc,char *argv[])
 {
     if(argc<2)exit(-1);
     EventLoop eventloop(0,1);
@@ -115,5 +117,21 @@ int main(int argc,char *argv[])
         }
     }
     eventloop.stop();
+    return 0;
+}
+int main(int argc,char *argv[])
+{
+    if(argc<2)return 0;
+    string lgd_ip=argv[1];
+    EventLoop eventloop(0,1);
+    Logger::Instance().set_log_to_std(true);
+    Logger::Instance().set_minimum_log_level(LOG_DEBUG);
+    Logger::Instance().register_handle();
+    upnp_helper::Instance().config(&eventloop,true,lgd_ip);
+    upnp_helper::Instance().add_port_task(TCP,8554,58554,"rtsp");
+    upnp_helper::Instance().add_port_task(TCP,1935,51935,"rtmp");
+    upnp_helper::Instance().add_port_task(UDP,10000,51000,"dns_mode");
+    while(getchar()!='8')continue;
+    Logger::Instance().unregister_handle();
     return 0;
 }

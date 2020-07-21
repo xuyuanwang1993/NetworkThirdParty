@@ -3,6 +3,7 @@
 using  namespace micagent;
 using  std::cout;
 using  std::endl;
+
 Upnp_Connection::Upnp_Connection(UpnpMapper * server,EventLoop *loop, int sockfd,UPNP_COMMAND mode)
     :m_channel(new Channel(sockfd)),m_upnp_mapper(server),m_event_loop(loop),m_mode(mode)
 {
@@ -13,7 +14,9 @@ Upnp_Connection::Upnp_Connection(UpnpMapper * server,EventLoop *loop, int sockfd
     m_channel->setCloseCallback([this](Channel *chn){
         m_event_loop->removeChannel(chn->fd());
         m_upnp_mapper->removeConnection(chn->fd());
+#if UPNP_LOG_ON
         cout<<"close Upnp_Connection : "<<chn->fd()<<endl;
+#endif
         return true;
     });
     m_channel->enableReading();
@@ -78,15 +81,19 @@ bool Upnp_Connection::onRead()
         }
         memset(buf.get(),0,4096);
     }
+#if UPNP_LOG_ON
     cout<<m_buf<<endl;
+#endif
     if(check_packet())HandleData();
     return ret;
 }
 bool Upnp_Connection::check_packet()
 {
+#if UPNP_LOG_ON
     cout<<"############"<<endl;
     cout<<m_buf<<endl;
     cout<<"****************"<<endl;
+#endif
     string key_body="\r\n\r\n";
     string key_length="Content-Length";
     bool ret=false;
@@ -150,7 +157,7 @@ void Upnp_Connection::send_get_control_url()
 {
     string request="GET ";
     request=request+m_upnp_mapper->m_location_src+" HTTP/1.1\r\n";
-     request=request+"Host: "+m_upnp_mapper->m_lgd_ip+":"+std::to_string(m_upnp_mapper->m_lgd_port)+"\r\n";
+    request=request+"Host: "+m_upnp_mapper->m_lgd_ip+":"+std::to_string(m_upnp_mapper->m_lgd_port)+"\r\n";
     request=request+"User-Agent: micagent_upnp_tool\r\n";
     request=request+"Accept: application/xml\r\n";
     request=request+"Connection: keep-alive\r\n";
@@ -165,28 +172,38 @@ void Upnp_Connection::handle_get_wanip()
     do{
         if(sscanf(m_buf.c_str(),"%*s %s %[^\r\n]",status,info)!=2)
         {
+#if UPNP_LOG_ON
             cout<<"false http response! : "<<m_buf<<endl;
+#endif
             break;
         }
         if(strcmp(status,"200")!=0)
         {
+#if UPNP_LOG_ON
             cout<<"can't found externalIPAddress! errorcode :"<<status<<" info:"<<info<<endl;
+#endif
             break;
         }
         string key="NewExternalIPAddress";
         auto pos=m_buf.find(key);
         if(pos==string::npos)
         {
+#if UPNP_LOG_ON
             cout<<"false http response! : "<<m_buf<<endl;
+#endif
             break;
         }
         char externalIP[32]={0};
         if(sscanf(m_buf.c_str()+pos,"%*[^>]>%[^<]",externalIP)!=1)
         {
+#if UPNP_LOG_ON
             cout<<"false http response! : "<<m_buf<<endl;
+#endif
             break;
         }
+#if UPNP_LOG_ON
         cout<<"NewExternalIPAddress : "<<externalIP<<endl;
+#endif
         this->m_upnp_mapper->m_wan_ip=externalIP;
         if(this->m_callback)m_callback(true);
     }while(0);
@@ -200,15 +217,21 @@ void Upnp_Connection::handle_add_port_mapper()
     do{
         if(sscanf(m_buf.c_str(),"%*s %s %[^\r\n]",status,info)!=2)
         {
+#if UPNP_LOG_ON
             cout<<"false http response! : "<<m_buf<<endl;
+#endif
             break;
         }
         if(strcmp(status,"200")!=0)
         {
+#if UPNP_LOG_ON
             cout<<"can't addportmapping! errorcode :"<<status<<" info:"<<info<<endl;
+#endif
             break;
         }
+#if UPNP_LOG_ON
         cout<<"add port mapping success!"<<endl;
+#endif
         b_success=true;
     }while(0);
     if(m_callback)m_callback(b_success);
@@ -222,37 +245,47 @@ void Upnp_Connection::handle_get_specific_port_mapping_entry()
     do{
         if(sscanf(m_buf.c_str(),"%*s %s %[^\r\n]",status,info)!=2)
         {
+#if UPNP_LOG_ON
             cout<<"false http response! : "<<m_buf<<endl;
+#endif
             break;
         }
         if(strcmp(status,"200")!=0)
         {
+#if UPNP_LOG_ON
             cout<<"can't get port mapping entry! errorcode :"<<status<<" info:"<<info<<endl;
+#endif
             break;
         }
         string key="NewInternalClient";
         auto pos=m_buf.find(key);
         if(pos==string::npos)
         {
+#if UPNP_LOG_ON
             cout<<"false http response! : "<<m_buf<<endl;
+#endif
             break;
         }
         char internalIP[32]={0};
         if(sscanf(m_buf.c_str()+pos,"%*[^>]>%[^<]",internalIP)!=1)
         {
+#if UPNP_LOG_ON
             cout<<"false http response! : "<<m_buf<<endl;
+#endif
             break;
         }
         auto interface_info=Network_Util::Instance().get_net_interface_info(false);
         bool find=false;
         for(auto i:interface_info){
             if(i.ip==internalIP){
-            find=true;
-            break;
+                find=true;
+                break;
             }
         }
         if(!find)break;
+#if UPNP_LOG_ON
         cout<<"get port mapping entry success!"<<endl;
+#endif
         b_success=true;
     }while(0);
     if(m_callback)m_callback(b_success);
@@ -266,27 +299,37 @@ void Upnp_Connection:: handle_delete_port_mapper()
     do{
         if(sscanf(m_buf.c_str(),"%*s %s %[^\r\n]",status,info)!=2)
         {
+#if UPNP_LOG_ON
             cout<<"false http response! : "<<m_buf<<endl;
+#endif
             break;
         }
         char errorinfo[128]="OK";
         if(strcmp(status,"200")!=0)
         {
+#if UPNP_LOG_ON
             cout<<"can't deleteportmapping! errorcode :"<<status<<" info:"<<info<<endl;
+#endif
             string key="errorDescription";
             auto pos=m_buf.find(key);
             if(pos==string::npos)
             {
+#if UPNP_LOG_ON
                 cout<<"false http response! : "<<m_buf<<endl;
+#endif
                 break;
             }
             if(sscanf(m_buf.c_str()+pos,"%*[^>]>%[^<]",errorinfo)!=1)
             {
+#if UPNP_LOG_ON
                 cout<<"false http response! : "<<m_buf<<endl;
+#endif
                 break;
             }
         }
+#if UPNP_LOG_ON
         cout<<"delete port mapping success!"<<"(error info :"<<errorinfo<<")"<<endl;
+#endif
         b_success=true;
     }while(0);
     if(m_callback)m_callback(b_success);
@@ -318,8 +361,10 @@ void Upnp_Connection::handle_get_control_url()
         }
         else {
             //not match
+#if UPNP_LOG_ON
             cout<<endl<<tmp<<endl;
             cout<<"not match"<<endl;
+#endif
             start_pos=pos2+key_string2.length();
             continue;
         }
@@ -328,11 +373,15 @@ void Upnp_Connection::handle_get_control_url()
         char t_control_url[256]={0};
         if(sscanf(tmp.c_str()+pos3,"%*[^>]>%[^<]",t_control_url)!=1)
         {
+#if UPNP_LOG_ON
             cout<<"false xml file : "<<tmp.c_str()+pos3<<endl;
+#endif
             break;
         }
         this->m_upnp_mapper->m_control_url=t_control_url;
+#if UPNP_LOG_ON
         cout<<"control url :"<<this->m_upnp_mapper->m_control_url<<endl;
+#endif
         this->m_upnp_mapper->m_init_ok=true;
         this->reset_mode(UPNP_GETEXTERNALIPADDRESS);
         this->send_get_wanip();
@@ -383,15 +432,19 @@ void UpnpMapper::Init(EventLoop *event_loop,string lgd_ip)
             if(m_lgd_ip==inet_ntoa(addr.sin_addr))
             {
                 this->m_event_loop->removeChannel(this->m_udp_channel);
+#if UPNP_LOG_ON
                 cout<<"find upnp device!"<<endl;
                 cout<<buf<<endl;
+#endif
                 string tmp=buf;
                 int match_pos=tmp.find("LOCATION",0);
                 if(match_pos==string::npos)match_pos=tmp.find("location",0);
                 do{
                     if(match_pos==string::npos)
                     {
+#if UPNP_LOG_ON
                         cout<<"can't find location url!"<<endl;
+#endif
                         break;
                     }
                     char igd_port[32]={0};
@@ -403,10 +456,14 @@ void UpnpMapper::Init(EventLoop *event_loop,string lgd_ip)
                     t.detach();
                     return true;
                 }while(0);
+#if UPNP_LOG_ON
                 cout<<"false upnp device!"<<endl;
+#endif
             }
             else {
+#if UPNP_LOG_ON
                 cout<<"recvfrom  ip:"<<inet_ntoa(addr.sin_addr)<<" port : "<<ntohs(addr.sin_port)<<endl<<buf<<endl;
+#endif
             }
         }
         return true;
@@ -421,7 +478,9 @@ void UpnpMapper::Init(EventLoop *event_loop,string lgd_ip)
             return false;
         }
         send_discover_packet();
+#if UPNP_LOG_ON
         cout<<"no upnp suppot!"<<endl;
+#endif
         return true;
     },MAX_WAIT_TIME*2);
 }
@@ -445,7 +504,7 @@ void UpnpMapper::Api_deleteportMapper(SOCKET_TYPE type,int external_port,UPNPCAL
 }
 void UpnpMapper::Api_GetNewexternalIP(UPNPCALLBACK callback)
 {
-if(!m_init_ok||m_control_url==string())return;
+    if(!m_init_ok||m_control_url==string())return;
     std::thread t(std::bind(&UpnpMapper::get_wanip,this,callback));
     t.detach();
 }
@@ -474,7 +533,9 @@ void UpnpMapper::addTimeoutEvent(SOCKET sockfd)
 void UpnpMapper::send_discover_packet()
 {
     if(!m_udp_channel||m_init_ok)return;
+#if UPNP_LOG_ON
     cout<<"send_discover_packet"<<endl;
+#endif
     struct sockaddr_in addr = {0};
     addr.sin_family=AF_INET;
     addr.sin_addr.s_addr=inet_addr("239.255.255.250");
@@ -520,11 +581,15 @@ void UpnpMapper::get_control_url()
     SOCKET fd=Network_Util::Instance().build_socket(TCP);
     if(fd<=0)
     {
+#if UPNP_LOG_ON
         cout<<"failed to create socket!"<<endl;
+#endif
         return;
     }
     if(!Network_Util::Instance().connect(fd,m_lgd_ip,m_lgd_port,MAX_WAIT_TIME)){
+#if UPNP_LOG_ON
         cout<<"failed to connect to the device!"<<endl;
+#endif
         Network_Util::Instance().close_socket(fd);
         return;
     }
@@ -542,15 +607,19 @@ void UpnpMapper::get_wanip(UPNPCALLBACK callback)
     SOCKET fd=Network_Util::Instance().build_socket(TCP);
     if(fd<=0)
     {
+#if UPNP_LOG_ON
         cout<<"failed to create socket!"<<endl;
+#endif
         return;
     }
     if(!Network_Util::Instance().connect(fd,m_lgd_ip,m_lgd_port,MAX_WAIT_TIME)){
+#if UPNP_LOG_ON
         cout<<"failed to connect to the device!"<<endl;
+#endif
         Network_Util::Instance().close_socket(fd);
         return;
     }
-    auto conn=newConnection(fd,UPNP_GETCONTROLURL);
+    auto conn=newConnection(fd,UPNP_GETEXTERNALIPADDRESS);
     if(conn)
     {
         conn->start_work();
@@ -564,15 +633,19 @@ void UpnpMapper::add_port_mapper(SOCKET_TYPE type,string internal_ip,int interna
     SOCKET fd=Network_Util::Instance().build_socket(TCP);
     if(fd<=0)
     {
+#if UPNP_LOG_ON
         cout<<"failed to create socket!"<<endl;
+#endif
         return;
     }
     if(!Network_Util::Instance().connect(fd,m_lgd_ip,m_lgd_port,MAX_WAIT_TIME)){
+#if UPNP_LOG_ON
         cout<<"failed to connect to the device!"<<endl;
+#endif
         Network_Util::Instance().close_socket(fd);
         return;
     }
-    auto conn=newConnection(fd,UPNP_GETCONTROLURL);
+    auto conn=newConnection(fd,UPNP_ADDPORTMAPPING);
     if(conn)
     {
         conn->start_work();
@@ -586,15 +659,19 @@ void UpnpMapper::get_specific_port_mapping_entry(SOCKET_TYPE type,int external_p
     SOCKET fd=Network_Util::Instance().build_socket(TCP);
     if(fd<=0)
     {
+#if UPNP_LOG_ON
         cout<<"failed to create socket!"<<endl;
+#endif
         return;
     }
     if(!Network_Util::Instance().connect(fd,m_lgd_ip,m_lgd_port,MAX_WAIT_TIME)){
+#if UPNP_LOG_ON
         cout<<"failed to connect to the device!"<<endl;
+#endif
         Network_Util::Instance().close_socket(fd);
         return;
     }
-    auto conn=newConnection(fd,UPNP_GETCONTROLURL);
+    auto conn=newConnection(fd,UPNP_GETSPECIFICPORTMAPPINGENTRY);
     if(conn)
     {
         conn->start_work();
@@ -608,15 +685,19 @@ void UpnpMapper::delete_port_mapper(SOCKET_TYPE type,int external_port,UPNPCALLB
     SOCKET fd=Network_Util::Instance().build_socket(TCP);
     if(fd<=0)
     {
+#if UPNP_LOG_ON
         cout<<"failed to create socket!"<<endl;
+#endif
         return;
     }
     if(!Network_Util::Instance().connect(fd,m_lgd_ip,m_lgd_port,MAX_WAIT_TIME)){
+#if UPNP_LOG_ON
         cout<<"failed to connect to the device!"<<endl;
+#endif
         Network_Util::Instance().close_socket(fd);
         return;
     }
-    auto conn=newConnection(fd,UPNP_GETCONTROLURL);
+    auto conn=newConnection(fd,UPNP_DELETEPORTMAPPING);
     if(conn)
     {
         conn->start_work();
