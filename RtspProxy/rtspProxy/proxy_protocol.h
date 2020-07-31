@@ -355,6 +355,7 @@ private:
             else{
                 if(seq_diff>=MAX_ORDER_CACHE_SIZE){
                     if(!iter->second->is_finished()){
+                        m_miss_packet=true;
                         //接收未完全的缓存
 #ifdef DEBUG
                         printf("******************cache recv  erase cache frames %u *****%lu**********\r\n",iter->second->frame_seq,iter->second->fragment_count-iter->second->m_fragment_seq_set.size());
@@ -369,13 +370,21 @@ private:
                         auto &cache= iter->second;
                         shared_ptr<ProxyFrame>frame(new ProxyFrame(cache->m_buf_chache.get(),cache->frame_len,cache->media_type,cache->frame_type,cache->media_channel,m_stream_token,cache->frame_seq,cache->timestamp));
                         m_recv_frame_chache.erase(iter++);
+                        if(frame->frame_type==FLUSH_FRAME)
+                        {
+                            m_miss_packet=false;
+                        }
+//                        if(m_miss_packet&&frame->frame_type==NORMAL_FRAME){
+//                            printf("miss packet %hu\r\n",frame->frame_seq);
+//                            continue;
+//                        }
                         locker.unlock();
                         if(m_recv_callback)m_recv_callback(frame);
                         locker.lock();
                     }
                 }
                 else {
-                    //缓存MAX_ORDER_CACHE_SIZE数目的帧
+                    //缓存MAX_ORDER_CACHE_SIZE数目的帧ss
                     break;
                 }
             }
@@ -433,6 +442,7 @@ private:
     map<uint16_t,shared_ptr<ProxyFrameCache>>m_recv_frame_chache;
     //最近一次接收的完整帧的帧序号
     uint16_t m_min_recv_frame_seq;
+    bool m_miss_packet;
 };
 }
 #endif // PROXY_PROTOCOL_H

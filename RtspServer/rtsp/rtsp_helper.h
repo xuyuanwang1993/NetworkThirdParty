@@ -1,6 +1,7 @@
 ﻿#ifndef RTSP_HELPER_H
 #define RTSP_HELPER_H
 #include <map>
+#include<string>
 #define REALM_INFO "micagent@meanning_cloud"
 namespace micagent {
 using namespace std;

@@ -14,7 +14,7 @@
 #include <Windows.h>
 #include<io.h>
 #endif
-
+#define DEBUG
 using namespace micagent;
 constexpr static char log_strings[][20]={
     "DEBUG",

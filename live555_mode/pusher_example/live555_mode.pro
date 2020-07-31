@@ -1,5 +1,12 @@
 HEADERS += \
-    ../../LOG/c_log.h \
+    live555_client.h \
+    live555_common.h \
+    ../../network_helper/tcp_server.h \
+    ../../network_helper/tcp_connection_helper.h \
+    ../../network_helper/tcp_connection.h \
+    ../../network_helper/http_response.h \
+    ../../network_helper/http_request.h \
+    ../../network_helper/buffer_handle.h \
     ../../events_handler/trigger_event.h \
     ../../events_handler/timer_queue.h \
     ../../events_handler/thread_pool.h \
@@ -8,11 +15,9 @@ HEADERS += \
     ../../events_handler/network_util.h \
     ../../events_handler/io_channel.h \
     ../../events_handler/event_loop.h \
-    ../../network_helper/tcp_server.h \
-    ../../network_helper/tcp_connection.h \
-    ../../network_helper/buffer_handle.h \
     ../../OtherTools/MD5/MD5.h \
-    ../rtspProxy/proxy_protocol.h \
+    ../../RtspProxy/rtspProxy/proxy_protocol.h \
+    ../../RtspProxy/proxyClient/rtsp_pusher.h \
     ../../RtspServer/rtsp/rtsp_server.h \
     ../../RtspServer/rtsp/rtsp_message.h \
     ../../RtspServer/rtsp/rtsp_helper.h \
@@ -26,26 +31,34 @@ HEADERS += \
     ../../RtspServer/rtsp/h264_source.h \
     ../../RtspServer/rtsp/g711a_source.h \
     ../../RtspServer/rtsp/aac_source.h \
-    ../proxyServer/proxybufhandle.h \
-    ../proxyClient/rtsp_pusher.h \
-    ../proxyServer/proxy_server.h \
-    ../proxyServer/proxy_connection.h \
     ../../json_config/CJsonObject.hpp \
     ../../json_config/cJSON.h \
-    ../../network_helper/tcp_connection_helper.h \
-    ../../RtspServer/example/file_reader.h \
-    h264parsesps.h \
-    ../../OtherTools/DelayControl/delay_control.h \
-    ../../OtherTools/UPNP/upnpmapper_mode.h \
-    ../../OtherTools/UPNP/upnpmapper.h
+    ../../LOG/c_log.h \
+    ../../RtspProxy/proxyServer/proxy_server.h \
+    ../../RtspProxy/proxyServer/proxy_connection.h \
+    ../../RtspProxy/proxyServer/proxybufhandle.h
 
-LIBS+= -lpthread
+MOC_DIR +=.moc
+RCC_DIR +=.rcc
+OBJECTS_DIR +=.obj
 
-QMAKE_CXXFLAGS +=
+LIBS+= /usr/local/lib/libliveMedia.a \
+/usr/local/lib/libgroupsock.a \
+/usr/local/lib/libBasicUsageEnvironment.a \
+/usr/local/lib/libUsageEnvironment.a \
+-lpthread \
 
+QMAKE_CXXFLAGS += -g -O2 -DSOCKLEN_T=socklen_t -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64
+QMAKE_LFLAGS +=
 SOURCES += \
     main.cpp \
-    ../../LOG/c_log.cpp \
+    live555_client.cpp \
+    ../../network_helper/tcp_server.cpp \
+    ../../network_helper/tcp_connection_helper.cpp \
+    ../../network_helper/tcp_connection.cpp \
+    ../../network_helper/http_response.cpp \
+    ../../network_helper/http_request.cpp \
+    ../../network_helper/buffer_handle.cpp \
     ../../events_handler/trigger_event.cpp \
     ../../events_handler/timer_queue.cpp \
     ../../events_handler/thread_pool.cpp \
@@ -53,11 +66,9 @@ SOURCES += \
     ../../events_handler/pipe.cpp \
     ../../events_handler/network_util.cpp \
     ../../events_handler/event_loop.cpp \
-    ../../network_helper/tcp_server.cpp \
-    ../../network_helper/tcp_connection.cpp \
-    ../../network_helper/buffer_handle.cpp \
     ../../OtherTools/MD5/MD5.cpp \
-    ../rtspProxy/proxy_protocol.cpp \
+    ../../RtspProxy/rtspProxy/proxy_protocol.cpp \
+    ../../RtspProxy/proxyClient/rtsp_pusher.cpp \
     ../../RtspServer/rtsp/rtsp_server.cpp \
     ../../RtspServer/rtsp/rtsp_message.cpp \
     ../../RtspServer/rtsp/rtsp_helper.cpp \
@@ -69,35 +80,30 @@ SOURCES += \
     ../../RtspServer/rtsp/h264_source.cpp \
     ../../RtspServer/rtsp/g711a_source.cpp \
     ../../RtspServer/rtsp/aac_source.cpp \
-    ../proxyServer/proxybufhandle.cpp \
-    ../proxyClient/rtsp_pusher.cpp \
-    ../proxyServer/proxy_server.cpp \
-    ../proxyServer/proxy_connection.cpp \
     ../../json_config/CJsonObject.cpp \
     ../../json_config/cJSON.c \
-    ../../network_helper/tcp_connection_helper.cpp \
-    ../../RtspServer/example/file_reader.cpp \
-    H264ParseSPS.c \
-    ../../OtherTools/DelayControl/delay_control.cpp \
-    ../../OtherTools/UPNP/upnpmapper_mode.cpp \
-    ../../OtherTools/UPNP/upnpmapper.cpp
+    ../../LOG/c_log.cpp \
+    ../../RtspProxy/proxyServer/proxy_server.cpp \
+    ../../RtspProxy/proxyServer/proxy_connection.cpp \
+    ../../RtspProxy/proxyServer/proxybufhandle.cpp
 
-INCLUDEPATH += ..\
-../../LOG \
+INCLUDEPATH += . \
+.. \
+/usr/local/include/liveMedia \
+/usr/local/include/BasicUsageEnvironment \
+/usr/local/include/UsageEnvironment \
+/usr/local/include/groupsock \
+/usr/local/include/openssl \
+../../network_helper \
 ../../events_handler \
-../../network_helper/ \
-../../OtherTools/MD5/ \
-../rtspProxy/ \
-../../RtspServer/rtsp/ \
-../proxyServer/ \
-../proxyClient/ \
-../../json_config/ \
-../../RtspServer/example/ \
-../../OtherTools/DelayControl \
-../../OtherTools/UPNP/ \
+../../OtherTools/MD5 \
+../../RtspProxy/rtspProxy \
+../../RtspProxy/proxyClient \
+../../RtspServer/rtsp \
+../../json_config \
+../../LOG \
+../../RtspProxy/proxyServer \
 
 CONFIG-=qt
- MOC_DIR +=.moc
-RCC_DIR +=.rcc
-OBJECTS_DIR +=.obj
+
 QMAKE_CXXFLAGS+= '-DDEBUG'

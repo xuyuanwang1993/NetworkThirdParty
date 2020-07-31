@@ -35,7 +35,7 @@ void tcp_connection_helper::OpenConnection(string ip,uint16_t port,CONNECTION_CA
             }
             m_loop->removeChannel(chn->fd());
             if(callback)callback(status,chn->fd());
-            return true;
+            return false;
         });
         channel->enableReading();
         channel->setReadCallback([this,callback,timer_id](Channel  *chn){
@@ -45,7 +45,7 @@ void tcp_connection_helper::OpenConnection(string ip,uint16_t port,CONNECTION_CA
             CONNECTION_STATUS status=CONNECTION_FAILED;
             m_loop->removeChannel(chn->fd());
             if(callback)callback(status,chn->fd());
-            return true;
+            return false;
         });
         m_loop->updateChannel(channel);
         return;

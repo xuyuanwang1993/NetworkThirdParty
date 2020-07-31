@@ -123,12 +123,16 @@ bool aac_source::handleFrame(MediaChannelId channelId, AVFrame frame)
 
 uint32_t aac_source::getTimeStamp(int64_t micro_time_now)
 {
-    if(micro_time_now==0)
+    if(m_last_micro_recv_time==0||micro_time_now==0)
     {
         auto timePoint = chrono::time_point_cast<chrono::microseconds>(chrono::steady_clock::now());
-        return (uint32_t)((timePoint.time_since_epoch().count()+500) / 1000 * m_sampleRate / 1000);
+        m_last_micro_send_time=timePoint.time_since_epoch().count();
+        m_last_micro_recv_time=micro_time_now;
+        return (uint32_t)((m_last_micro_send_time+ 500) / 1000 * m_sampleRate / 1000);
     }
     else {
-        return (uint32_t)((micro_time_now+500) / 1000 * m_sampleRate / 1000);
+        m_last_micro_send_time+=(micro_time_now-m_last_micro_recv_time);
+        m_last_micro_recv_time=micro_time_now;
+        return (uint32_t)((m_last_micro_send_time + 500) / 1000 * m_sampleRate / 1000);
     }
 }

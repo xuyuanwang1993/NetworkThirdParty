@@ -14,7 +14,7 @@ rtsp_pusher::rtsp_pusher(tcp_connection_helper *helper,PTransMode mode,const str
     {
         m_udp_fd=NETWORK.build_socket(UDP);
     }
-    m_proxy_interface.reset(new ProxyInterface(0,RAW_TCP,[this](const void *buf,uint32_t buf_len){
+    m_proxy_interface.reset(new ProxyInterface(INVALID_MediaSessionId,RAW_TCP,[this](const void *buf,uint32_t buf_len){
         //TCP协议包发送处理
         return this->send_message(static_cast<const char *>(buf),buf_len);},[this](const void *buf,uint32_t buf_len){
         //UDP数据包发送处理
@@ -102,6 +102,7 @@ void rtsp_pusher::reset_connection()
                 strong->handle_connect(status,fd);
             }
             else {
+                MICAGENT_LOG(LOG_INFO,"puhser released!");
                 if(status==CONNECTION_SUCCESS){
                     if(fd!=INVALID_SOCKET)NETWORK.close_socket(fd);
                 }
@@ -117,7 +118,7 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
     else if(status==CONNECTION_SUCCESS){
         //连接成功后的处理
         lock_guard<mutex>locker(m_mutex);
-        if(m_is_closed){
+        if(m_is_closed||m_tcp_channel){
             NETWORK.close_socket(fd);
             return ;
         }
@@ -134,7 +135,7 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
             if(!strong->m_proxy_interface)return false;
             auto ret=strong->m_recv_buf->read_fd(chn->fd());
             if(ret==0){
-                MICAGENT_LOG(LOG_INFO,"%s %d",strerror(errno),errno);
+                MICAGENT_LOG(LOG_INFO,"%s %d  fd(%d)",strerror(errno),errno,chn->fd());
                 return false;
             }
             if(ret>0){
@@ -187,6 +188,15 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
         m_tcp_channel->enableReading();
         auto loop=m_connection_helper->get_loop();
         if(loop){
+            m_proxy_interface.reset(new ProxyInterface(INVALID_MediaSessionId,RAW_TCP,[this](const void *buf,uint32_t buf_len){
+                //TCP协议包发送处理
+                return this->send_message(static_cast<const char *>(buf),buf_len);},[this](const void *buf,uint32_t buf_len){
+                //UDP数据包发送处理
+                if(m_udp_fd==INVALID_SOCKET)return false;
+                return NETWORK.time_out_sendto(m_udp_fd,buf,buf_len,0,(struct sockaddr *)&m_des_addr,sizeof(struct sockaddr_in),1)==buf_len;
+            },[this](shared_ptr<ProxyFrame>frame){
+                                        return this->handle_proxy_request(frame);
+                                    }));
             loop->updateChannel(m_tcp_channel);
             send_get_authorized_info();
         }
@@ -196,7 +206,8 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
         weak_ptr<rtsp_pusher>weak_this(shared_from_this());
         auto loop=m_connection_helper->get_loop();
         if(!loop)throw runtime_error("event loop was quit!");
-        MICAGENT_LOG(LOG_WARNNING,"connect %s  %hu  error for %s!  wait %u ms!",m_des_ip.c_str(),m_des_port,strerror(errno),m_last_time_out);
+        MICAGENT_LOG(LOG_DEBUG,"%d connect %s  %hu  error for %s!  wait %u ms!",fd,m_des_ip.c_str(),m_des_port,strerror(errno),m_last_time_out);
+        if(fd!=INVALID_SOCKET)NETWORK.close_socket(fd);
         loop->addTimer([weak_this](){
             auto strong=weak_this.lock();
             if(strong){

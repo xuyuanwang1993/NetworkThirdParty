@@ -45,8 +45,8 @@ public:
         }
     }Rtsp_Handle;
     //添加鉴权信息，可添加多个账户 默认账户密码admin@micagent
-    static bool Api_Rtsp_Server_AddAuthorization(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,std::string username,std::string password);
-    static void  Api_Rtsp_Server_Init_And_Start(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint16_t port=554);
+    static bool Api_Rtsp_Server_AddAuthorization(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,std::string username,std::string password);
+    static void  Api_Rtsp_Server_Init_And_Start(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint16_t port=554);
     //返回为0代表创建失败
     struct Media_Info{
         MediaType viedo_type;
@@ -65,8 +65,8 @@ public:
         }
     };
 //此函数的返回值为取消会话和数据传输所需传入的sessionid
-    static uint32_t Api_Rtsp_Server_Add_Stream(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,std::string stream_name,Media_Info media_info);
-    static void Api_Rtsp_Server_Remove_Stream(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id);
+    static uint32_t Api_Rtsp_Server_Add_Stream(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,std::string stream_name,Media_Info media_info);
+    static void Api_Rtsp_Server_Remove_Stream(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id);
  typedef  enum
     {
         UNKNOWN_FRAME=0x00,
@@ -75,8 +75,8 @@ public:
         VIDEO_FRAME_B = 0x03,
         AUDIO_FRAME   = 0x11,
     }Frame_type;
-    static bool Api_Rtsp_Push_Frame(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,const void *tmp_buf,int buf_size,int channel_id=0,int64_t micro_time_now=0);
-    static void Api_Rtsp_Add_Frame_Control(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,uint32_t frame_rate);
+    static bool Api_Rtsp_Push_Frame(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,const void *tmp_buf,int buf_size,int channel_id=0,int64_t micro_time_now=0);
+    static void Api_Rtsp_Add_Frame_Control(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,uint32_t frame_rate);
 private:
     Api_rtsp_server(){}
     ~Api_rtsp_server(){}

@@ -93,7 +93,7 @@ static inline void encode_proxy_header( ProxyHeader&header, char *buf){
 ProxyInterface::ProxyInterface(uint32_t token,PTransMode mode,POUTPUT_CALLBACK tcp_callback,POUTPUT_CALLBACK udp_callback,PFRAME_CALLBACK recv_callback)
     :m_stream_token(token),m_mode(mode),m_tcp_callback(tcp_callback),m_udp_callback(udp_callback),m_recv_callback(recv_callback)\
     ,m_last_send_frame_seq(P_INVALID_SEQ),m_last_confirmed_flush_frame_seq(P_INVALID_SEQ)\
-    ,m_min_recv_frame_seq(P_INVALID_SEQ){
+    ,m_min_recv_frame_seq(P_INVALID_SEQ),m_miss_packet(false){
 
 }
 bool ProxyInterface::send_frame(shared_ptr<ProxyFrame> frame)

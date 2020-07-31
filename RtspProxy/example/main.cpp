@@ -17,6 +17,8 @@
 #include "proxy_server.h"
 #include "h264parsesps.h"
 #include "delay_control.h"
+#include "upnpmapper_mode.h"
+
 using namespace std;
 using namespace micagent;
 using neb::CJsonObject;
@@ -26,6 +28,7 @@ int main(int argc,char *argv[]){
     //Logger::Instance().set_log_path("",to_string(argc));
     Logger::Instance().set_clear_flag(true);
     Logger::Instance().register_handle();
+    //Logger::Instance().set_minimum_log_level(LOG_WARNNING);
     shared_ptr<EventLoop> loop(new EventLoop());
     if(argc==6)
     {//client
@@ -76,9 +79,17 @@ int main(int argc,char *argv[]){
     t.join();
     }
     else {
-        shared_ptr<rtsp_server>server(new rtsp_server(58554));
+        uint16_t server_port=8555;
+        uint16_t rtsp_server_port=58554;
+        string lgd_ip="192.168.2.3";
+        if(argc==2)lgd_ip=argv[1];
+        upnp_helper::Instance().config(loop.get(),true,lgd_ip);
+        upnp_helper::Instance().add_port_task(TCP,rtsp_server_port,rtsp_server_port,"rtsp");
+        upnp_helper::Instance().add_port_task(TCP,server_port,server_port,"rtsp_proxy");
+        upnp_helper::Instance().add_port_task(UDP,server_port,server_port,"rtsp_proxy");
+        shared_ptr<rtsp_server>server(new rtsp_server(rtsp_server_port));
         server->register_handle(loop.get());
-        shared_ptr<proxy_server>pro_server(new proxy_server(8555));
+        shared_ptr<proxy_server>pro_server(new proxy_server(server_port));
         pro_server->set_rtsp_server(server);
         pro_server->register_handle(loop.get());
         while (getchar()!='8') continue;

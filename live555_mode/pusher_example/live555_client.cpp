@@ -3,8 +3,21 @@
 #include<exception>
 #include<cstdlib>
 #include<stdexcept>
+#include "tcp_server.h"
+#include <iostream>
+#include <arpa/inet.h>
+#include "MD5.h"
+#include "network_util.h"
+#include "proxy_protocol.h"
+#include "tcp_connection_helper.h"
+#include "CJsonObject.hpp"
+#include "rtsp_pusher.h"
+#include "rtsp_server.h"
+#include "aac_source.h"
+#include "g711a_source.h"
+#include"h264_source.h"
+#include "h265_source.h"
 using namespace std;
-shared_ptr<Api_rtsp_server::Rtsp_Handle> g_handle;
 // Forward function definitions:
 
 // RTSP 'response handlers':
@@ -33,7 +46,7 @@ UsageEnvironment& operator<<(UsageEnvironment& env, const MediaSubsession& subse
 }
 
 void usage(UsageEnvironment& env, char const* progName) {
-    env << "Usage: " << progName << " <rtsp-url-1> ... <rtsp-url-N>\n";
+    env << "Usage: " << progName << "<stream_prefix><server_ip> <rtsp-url-1> ... <rtsp-url-N>\n";
     env << "\t(where each <rtsp-url-i> is a \"rtsp://\" URL)\n";
 }
 
@@ -46,20 +59,34 @@ void delay_task(void *ptr)
     printf("%ld   %ld \r\n",time_now.tv_sec,time_now.tv_usec);
     env->taskScheduler().scheduleDelayedTask(40000,delay_task,ptr);
 }
+// stream_prefix server_ip url1  url2 ....
+static std::vector<shared_ptr<micagent::rtsp_pusher>>pusher_vec;
 int test_client(int argc, char** argv) {
+    shared_ptr<micagent::EventLoop> loop(new micagent::EventLoop());
+    auto helper=micagent::tcp_connection_helper::CreateNew(loop.get());
+
     // Begin by setting up our usage environment:
     TaskScheduler* scheduler = BasicTaskScheduler::createNew();
     UsageEnvironment* env = BasicUsageEnvironment::createNew(*scheduler);
 
     // We need at least one "rtsp://" URL argument:
-    if (argc < 2) {
+    if (argc < 4) {
         usage(*env, argv[0]);
         return 1;
     }
-
+    string stream_name_prefix=argv[1];
+    string server_ip=argv[2];
     // There are argc-1 URLs: argv[1] through argv[argc-1].  Open and start streaming each one:
-    for (int i = 1; i <= argc-1; ++i) {
-        ourRTSPClient::openURL(*env, argv[0], argv[i],i);
+    int index=0;
+    for (int i = 3; i <= argc-1; ++i) {
+    shared_ptr<micagent::rtsp_pusher>pusher( micagent::rtsp_pusher::CreateNew(helper,micagent::RAW_TCP,stream_name_prefix+"_"+to_string(index),\
+        server_ip,8555));
+        pusher_vec.push_back(pusher);
+        index++;
+    }
+     index=0;
+    for (int i = 3; i <= argc-1; ++i) {
+        ourRTSPClient::openURL(*env, argv[0], argv[i],index++);
     }
 
     // All subsequent activity takes place within the event loop:
@@ -379,12 +406,11 @@ StreamClientState::~StreamClientState() {
 
 // Even though we're not going to be doing anything with the incoming data, we still need to receive it.
 // Define the size of the buffer that we'll use:
-#define DUMMY_SINK_RECEIVE_BUFFER_SIZE 300000
+#define DUMMY_SINK_RECEIVE_BUFFER_SIZE 1000000
 
 DummySink* DummySink::createNew(UsageEnvironment& env, MediaSubsession& subsession, uint32_t stream_index,char const* streamId) {
     return new DummySink(env, subsession, stream_index,streamId);
 }
-
 
 DummySink::DummySink(UsageEnvironment& env, MediaSubsession& subsession, uint32_t stream_index, char const* streamId)
     : MediaSink(env),
@@ -410,7 +436,7 @@ DummySink::~DummySink() {
 #endif
     if(m_set_up)
     {
-        Api_rtsp_server::Api_Rtsp_Server_Remove_Stream(g_handle,m_session_id);
+        pusher_vec[m_stream_index]->close_connection();
     }
 }
 
@@ -421,7 +447,7 @@ void DummySink::afterGettingFrame(void* clientData, unsigned frameSize, unsigned
 }
 
 // If you don't want to see debugging output for each received frame, then comment out the following line:
-#define DEBUG_PRINT_EACH_RECEIVED_FRAME 1
+#define DEBUG_PRINT_EACH_RECEIVED_FRAME 0
 
 void DummySink::afterGettingFrame(unsigned frameSize, unsigned numTruncatedBytes,
                                   struct timeval presentationTime, unsigned /*durationInMicroseconds*/) {
@@ -435,20 +461,23 @@ void DummySink::afterGettingFrame(unsigned frameSize, unsigned numTruncatedBytes
 #endif
     if(!m_set_up)
     {
-        Api_rtsp_server::Media_Info media_info;
+        shared_ptr<micagent::media_session> session(micagent::media_session::CreateNew("test"));
         if(string(fSubsession.codecName() )=="H265"){
-            media_info.viedo_type=Api_rtsp_server::H265;
+            session->setMediaSource(micagent::channel_0,micagent::h265_source::createNew(25));
         }
         else {
-            media_info.viedo_type=Api_rtsp_server::H264;
+            session->setMediaSource(micagent::channel_0,micagent::h264_source::createNew(25));
         }
-        m_session_id=Api_rtsp_server::Api_Rtsp_Server_Add_Stream(g_handle,m_stream_name,media_info);
+
+        session->addProxySession(pusher_vec[m_stream_index]);
         m_set_up=true;
     }
     if(m_set_up&&frameSize>0)
     {
-
-        Api_rtsp_server::Api_Rtsp_Push_Frame(g_handle,m_session_id,fReceiveBuffer,frameSize,0,presentationTime.tv_sec*1000*1000+presentationTime.tv_usec);
+        micagent::AVFrame frame(frameSize);
+            frame.timestamp=presentationTime.tv_sec*1000000+presentationTime.tv_usec;
+            memcpy(frame.buffer.get(),fReceiveBuffer,frameSize);
+            pusher_vec[m_stream_index]->proxy_frame(micagent::channel_0,frame);
     }
     // We've just received a frame of data.  (Optionally) print out information about it:
     //printf("%02x \r\n ",fReceiveBuffer[0]);

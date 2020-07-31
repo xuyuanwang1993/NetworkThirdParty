@@ -56,7 +56,7 @@ private:
     //check
     string m_last_external_ip;
     string m_last_internal_ip;
-    map<uint16_t,upnp_task> m_upnp_task_map;
+    map<string,upnp_task> m_upnp_task_map;
 
 };
 }

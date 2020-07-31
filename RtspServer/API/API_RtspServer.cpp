@@ -17,59 +17,56 @@
 #include "pch.h"
 #endif // VSPROJECT_EXPORTS
 using namespace micagent;
-void  Api_rtsp_server::Api_Rtsp_Server_Init_And_Start(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint16_t port)
+void  Api_rtsp_server::Api_Rtsp_Server_Init_And_Start(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint16_t port)
 {
-    auto rtsp_handle=handle.lock();
-    if(!rtsp_handle||port<554)
+    if(!handle||port<554)
     {
         std::cout<<"illegal parameter!"<<std::endl;
         return ;
     }
-    if(rtsp_handle->is_run)
+    if(handle->is_run)
     {
         std::cout<<"server is running!"<<std::endl;
         return ;
     }
     std::shared_ptr<micagent::EventLoop> eventLoop;
-    if(!rtsp_handle->event_loop)
+    if(!handle->event_loop)
     {
-        eventLoop.reset(new micagent::EventLoop(0,0,2000,0));
-        rtsp_handle->event_loop=eventLoop;
+        eventLoop.reset(new micagent::EventLoop(0,0,2000,1));
+        handle->event_loop=eventLoop;
     }
     else
     {
-        eventLoop=rtsp_handle->event_loop;
+        eventLoop=handle->event_loop;
     }
     std::shared_ptr<micagent::rtsp_server> server;
-    if(!rtsp_handle->server)
+    if(!handle->server)
     {
         server.reset(new micagent::rtsp_server(port));
-        server->register_handle(rtsp_handle->event_loop.get());
-        rtsp_handle->server=server;
+        server->register_handle(eventLoop.get());
+        handle->server=server;
     }
     else
     {
-        server=rtsp_handle->server;
+        server=handle->server;
     }
 
-    rtsp_handle->is_run=true;
+    handle->is_run=true;
     cout<<"success init Rtsp_server!"<<endl;
 }
-bool Api_rtsp_server::Api_Rtsp_Server_AddAuthorization(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,std::string username,std::string password)
+bool Api_rtsp_server::Api_Rtsp_Server_AddAuthorization(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,std::string username,std::string password)
 {
-    auto rtsp_handle=handle.lock();
-    if(!rtsp_handle||username.empty()||password.empty()||!rtsp_handle->server)
+    if(!handle||username.empty()||password.empty()||!handle->server)
     {
         std::cout<<"illegal parameter!"<<std::endl;
         return false;
     }
-    return rtsp_handle->server->addAuthorizationInfo(username,password);
+    return handle->server->addAuthorizationInfo(username,password);
 }
 
-uint32_t Api_rtsp_server::Api_Rtsp_Server_Add_Stream(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,std::string stream_name,Media_Info media_info)
+uint32_t Api_rtsp_server::Api_Rtsp_Server_Add_Stream(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,std::string stream_name,Media_Info media_info)
  {
-    auto rtsp_handle=handle.lock();
-    if(!rtsp_handle||!rtsp_handle->is_run)return INVALID_MediaSessionId;
+    if(!handle||!handle->is_run)return INVALID_MediaSessionId;
      if(stream_name.empty()||(media_info.viedo_type==DEFAULT&&media_info.audio_type==DEFAULT))
      {
          std::cout<<"illegal parameter! in"<<__FUNCTION__<<std::endl;
@@ -100,21 +97,19 @@ uint32_t Api_rtsp_server::Api_Rtsp_Server_Add_Stream(std::weak_ptr<Api_rtsp_serv
      {
          std::cout<<"audio type not supported!"<<std::endl;
      }
-     std::string rtspUrl = "rtsp://" + rtsp_handle->server->get_ip()+":"+std::to_string(rtsp_handle->server->get_port())+ "/" + session->getSuffix();
+     std::string rtspUrl = "rtsp://" + handle->server->get_ip()+":"+std::to_string(handle->server->get_port())+ "/" + session->getSuffix();
      std::cout<<"play this stream using url: "<<rtspUrl<<"!"<<std::endl;
-     return rtsp_handle->server->addMediaSession(session);
+     return handle->server->addMediaSession(session);
  }
-void Api_rtsp_server::Api_Rtsp_Server_Remove_Stream(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id)
+void Api_rtsp_server::Api_Rtsp_Server_Remove_Stream(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id)
 {
-    auto rtsp_handle=handle.lock();
-    if(!rtsp_handle||!rtsp_handle->is_run) return;
-    rtsp_handle->server->removeMediaSession(session_id);
+    if(!handle||!handle->is_run) return;
+    handle->server->removeMediaSession(session_id);
 }
 
-bool Api_rtsp_server::Api_Rtsp_Push_Frame(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,const void *tmp_buf,int buf_size,int channel_id,int64_t micro_time_now)
+bool Api_rtsp_server::Api_Rtsp_Push_Frame(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,const void *tmp_buf,int buf_size,int channel_id,int64_t micro_time_now)
 {
-    auto rtsp_handle=handle.lock();
-    if(!rtsp_handle||!rtsp_handle->is_run) return false;
+    if(!handle||!handle->is_run) return false;
     micagent::AVFrame videoFrame = {0};
     videoFrame.timestamp=micro_time_now;
     auto buf=static_cast<const char *>(tmp_buf);
@@ -137,11 +132,10 @@ bool Api_rtsp_server::Api_Rtsp_Push_Frame(std::weak_ptr<Api_rtsp_server::Rtsp_Ha
     }
     micagent::MediaChannelId s_id=channel_0;
     if(channel_id!=0)s_id=channel_1;
-    return rtsp_handle->server->updateFrame(session_id, s_id, videoFrame);
+    return handle->server->updateFrame(session_id, s_id, videoFrame);
 }
-void Api_rtsp_server::Api_Rtsp_Add_Frame_Control(std::weak_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,uint32_t frame_rate)
+void Api_rtsp_server::Api_Rtsp_Add_Frame_Control(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,uint32_t frame_rate)
 {
-    auto rtsp_handle=handle.lock();
-    if(!rtsp_handle||!rtsp_handle->is_run) return ;
-    rtsp_handle->server->setFrameRate(session_id,frame_rate);
+    if(!handle||!handle->is_run) return ;
+    handle->server->setFrameRate(session_id,frame_rate);
 }

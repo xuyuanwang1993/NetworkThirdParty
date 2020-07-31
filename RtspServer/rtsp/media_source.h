@@ -16,7 +16,10 @@ class media_source
 public:
     typedef std::function<bool (MediaChannelId channelId, RtpPacket pkt)> SendFrameCallback;
 
-    media_source():m_sendFrameCallback(nullptr){}
+    media_source():m_sendFrameCallback(nullptr),m_last_micro_recv_time(0){
+        auto timePoint = chrono::time_point_cast<chrono::microseconds>(chrono::steady_clock::now());
+        m_last_micro_send_time=timePoint.time_since_epoch().count();
+    }
     virtual ~media_source();
 
     virtual MediaType getMediaType() const
@@ -46,11 +49,14 @@ public:
     virtual uint32_t getClockRate() const
     { return m_clockRate; }
     virtual void setFrameRate(uint32_t frameRate){(void)frameRate;}
+    int64_t getLastSendTime()const{return m_last_micro_send_time;}
 protected:
     MediaType m_mediaType = NONE;
     uint32_t m_payload = 0;
     uint32_t m_clockRate = 0;
     SendFrameCallback m_sendFrameCallback;
+    int64_t m_last_micro_send_time;
+    int64_t m_last_micro_recv_time;
 };
 }
 #endif // MEDIA_SOURCE_H

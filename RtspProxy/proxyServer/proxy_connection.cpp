@@ -91,7 +91,7 @@ proxy_connection::proxy_connection(SOCKET fd,proxy_server *server):tcp_connectio
 ,m_is_authorized(false),m_is_setup(false),m_stream_token(INVALID_MediaSessionId),m_last_alive_time(Timer::getTimeNow()),m_last_send_timestamp(p_timer_help::getTimesTamp()),m_last_recv_timestamp(m_last_send_timestamp)
 {
     //初始化转发实例，默认只接受TCP包，进行控制命令处理
-    m_proxy_interface.reset(new ProxyInterface(0,RAW_TCP,[this](const void *buf,uint32_t buf_len){
+    m_proxy_interface.reset(new ProxyInterface(INVALID_MediaSessionId,RAW_TCP,[this](const void *buf,uint32_t buf_len){
         return this->send_message(static_cast<const char *>(buf),buf_len);},nullptr,[this](shared_ptr<ProxyFrame>frame){
                                 return this->handle_proxy_frame(frame);
                             }));
@@ -209,6 +209,7 @@ bool proxy_connection::handle_proxy_media_data(const shared_ptr<ProxyFrame>&fram
         AVFrame new_frame(frame->data_len);
         memcpy(new_frame.buffer.get(),frame->data_buf.get(),frame->data_len);
         new_frame.timestamp=frame->timestamp;
+       //MICAGENT_LOG(LOG_INFO,"%02x      %u %u",new_frame.buffer.get()[0],frame->data_len,frame->timestamp);
         return  rtsp_server->updateFrame(m_stream_token,static_cast<MediaChannelId>(frame->media_channel),new_frame);
     }
 }
@@ -434,6 +435,7 @@ void proxy_connection::handle_set_up_stream(CJsonObject &object)
         m_is_setup=true;
         build_json_response("set_up_stream_ack",seq,P_OK,"OK",response);
         response.Add("stream_token",m_stream_token);
+        response.Add("stream_name",stream_name);
     }while(0);
     auto res=response.ToString();
     m_proxy_interface->send_control_command(res.c_str(),res.length());

@@ -7,7 +7,7 @@ int main()
     string test_domain="www.meanning_test.com";
     EventLoop loop;
     dns_client client("139.159.137.87",10000);
-#if 1
+#if 0
     auto ret=client.register_to_server(test_domain,"admin","micagent","test");
     cout<<ret.first<<"  "<<ret.second.ToFormattedString()<<endl;
     client.config(&loop,test_domain,"admin","micagent");

@@ -32,11 +32,13 @@ void upnp_helper::add_port_task(SOCKET_TYPE type,uint16_t internal_port,uint16_t
 {
     if(!m_is_config)return;
     lock_guard<mutex>locker(m_mutex);
-    auto iter=m_upnp_task_map.find(external_port);
+    string key=type==UDP?"udp":"tcp";
+    key+=to_string(external_port);
+    auto iter=m_upnp_task_map.find(key);
     if(iter==m_upnp_task_map.end())
     {
         UpnpMapper::Instance().Api_addportMapper(type,m_last_internal_ip,internal_port,external_port,description);
-        m_upnp_task_map.emplace(external_port,upnp_task(type,internal_port,external_port,description));
+        m_upnp_task_map.emplace(key,upnp_task(type,internal_port,external_port,description));
     }
 
 }
@@ -44,7 +46,9 @@ void upnp_helper::delete_port_task(SOCKET_TYPE type,uint16_t external_port,strin
 {
     if(!m_is_config)return;
     lock_guard<mutex>locker(m_mutex);
-    auto iter=m_upnp_task_map.find(external_port);
+    string key=type==UDP?"udp":"tcp";
+    key+=to_string(external_port);
+    auto iter=m_upnp_task_map.find(key);
     if(iter!=m_upnp_task_map.end())
     {
         m_upnp_task_map.erase(iter);
@@ -53,7 +57,7 @@ void upnp_helper::delete_port_task(SOCKET_TYPE type,uint16_t external_port,strin
 }
 void upnp_helper::add_external_ip_to_dev(string ip)
 {
-    if(!m_set_net)return;
+    if(!m_set_net||ip.empty())return;
     if(ip!=m_last_external_ip)
     {
          MICAGENT_LOG(LOG_WARNNING,"external_ip %s is  changed to %s!\r\n",m_last_external_ip.c_str(),ip.c_str());
@@ -106,7 +110,9 @@ void upnp_helper::check_port_task()
             if(!flag)
             {
                 lock_guard<mutex>locker(m_mutex);
-                auto iter=m_upnp_task_map.find(task.external_port);
+                string key=task.type==UDP?"udp":"tcp";
+                key+=to_string(task.external_port);
+                auto iter=m_upnp_task_map.find(key);
                 if(iter!=m_upnp_task_map.end())
                 {
                     UpnpMapper::Instance().Api_addportMapper(task.type,m_last_internal_ip,task.internal_port,task.external_port,task.description);

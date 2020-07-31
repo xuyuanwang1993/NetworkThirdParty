@@ -1,7 +1,7 @@
 ﻿#ifndef LIVE555_CLIENT_H
 #define LIVE555_CLIENT_H
 #include "live555_common.h"
-#include "API_RtspServer.h"
+#include<string>
 #define RTSP_CLIENT_VERBOSITY_LEVEL 1 // by default, print verbose output from each "RTSPClient"
 #define DEBUG_PRINT_NPT 1
 

@@ -141,6 +141,8 @@ bool rtsp_connection::handleCmdDescribe(map<string ,string>&handle_map)
                 m_rtpConnPtr->setClockRate(static_cast<MediaChannelId>(chn), source->getClockRate());
                 // 设置媒体负载类型
                 m_rtpConnPtr->setPayloadType(static_cast<MediaChannelId>(chn), source->getPayloadType());
+                //同步时间戳
+                m_rtpConnPtr->setBuildTimesTamp(static_cast<MediaChannelId>(chn), source->getLastSendTime());
             }
         }
         auto sdp_info=media_session->get_sdp_info();
