@@ -65,15 +65,15 @@ string aac_source::getAttribute()  // RFC 3640
         return ""; // error
 
     uint8_t profile = 1;
-    char configStr[10] = {0};
+    char configStr[5] = {0};
     sprintf(configStr, "%02x%02x", (uint8_t)((profile+1) << 3)|(index >> 1), (uint8_t)((index << 7)|(m_channels<< 3)));
 
     sprintf(buf+strlen(buf),
-            "a=fmtp:97 profile-level-id=1;"
+            "a=fmtp:97 streamtype=5;profile-level-id=1;"
             "mode=AAC-hbr;"
             "sizelength=13;indexlength=3;indexdeltalength=3;"
-            "config=%04u",
-             atoi(configStr));
+            "config=%s",
+             configStr);
 
     return string(buf);
 }
@@ -82,6 +82,7 @@ string aac_source::getAttribute()  // RFC 3640
 #define AU_SIZE 4
 bool aac_source::handleFrame(MediaChannelId channelId, AVFrame frame)
 {
+    frame.type=FRAME_AUDIO;
     if (frame.size > (MAX_RTP_PAYLOAD_SIZE-AU_SIZE))
     {
         return false;
@@ -92,7 +93,7 @@ bool aac_source::handleFrame(MediaChannelId channelId, AVFrame frame)
     {
         adtsSize = ADTS_SIZE;
     }
-
+    auto timestamp=getTimeStamp(frame.timestamp);
     uint8_t *frameBuf = frame.buffer.get() + adtsSize; // 打包RTP去掉ADTS头
     uint32_t frameSize = frame.size - adtsSize;
 
@@ -104,7 +105,7 @@ bool aac_source::handleFrame(MediaChannelId channelId, AVFrame frame)
 
     RtpPacket rtpPkt;
     rtpPkt.type = frame.type;
-    rtpPkt.timestamp = frame.timestamp;
+    rtpPkt.timestamp = timestamp;
     rtpPkt.size = frameSize + 4 + RTP_HEADER_SIZE + AU_SIZE;
     rtpPkt.last = 1;
 

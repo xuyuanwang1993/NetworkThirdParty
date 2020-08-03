@@ -2,7 +2,7 @@
 #include "rtsp_connection.h"
 #include <random>
 using namespace micagent;
-rtp_connection::rtp_connection(rtsp_connection *_rtsp_connection):m_rtsp_connection(_rtsp_connection),m_transportMode(RTP_OVER_TCP),m_is_closed(false)
+rtp_connection::rtp_connection(rtsp_connection *_rtsp_connection):m_rtsp_connection(_rtsp_connection),m_transportMode(RTP_OVER_TCP),m_is_closed(false),m_see_idr(false),m_got_gop(false)
 {
     random_device rd;
     for(int chn=0; chn<MAX_MEDIA_CHANNEL; chn++)

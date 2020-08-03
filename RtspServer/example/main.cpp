@@ -16,11 +16,13 @@
 using namespace std;
 using namespace micagent;
 int main(int argc,char *argv[]){
-    if(argc != 2)
+    if(argc < 2)
     {
         printf("Usage: %s test.h264\n", argv[0]);
         return 0;
     }
+    uint16_t port=8554;
+    if(argc==3)port=stoul(argv[2]);
     Logger::Instance().set_log_to_std(false);
     Logger::Instance().register_handle();
 #if 0
@@ -72,7 +74,7 @@ int main(int argc,char *argv[]){
     server->removeMediaSession(session_id);
 #else
     shared_ptr<Api_rtsp_server::Rtsp_Handle>handle(new Api_rtsp_server::Rtsp_Handle);
-    Api_rtsp_server::Api_Rtsp_Server_Init_And_Start(handle,8554);
+    Api_rtsp_server::Api_Rtsp_Server_Init_And_Start(handle,port);
     //Api_rtsp_server::Api_Rtsp_Server_AddAuthorization(handle,"admin","micagent");
     Api_rtsp_server::Media_Info media_info;
     media_info.frameRate=25;

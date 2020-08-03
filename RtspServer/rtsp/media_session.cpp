@@ -1,5 +1,5 @@
 ﻿#include "media_session.h"
-
+#define ENABLE_GOP_CACHE 1
 using namespace micagent;
 atomic<MediaSessionId> media_session::s_session_id(0);
 
@@ -19,13 +19,25 @@ void media_session::setMediaSource(MediaChannelId id,shared_ptr<media_source>sou
         int count=0;
         for(auto i=m_rtp_connections.begin();i!=m_rtp_connections.end();){
             auto ptr=i->second.lock();
-            if(!ptr||!ptr->sendRtpPacket(channelId,pkt)){
+            if(!ptr){
                 m_rtp_connections.erase(i++);
             }
             else {
-                count++;
-                if(isMulticast())break;
-                i++;
+                if(pkt.type==FRAME_I)ptr->set_see_idr();
+                if(ptr->get_see_idr()||pkt.type!=FRAME_P)
+                {
+                    if(ptr->sendRtpPacket(channelId,pkt))
+                    {
+                        count++;
+                        i++;
+                        if(isMulticast())break;
+                    }else {
+                        m_rtp_connections.erase(i++);
+                    }
+
+                }else {
+                    i++;
+                }
             }
         }
         return count>0;});
@@ -82,6 +94,16 @@ bool media_session::updateFrame(MediaChannelId channel,const AVFrame &frame)
     }
     if(m_rtp_connections.empty())return true;
     if(m_media_source[channel]){
+#if ENABLE_GOP_CACHE
+        for(auto i:m_rtp_connections)
+        {
+            auto s_rtp_connection=i.second.lock();
+            if(s_rtp_connection&&!s_rtp_connection->get_got_gop()&&!s_rtp_connection->get_see_idr())
+            {
+                if(!m_media_source[channel]->handleGopCache(channel,s_rtp_connection)||isMulticast())break;
+            }
+        }
+#endif
         return m_media_source[channel]->handleFrame(channel,frame);
     }
     return false;

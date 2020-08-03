@@ -43,6 +43,7 @@ string g711a_source::getAttribute()
 
 bool g711a_source::handleFrame(MediaChannelId channelId, AVFrame frame)
 {
+    frame.type=FRAME_AUDIO;
     if (frame.size > MAX_RTP_PAYLOAD_SIZE)
     {
         return false;

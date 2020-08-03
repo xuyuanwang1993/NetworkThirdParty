@@ -9,8 +9,22 @@
 #include <map>
 #include<cstring>
 #include "c_log.h"
+#include <queue>
+#include "rtp_connection.h"
 namespace micagent {
 using namespace std;
+enum media_frame_type{
+    FRAME_I,
+    FRAME_VPS,
+    FRAME_SPS,
+    FRAME_PPS,
+    FRAME_SEI,
+    FRAME_P,
+    FRAME_B,
+    FRAME_AUDIO,
+    FRAME_GOP_BEGIN,
+    FRAME_UNKNOWN
+};
 class media_source
 {
 public:
@@ -37,7 +51,7 @@ public:
     virtual std::string getAttribute()  = 0;
 
     virtual bool handleFrame(MediaChannelId channelId, AVFrame frame) = 0;
-
+    virtual bool handleGopCache(MediaChannelId /*channelid*/,shared_ptr<rtp_connection>/*connection*/){return false;}
     virtual uint32_t getTimeStamp(int64_t micro_time_now=0)=0;
 
     virtual void setSendFrameCallback(const SendFrameCallback &cb)

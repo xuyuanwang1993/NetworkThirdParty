@@ -27,6 +27,22 @@ public:
     void startPlay();
     void stopPlay();
     string get_rtp_Info(const string &url);
+    void set_see_idr(){
+        lock_guard<mutex>locker(m_mutex);
+        m_see_idr=true;
+    }
+    bool get_see_idr(){
+        lock_guard<mutex>locker(m_mutex);
+        return m_see_idr;
+    }
+    void set_got_gop(){
+        lock_guard<mutex>locker(m_mutex);
+        m_got_gop=true;
+    }
+    bool get_got_gop(){
+        lock_guard<mutex>locker(m_mutex);
+        return m_got_gop;
+    }
 private:
     void dump_rtp_head_info(MediaChannelId channelId);
     inline void setRtpHeader(MediaChannelId channelId, RtpPacket pkt)
@@ -35,7 +51,6 @@ private:
         m_mediaChannelInfo[channelId].rtpHeader.ts = htonl(pkt.timestamp);
         m_mediaChannelInfo[channelId].rtpHeader.seq = htons(m_mediaChannelInfo[channelId].packetSeq++);
         memcpy(pkt.data.get()+4, &m_mediaChannelInfo[channelId].rtpHeader, RTP_HEADER_SIZE);
-        //dump_rtp_head_info(channelId);
     }
     rtsp_connection *m_rtsp_connection;
     MediaChannelInfo m_mediaChannelInfo[MAX_MEDIA_CHANNEL];
@@ -45,6 +60,8 @@ private:
     uint16_t m_localRtcpPort[MAX_MEDIA_CHANNEL];
     bool m_is_closed;
     mutable mutex m_mutex;
+    bool m_see_idr;
+    bool m_got_gop;
 };
 }
 #endif // RTP_CONNECTION_H
