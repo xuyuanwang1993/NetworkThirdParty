@@ -213,7 +213,7 @@ void continueAfterSETUP(RTSPClient* rtspClient, int resultCode, char* resultStri
                 scs.m_media_info.audio_type=Api_rtsp_server::PCMA;
                 scs.subsession->sink = G711aDummySink::createNew(env, *scs.subsession,scs, 1,rtspClient->url());
             }
-            else if(strcmp(scs.subsession->codecName(),"MPEG4-GENERIC")==0||scs.subsession->rtpPayloadFormat()==104) {
+            else if(strcmp(scs.subsession->codecName(),"MPEG4-GENERIC")==0||scs.subsession->rtpPayloadFormat()==104||scs.subsession->rtpPayloadFormat()==97) {
                 scs.m_media_info.audio_type=Api_rtsp_server::AAC;
                 scs.m_media_info.hasADTS=false;
                 scs.m_media_info.sampleRate=scs.subsession->rtpTimestampFrequency();

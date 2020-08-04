@@ -1,6 +1,7 @@
 HEADERS += \
     live555_client.h \
-    live555_common.h
+    live555_common.h \
+    byte_cache_buf.h
 
 MOC_DIR +=.moc
 RCC_DIR +=.rcc
@@ -17,7 +18,8 @@ QMAKE_CXXFLAGS += -g -O2 -DSOCKLEN_T=socklen_t -D_LARGEFILE_SOURCE=1 -D_FILE_OFF
 QMAKE_LFLAGS +=
 SOURCES += \
     main.cpp \
-    live555_client.cpp
+    live555_client.cpp \
+    byte_cache_buf.cpp
 
 INCLUDEPATH += . \
 .. \
