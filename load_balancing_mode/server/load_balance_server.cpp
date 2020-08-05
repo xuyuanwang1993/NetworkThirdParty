@@ -1,4 +1,4 @@
-﻿#include "load_balance_server.h"
+#include "load_balance_server.h"
 #include <cstdlib>
 #include<cmath>
 using namespace micagent;

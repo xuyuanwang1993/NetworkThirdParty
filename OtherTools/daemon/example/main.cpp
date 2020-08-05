@@ -1,4 +1,4 @@
-﻿#include <string>
+#include <string>
 #include<iostream>
 #include<map>
 #include "daemon_instance.h"

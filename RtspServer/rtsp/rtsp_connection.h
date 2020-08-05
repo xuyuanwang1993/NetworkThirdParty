@@ -1,4 +1,4 @@
-﻿#ifndef RTSP_CONNECTION_H
+#ifndef RTSP_CONNECTION_H
 #define RTSP_CONNECTION_H
 #include "tcp_connection.h"
 #include "rtsp_message.h"

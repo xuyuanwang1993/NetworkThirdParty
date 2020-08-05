@@ -1,4 +1,4 @@
-﻿#include "proxy_server.h"
+#include "proxy_server.h"
 #include "proxy_connection.h"
 #include "proxy_protocol.h"
 using namespace micagent;

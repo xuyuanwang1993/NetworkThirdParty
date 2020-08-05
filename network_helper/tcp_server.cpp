@@ -1,4 +1,4 @@
-﻿#include "tcp_server.h"
+#include "tcp_server.h"
 using namespace micagent;
 tcp_server::~tcp_server(){
     MICAGENT_MARK("tcp_server exit!");

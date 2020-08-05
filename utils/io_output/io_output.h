@@ -1,4 +1,4 @@
-﻿#ifndef IO_OUTPUT_H
+#ifndef IO_OUTPUT_H
 #define IO_OUTPUT_H
 #include <cstdio>
 #include<cstdint>

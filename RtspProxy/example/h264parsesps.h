@@ -1,4 +1,4 @@
-﻿#ifndef _SPSPARSER_H_
+#ifndef _SPSPARSER_H_
 #define _SPSPARSER_H_
 #include<stdint.h>
 //the source file is copied from https://github.com/xiongziliang/ZLMediaKit

@@ -1,4 +1,4 @@
-﻿#include "c_log.h"
+#include "c_log.h"
 #include <iomanip>
 #include <chrono>
 #include<memory>

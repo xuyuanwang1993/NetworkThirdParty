@@ -1,4 +1,4 @@
-﻿#ifndef PROXY_SERVER_H
+#ifndef PROXY_SERVER_H
 #define PROXY_SERVER_H
 #include "rtsp_server.h"
 #include "proxy_protocol.h"

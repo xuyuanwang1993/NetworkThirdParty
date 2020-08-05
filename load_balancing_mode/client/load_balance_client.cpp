@@ -1,4 +1,4 @@
-﻿#include "load_balance_client.h"
+#include "load_balance_client.h"
 #include"MD5.h"
 using namespace micagent;
 load_balance_client::load_balance_client():\

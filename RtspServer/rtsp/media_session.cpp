@@ -1,4 +1,4 @@
-﻿#include "media_session.h"
+#include "media_session.h"
 #define ENABLE_GOP_CACHE 1
 using namespace micagent;
 atomic<MediaSessionId> media_session::s_session_id(0);

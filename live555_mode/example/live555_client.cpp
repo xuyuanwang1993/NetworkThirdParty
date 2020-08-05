@@ -1,4 +1,4 @@
-﻿#include "live555_client.h"
+#include "live555_client.h"
 #include<string>
 #include<exception>
 #include<cstdlib>
@@ -490,7 +490,7 @@ void H264or5DummySink::afterGettingFrame(unsigned frameSize, unsigned numTruncat
     }
     // We've just received a frame of data.  (Optionally) print out information about it:
     //sprintf("%02x \r\n ",fReceiveBuffer[0]);
-#if DEBUG_PRINT_EACH_RECEIVED_FRAME
+#if !DEBUG_PRINT_EACH_RECEIVED_FRAME
     if (fStreamId != NULL) envir() << "Stream \"" << fStreamId << "\"; ";
     envir() << fSubsession.mediumName() << "/" << fSubsession.codecName() << ":\tReceived " << frameSize << " bytes";
     if (numTruncatedBytes > 0) envir() << " (with " << numTruncatedBytes << " bytes truncated)";

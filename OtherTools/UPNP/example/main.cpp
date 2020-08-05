@@ -1,4 +1,4 @@
-﻿#include "upnpmapper.h"
+#include "upnpmapper.h"
 #include <iostream>
 #include<queue>
 #include "upnpmapper_mode.h"

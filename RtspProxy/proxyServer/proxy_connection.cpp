@@ -1,4 +1,4 @@
-﻿#include "proxy_connection.h"
+#include "proxy_connection.h"
 #include "proxy_server.h"
 #include "MD5.h"
 #include "rtsp_server.h"

@@ -1,4 +1,4 @@
-﻿#include "http_request.h"
+#include "http_request.h"
 #include "algorithm"
 namespace micagent {
 http_request::http_request(const string &api):m_api(api),m_body_len(-1),m_body(string())\

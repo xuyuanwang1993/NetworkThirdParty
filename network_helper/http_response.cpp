@@ -1,4 +1,4 @@
-﻿#define _GLIBCXX_USE_C99 1
+#define _GLIBCXX_USE_C99 1
 #include "http_response.h"
 #include <algorithm>
 #include <string>

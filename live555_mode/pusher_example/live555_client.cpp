@@ -1,4 +1,4 @@
-﻿#include "live555_client.h"
+#include "live555_client.h"
 #include<string>
 #include<exception>
 #include<cstdlib>

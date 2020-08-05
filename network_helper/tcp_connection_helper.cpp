@@ -1,4 +1,4 @@
-﻿#include "tcp_connection_helper.h"
+#include "tcp_connection_helper.h"
 using namespace micagent;
 tcp_connection_helper *tcp_connection_helper::CreateNew(EventLoop *loop)
 {

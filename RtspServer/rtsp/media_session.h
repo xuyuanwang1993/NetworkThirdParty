@@ -1,4 +1,4 @@
-﻿#ifndef MEDIA_SESSION_H
+#ifndef MEDIA_SESSION_H
 #define MEDIA_SESSION_H
 #include "c_log.h"
 #include "media.h"

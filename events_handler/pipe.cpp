@@ -1,4 +1,4 @@
-﻿#include "pipe.h"
+#include "pipe.h"
 namespace micagent {
 Pipe::Pipe(){
 

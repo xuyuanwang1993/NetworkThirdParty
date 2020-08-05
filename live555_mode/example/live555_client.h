@@ -1,4 +1,4 @@
-﻿#ifndef LIVE555_CLIENT_H
+#ifndef LIVE555_CLIENT_H
 #define LIVE555_CLIENT_H
 #include "live555_common.h"
 #include "API_RtspServer.h"

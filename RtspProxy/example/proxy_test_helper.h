@@ -1,4 +1,4 @@
-﻿#ifndef PROXY_TEST_HELPER_H
+#ifndef PROXY_TEST_HELPER_H
 #define PROXY_TEST_HELPER_H
 #include "proxy_protocol.h"
 #include"c_log.h"

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #ifndef KCP_SERVER_H
 #define KCP_SERVER_H
 #include "ikcp.h"

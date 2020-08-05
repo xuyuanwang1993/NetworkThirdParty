@@ -1,4 +1,4 @@
-﻿#define _GLIBCXX_USE_C99 1
+#define _GLIBCXX_USE_C99 1
 #include "rtsp_helper.h"
 #include <arpa/inet.h>
 #include <random>

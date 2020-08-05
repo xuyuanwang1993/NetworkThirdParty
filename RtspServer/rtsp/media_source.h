@@ -1,4 +1,4 @@
-﻿#ifndef MEDIA_SOURCE_H
+#ifndef MEDIA_SOURCE_H
 #define MEDIA_SOURCE_H
 #include "media.h"
 #include "rtp.h"

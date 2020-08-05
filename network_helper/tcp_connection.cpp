@@ -1,4 +1,4 @@
-﻿#include "tcp_connection.h"
+#include "tcp_connection.h"
 using namespace micagent;
 tcp_connection::tcp_connection(SOCKET _fd):m_channel(new Channel(_fd)),m_registered(false),m_disconnect_CB(nullptr)
 {

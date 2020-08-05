@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #ifndef TIMER_QUEUE_H
 #define TIMER_QUEUE_H
 #include <map>

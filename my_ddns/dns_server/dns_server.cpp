@@ -1,4 +1,4 @@
-﻿#include "dns_server.h"
+#include "dns_server.h"
 #include <cstdlib>
 using namespace micagent;
 using namespace std;

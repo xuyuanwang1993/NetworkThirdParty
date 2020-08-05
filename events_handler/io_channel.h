@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #ifndef IO_CHANNEL_H
 #define IO_CHANNEL_H
 #include "network_util.h"

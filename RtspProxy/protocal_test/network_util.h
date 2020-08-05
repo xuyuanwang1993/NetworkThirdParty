@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #ifndef SOCKET_UTIL_H
 #define SOCKET_UTIL_H
 /*

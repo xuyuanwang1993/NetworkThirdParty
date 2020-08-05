@@ -1,4 +1,4 @@
-﻿#include "dns.h"
+#include "dns.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

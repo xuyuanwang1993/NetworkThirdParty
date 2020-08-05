@@ -1,4 +1,4 @@
-﻿#ifndef PROXYBUFHANDLE_H
+#ifndef PROXYBUFHANDLE_H
 #define PROXYBUFHANDLE_H
 #include "buffer_handle.h"
 #include "proxy_protocol.h"

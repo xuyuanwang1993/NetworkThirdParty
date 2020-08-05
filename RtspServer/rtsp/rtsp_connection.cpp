@@ -1,4 +1,4 @@
-﻿#define _GLIBCXX_USE_C99 1
+#define _GLIBCXX_USE_C99 1
 #include "rtsp_connection.h"
 #include "rtsp_server.h"
 #include "rtsp_helper.h"

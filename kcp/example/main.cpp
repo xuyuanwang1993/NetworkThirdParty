@@ -1,4 +1,4 @@
-﻿#include "kcp_manage.h"
+#include "kcp_manage.h"
 #include <string>
 #include<iostream>
 #include<map>

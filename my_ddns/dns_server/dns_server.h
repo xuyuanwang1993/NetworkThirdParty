@@ -1,4 +1,4 @@
-﻿#ifndef DNS_SERVER_H
+#ifndef DNS_SERVER_H
 #define DNS_SERVER_H
 #include "event_loop.h"
 #include "rc4_interface.h"

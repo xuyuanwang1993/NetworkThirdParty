@@ -1,4 +1,4 @@
-﻿#include "load_balance_client.h"
+#include "load_balance_client.h"
 #include <iostream>
 #include <random>
 using namespace micagent;

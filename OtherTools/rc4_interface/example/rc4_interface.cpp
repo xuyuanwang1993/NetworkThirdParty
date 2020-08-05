@@ -1,4 +1,4 @@
-﻿#include "rc4_interface.h"
+#include "rc4_interface.h"
 
 using namespace micagent;
 

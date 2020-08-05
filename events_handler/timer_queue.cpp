@@ -1,4 +1,4 @@
-﻿#include "timer_queue.h"
+#include "timer_queue.h"
 namespace micagent {
 using namespace std;
 using namespace std::chrono;

@@ -1,4 +1,4 @@
-﻿#include "network_util.h"
+#include "network_util.h"
 #define UNUSED(x) (void)x
 #if defined(WIN32) || defined(_WIN32)
 #pragma comment(lib, "Ws2_32.lib")

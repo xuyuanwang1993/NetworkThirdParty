@@ -1,4 +1,4 @@
-﻿#ifndef PROXY_CONNECTION_H
+#ifndef PROXY_CONNECTION_H
 #define PROXY_CONNECTION_H
 #include "tcp_connection.h"
 #include "proxy_protocol.h"

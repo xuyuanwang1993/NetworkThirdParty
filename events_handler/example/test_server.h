@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #ifndef TEST_SERVER_H
 #define TEST_SERVER_H
 #define TEST_PORT 10000

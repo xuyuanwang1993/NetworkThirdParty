@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #ifndef EVENT_LOOP_H
 #define EVENT_LOOP_H
 #include "task_scheduler.h"

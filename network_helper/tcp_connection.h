@@ -1,4 +1,4 @@
-﻿#ifndef TCP_CONNECTION_H
+#ifndef TCP_CONNECTION_H
 #define TCP_CONNECTION_H
 #include "io_channel.h"
 #include "buffer_handle.h"

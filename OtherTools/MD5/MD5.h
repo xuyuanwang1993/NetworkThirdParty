@@ -1,4 +1,4 @@
-﻿#ifndef MD5_H
+#ifndef MD5_H
 #define MD5_H
 /* GLOBAL.H - RSAREF types and constants
 */

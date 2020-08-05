@@ -1,4 +1,4 @@
-﻿#include <string>
+#include <string>
 #include<iostream>
 #include<map>
 #include "rc4_interface.h"

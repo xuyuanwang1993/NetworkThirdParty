@@ -1,4 +1,4 @@
-﻿#define _GLIBCXX_USE_C99 1
+#define _GLIBCXX_USE_C99 1
 #include "tcp_server.h"
 #include <iostream>
 #include <arpa/inet.h>

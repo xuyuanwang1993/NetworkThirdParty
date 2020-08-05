@@ -1,4 +1,4 @@
-﻿#include "c_log.h"
+#include "c_log.h"
 #include "network_util.h"
 #include "proxy_protocol.h"
 #include <random>

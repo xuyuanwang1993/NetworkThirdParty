@@ -1,4 +1,4 @@
-﻿#include "rtsp_server.h"
+#include "rtsp_server.h"
 #include"rtsp_connection.h"
 #include "network_util.h"
 using namespace micagent;

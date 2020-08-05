@@ -1,4 +1,4 @@
-﻿#ifndef RTP_CONNECTION_H
+#ifndef RTP_CONNECTION_H
 #define RTP_CONNECTION_H
 #include "media.h"
 #include "rtp.h"

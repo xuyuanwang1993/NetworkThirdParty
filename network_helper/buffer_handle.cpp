@@ -1,4 +1,4 @@
-﻿#include "buffer_handle.h"
+#include "buffer_handle.h"
 #include <algorithm>
 namespace micagent {
 buffer_handle::buffer_handle(uint32_t capacity,ReadBufferCallback callback,bool is_stream,uint32_t per_read_size):\

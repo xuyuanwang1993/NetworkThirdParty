@@ -1,4 +1,4 @@
-﻿#ifndef PROXY_PROTOCOL_H
+#ifndef PROXY_PROTOCOL_H
 #define PROXY_PROTOCOL_H
 #include<inttypes.h>
 #include<memory>

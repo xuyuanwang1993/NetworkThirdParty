@@ -1,4 +1,4 @@
-﻿#ifndef DELAY_CONTROL_H
+#ifndef DELAY_CONTROL_H
 #define DELAY_CONTROL_H
 #include <cstdint>
 #include<chrono>

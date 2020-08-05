@@ -1,4 +1,4 @@
-﻿#ifndef DAEMON_INSTANCE_H
+#ifndef DAEMON_INSTANCE_H
 #define DAEMON_INSTANCE_H
 #include <string>
 #include<cstdio>

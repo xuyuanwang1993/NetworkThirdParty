@@ -1,4 +1,4 @@
-﻿#ifndef RTSP_SERVER_H
+#ifndef RTSP_SERVER_H
 #define RTSP_SERVER_H
 #include "tcp_server.h"
 #include "media_session.h"

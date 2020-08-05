@@ -1,4 +1,4 @@
-﻿#include "rtsp_pusher.h"
+#include "rtsp_pusher.h"
 #include "MD5.h"
 using namespace micagent;
 rtsp_pusher::rtsp_pusher(tcp_connection_helper *helper,PTransMode mode,const string &des_name,const string &des_ip ,uint16_t des_port,const string &user_name="",const string &password=""):\

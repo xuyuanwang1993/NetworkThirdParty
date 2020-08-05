@@ -1,4 +1,4 @@
-﻿#include "upnpmapper.h"
+#include "upnpmapper.h"
 #include <iostream>
 using  namespace micagent;
 using  std::cout;

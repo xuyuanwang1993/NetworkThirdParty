@@ -1,4 +1,4 @@
-﻿#Makefile
+#Makefile
 
 #CROSS_COMPILE ?=/home/microcreat/Desktop/workdir/HI3616A/arm-hisiv300-linux/bin/arm-hisiv300-linux-uclibcgnueabi-
 CROSS_COMPILE ?= /workdir/Others//MA_M_V0005R0001/.cross_tools/arm-hisiv300-linux/bin/arm-hisiv300-linux-uclibcgnueabi-

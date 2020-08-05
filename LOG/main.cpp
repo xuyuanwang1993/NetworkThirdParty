@@ -1,4 +1,4 @@
-﻿#include "c_log.h"
+#include "c_log.h"
 #include "iostream"
 #include<random>
 #if defined(__linux) || defined(__linux__)

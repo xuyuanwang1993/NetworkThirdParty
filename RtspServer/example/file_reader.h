@@ -1,4 +1,4 @@
-﻿#ifndef FILE_READER_H
+#ifndef FILE_READER_H
 #define FILE_READER_H
 #include <vector>
 #include<unordered_map>

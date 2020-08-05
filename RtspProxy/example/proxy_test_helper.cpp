@@ -1,4 +1,4 @@
-﻿#include "proxy_test_helper.h"
+#include "proxy_test_helper.h"
 #include <random>
 using namespace micagent;
 bool proxy_test_helper::tcp_send_callback(ProxyInterface *recv,const void *buf,uint32_t buf_len)

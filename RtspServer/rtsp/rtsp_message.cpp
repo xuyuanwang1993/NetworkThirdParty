@@ -1,4 +1,4 @@
-﻿#include "rtsp_message.h"
+#include "rtsp_message.h"
 #include"algorithm"
 using namespace micagent;
 rtsp_message::rtsp_message(bool is_send):buffer_handle (1000),m_is_send(is_send),m_buf_cache(new BufferPacket(MAX_PACKET_SIZE)),m_packet_type(NONE_PACKET),\

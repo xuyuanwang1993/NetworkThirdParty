@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #ifndef KCP_MANAGE_H
 #define KCP_MANAGE_H
 #include <functional>

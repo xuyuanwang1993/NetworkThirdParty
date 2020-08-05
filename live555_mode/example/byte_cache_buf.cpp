@@ -1,4 +1,4 @@
-﻿#include "byte_cache_buf.h"
+#include "byte_cache_buf.h"
 #include <cstdio>
 #include<string.h>
 #include<cstdlib>
@@ -6,7 +6,7 @@ using namespace micagent;
 
 Byte_Cache_Buf::Byte_Cache_Buf(uint32_t index,uint32_t buf_size):m_index(index),m_buf_size(buf_size),\
     m_access_id(0),m_read_offset(0),m_write_offset(0),m_cache_size(DEFAULT_CACHE_SIZE),m_capacity(DEFAULT_CAPACITY),\
-    m_is_working(true)
+    m_is_working(true),m_total_recv_size(0),m_total_recv_cnt(0)
 {
     if(m_buf_size>MAX_BUF_SIZE){
 #if BYTE_CACHE_BUF_DEBUG
@@ -70,6 +70,8 @@ bool Byte_Cache_Buf::insert_buf(const void *access_id,const void *buf,uint32_t b
             memcpy(m_cache_buf.get()+m_write_offset,buf,buf_len);
             m_write_offset+=buf_len;
         }
+        m_total_recv_cnt++;
+        m_total_recv_size+=buf_len;
         m_packet_queue.push(packet_info(timestamp,packet_len));
         m_cv.notify_one();
         ret =true;
@@ -124,6 +126,7 @@ bool Byte_Cache_Buf::get_packet_block(const void *access_id, void *buf,uint32_t 
 }
 bool Byte_Cache_Buf::get_packet_for(const void *access_id, void *buf,uint32_t &buf_len,uint32_t micro_wait_time,struct timeval *timestamp)
 {
+    printf("____%d %s \r\n",__LINE__,__func__);
     if(!m_is_working){
 #if BYTE_CACHE_BUF_DEBUG
         printf("buf %d is  not working!\r\n",m_index);
@@ -170,6 +173,7 @@ bool Byte_Cache_Buf::get_packet_for(const void *access_id, void *buf,uint32_t &b
         }
         ret =true;
     }while(0);
+    printf("____%d %s \r\n",__LINE__,__func__);
     return ret;
 }
 
@@ -222,6 +226,8 @@ void Byte_Cache_Buf::reset(const void *access_id)
         }
         m_read_offset=0;
         m_write_offset=0;
+        m_total_recv_cnt=0;
+        m_total_recv_size=0;
         m_is_working.exchange(false);
         m_capacity=DEFAULT_CAPACITY;
         m_cache_size=DEFAULT_CACHE_SIZE;
@@ -274,5 +280,20 @@ void Byte_Cache_Buf::started(const void *access_id)
             break;
         }
         m_is_working.exchange(true);
+    }while(0);
+}
+void Byte_Cache_Buf::clear(const void *access_id)
+{
+    do{
+        lock_guard<mutex>locker(m_mutex);
+        if(m_access_id&&m_access_id!=reinterpret_cast<uint64_t>(access_id)){
+#if BYTE_CACHE_BUF_DEBUG
+            printf("buf %d access_id %lu mismatch  with saved %lu!\r\n",m_index,reinterpret_cast<uint64_t>(access_id),m_access_id);
+#endif
+            break;
+        }
+        m_read_offset=0;
+        m_write_offset=0;
+        while(!m_packet_queue.empty())m_packet_queue.pop();
     }while(0);
 }

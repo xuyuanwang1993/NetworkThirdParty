@@ -1,4 +1,4 @@
-﻿#include "test_server.h"
+#include "test_server.h"
 namespace micagent {
 static const char cmd_str[][128]={
     "start",

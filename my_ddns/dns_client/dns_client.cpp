@@ -1,4 +1,4 @@
-﻿#include "dns_client.h"
+#include "dns_client.h"
 #include"MD5.h"
 using namespace micagent;
 dns_client::dns_client(string server_ip,uint16_t dns_port):\

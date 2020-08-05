@@ -1,4 +1,4 @@
-﻿#include "trigger_event.h"
+#include "trigger_event.h"
 namespace micagent {
 trigger_queue::trigger_queue(uint32_t num_threads,uint32_t capacity):m_is_running(true),m_next_index(0){
     if(num_threads<1)num_threads=1;

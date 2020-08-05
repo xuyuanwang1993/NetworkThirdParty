@@ -1,4 +1,4 @@
-﻿#include "proxybufhandle.h"
+#include "proxybufhandle.h"
 using namespace micagent;
 proxy_message::proxy_message(bool is_send):buffer_handle (MAX_TCP_MSS_CACHE),m_is_send(is_send)
 {

@@ -1,4 +1,4 @@
-﻿#define _GLIBCXX_USE_C99 1
+#define _GLIBCXX_USE_C99 1
 #include "API_RtspServer.h"
 #include <iostream>
 #include "tcp_server.h"

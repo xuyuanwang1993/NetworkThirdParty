@@ -1,4 +1,4 @@
-﻿#ifndef RTSP_PUSHER_H
+#ifndef RTSP_PUSHER_H
 #define RTSP_PUSHER_H
 #include "media_session.h"
 #include "tcp_connection_helper.h"

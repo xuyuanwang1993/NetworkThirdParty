@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #ifndef BUFFER_HANDLE_H
 #define BUFFER_HANDLE_H
 #include <list>

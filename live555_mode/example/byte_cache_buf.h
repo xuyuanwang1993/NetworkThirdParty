@@ -1,4 +1,4 @@
-﻿#ifndef BYTE_CACHE_BUF_H
+#ifndef BYTE_CACHE_BUF_H
 #define BYTE_CACHE_BUF_H
 //compile with std=c++11
 #include <queue>
@@ -48,7 +48,7 @@ public:
      * @param head_len 数据头长度
      * @return 缓冲区无法插入或使用对象不匹配时返回false 其余返回true
      */
-    bool insert_buf(const void *access_id,const void *buf,uint32_t buf_len,const struct timeval &timestamp,const void *adt_head=nullptr,uint32_t head_len=0);
+    bool insert_buf(const void *access_id,const void *buf,uint32_t buf_len,const struct timeval &timestamp={0,0},const void *adt_head=nullptr,uint32_t head_len=0);
     /**
      * @brief get_packet_block 阻塞获取帧数据
      * @param access_id 使用时绑定的用户id，推荐传入使用对象的指针值
@@ -108,9 +108,15 @@ public:
      */
     void started(const void *access_id);
     /**
+     * @brief clear 清空缓存列表
+     * @param access_id
+     */
+    void clear(const void *access_id);
+    /**
      * @brief get_index 获取buf的索引
      * @return
      */
+
     uint32_t get_index()const{return m_index;}
     /**
      * @brief get_availiable_size 获取可用长度
@@ -119,11 +125,35 @@ public:
     uint32_t get_availiable_size()const{
     lock_guard<mutex>locker(m_mutex);
     return m_buf_size-(m_write_offset-m_read_offset);}
+    /**
+     * @brief get_availiable_packet_nums 获取当前可以获取帧的总数目
+     * @return
+     */
     uint32_t get_availiable_packet_nums()const{
         lock_guard<mutex>locker(m_mutex);
         return  m_packet_queue.size()>m_cache_size?static_cast<uint32_t>(m_packet_queue.size()-m_cache_size):0;
     }
+    /**
+     * @brief get_working_status 获取buf是否正在工作
+     * @return
+     */
     bool get_working_status()const{return m_is_working;}
+    /**
+     * @brief get_total_recv_bytes 获取接收到的总字节数
+     * @return
+     */
+    uint64_t get_total_recv_bytes()const{
+        lock_guard<mutex>locker(m_mutex);
+        return m_total_recv_size;
+    }
+    /**
+     * @brief get_total_recv_cnt 获取接收到的帧的总数目
+     * @return
+     */
+    uint64_t get_total_recv_cnt()const{
+        lock_guard<mutex>locker(m_mutex);
+        return m_total_recv_cnt;
+    }
 private:
     uint32_t m_index;
     //缓存buf
@@ -147,6 +177,10 @@ private:
     uint32_t m_capacity;
     //判断buf是否可用标识
     atomic_bool m_is_working;
+    //统计数据接收
+    uint64_t m_total_recv_size;
+    //统计数据接收数目
+    uint64_t m_total_recv_cnt;
 };
 }
 #endif // BYTE_CACHE_BUF_H

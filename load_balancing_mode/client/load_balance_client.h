@@ -1,4 +1,4 @@
-﻿#ifndef DNS_CLIENT_H
+#ifndef DNS_CLIENT_H
 #define DNS_CLIENT_H
 #include "event_loop.h"
 #include "CJsonObject.hpp"

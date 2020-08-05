@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #ifndef TRIGGER_EVENT_H
 #define TRIGGER_EVENT_H
 #include <vector>

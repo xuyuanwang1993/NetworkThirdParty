@@ -1,4 +1,4 @@
-﻿#include "io_output.h"
+#include "io_output.h"
 using namespace micagent;
 #define TEST_DECLARE(name) void name##_test()
 #define TEST_SAMPLE(name,str) void name##_test(){str}

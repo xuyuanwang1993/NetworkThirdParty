@@ -1,4 +1,4 @@
-﻿#include <string>
+#include <string>
 #include<algorithm>
 #include"event_loop.h"
 #include "buffer_handle.h"

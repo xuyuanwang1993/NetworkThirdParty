@@ -1,4 +1,4 @@
-﻿#ifndef API_RTSPSERVER_H
+#ifndef API_RTSPSERVER_H
 #define API_RTSPSERVER_H
 //-lrt -lpthread -ldl -lm
 #ifdef WIN32

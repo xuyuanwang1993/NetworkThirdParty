@@ -1,4 +1,4 @@
-﻿#include "delay_control.h"
+#include "delay_control.h"
 using namespace micagent;
 delay_control_base::delay_control_base():m_last_due_time(get_micro_time_now()),m_micro_due_interval(1),m_sleep_time_fix(500)
 {

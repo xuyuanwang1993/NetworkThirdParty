@@ -1,4 +1,4 @@
-﻿#include "thread_pool.h"
+#include "thread_pool.h"
 #include "timer_queue.h"
 #include "trigger_event.h"
 #include  "network_util.h"

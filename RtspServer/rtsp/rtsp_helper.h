@@ -1,4 +1,4 @@
-﻿#ifndef RTSP_HELPER_H
+#ifndef RTSP_HELPER_H
 #define RTSP_HELPER_H
 #include <map>
 #include<string>

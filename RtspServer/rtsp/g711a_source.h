@@ -1,4 +1,4 @@
-﻿#ifndef G711A_SOURCE_H
+#ifndef G711A_SOURCE_H
 #define G711A_SOURCE_H
 #include "media_source.h"
 #include "rtp.h"

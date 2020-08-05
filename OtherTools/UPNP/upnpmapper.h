@@ -1,4 +1,4 @@
-﻿#ifndef UPNPMAPPER_H
+#ifndef UPNPMAPPER_H
 #define UPNPMAPPER_H
 #include <string>
 #include <functional>

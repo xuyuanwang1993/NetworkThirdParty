@@ -1,4 +1,4 @@
-﻿#include "thread_pool.h"
+#include "thread_pool.h"
 namespace micagent {
 thread_pool::thread_pool(int32_t thread_nums):m_word_threads(0){
     int32_t nums=thread_nums;

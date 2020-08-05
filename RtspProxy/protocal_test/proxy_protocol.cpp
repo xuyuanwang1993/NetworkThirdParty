@@ -1,4 +1,4 @@
-﻿#include "proxy_protocol.h"
+#include "proxy_protocol.h"
 using namespace micagent;
 
 static inline char *m_encode8u(char *p, uint8_t c)

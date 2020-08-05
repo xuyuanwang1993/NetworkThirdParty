@@ -1,4 +1,4 @@
-﻿#include "file_reader.h"
+#include "file_reader.h"
 #include <string.h>
 #include<errno.h>
 #include<sys/time.h>

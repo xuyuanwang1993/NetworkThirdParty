@@ -1,4 +1,4 @@
-﻿#ifndef TCP_SERVER_H
+#ifndef TCP_SERVER_H
 #define TCP_SERVER_H
 #include "event_loop.h"
 #include "tcp_connection.h"

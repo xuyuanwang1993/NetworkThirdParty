@@ -1,4 +1,4 @@
-﻿#ifndef UPNPMAPPER_MODE_H
+#ifndef UPNPMAPPER_MODE_H
 #define UPNPMAPPER_MODE_H
 #include "upnpmapper.h"
 #include <map>

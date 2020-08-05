@@ -1,4 +1,4 @@
-﻿#include "upnpmapper_mode.h"
+#include "upnpmapper_mode.h"
 #include "c_log.h"
 using namespace micagent;
 using namespace std;

@@ -1,4 +1,4 @@
-﻿#include "task_scheduler.h"
+#include "task_scheduler.h"
 #include<exception>
 namespace micagent {
 TaskScheduler::TaskScheduler(int _id):m_last_handle_none(false),m_id(_id),m_wake_up_pipe(make_shared<Pipe>()),m_is_running(false),m_last_time_out(MIN_TIME_OUT)

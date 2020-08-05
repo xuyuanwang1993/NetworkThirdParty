@@ -1,4 +1,4 @@
-﻿#ifndef H264_SOURCE_H
+#ifndef H264_SOURCE_H
 #define H264_SOURCE_H
 #include "media_source.h"
 #include "rtp.h"

@@ -1,4 +1,4 @@
-﻿#include "kcp_server.h"
+#include "kcp_server.h"
 #include <random>
 #include"c_log.h"
 namespace micagent {

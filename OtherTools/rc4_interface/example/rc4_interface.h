@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #ifndef RC4_H
 #define RC4_H
 #include "MD5.h"

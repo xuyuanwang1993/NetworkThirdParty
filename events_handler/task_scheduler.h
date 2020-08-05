@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #ifndef TASK_SCHEDULER_H
 #define TASK_SCHEDULER_H
 #include "pipe.h"

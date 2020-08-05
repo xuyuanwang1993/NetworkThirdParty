@@ -1,4 +1,4 @@
-﻿#ifndef RTSP_MESSAGE_H
+#ifndef RTSP_MESSAGE_H
 #define RTSP_MESSAGE_H
 #include "buffer_handle.h"
 namespace micagent {

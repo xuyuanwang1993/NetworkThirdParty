@@ -1,4 +1,4 @@
-﻿#ifndef TCP_CONNECTION_HELPER_H
+#ifndef TCP_CONNECTION_HELPER_H
 #define TCP_CONNECTION_HELPER_H
 #include "event_loop.h"
 namespace micagent {

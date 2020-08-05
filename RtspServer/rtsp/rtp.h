@@ -1,4 +1,4 @@
-﻿#ifndef RTP_H
+#ifndef RTP_H
 #define RTP_H
 #include <memory>
 #include <cstdint>

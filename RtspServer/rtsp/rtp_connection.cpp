@@ -1,4 +1,4 @@
-﻿#include "rtp_connection.h"
+#include "rtp_connection.h"
 #include "rtsp_connection.h"
 #include <random>
 using namespace micagent;

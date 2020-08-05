@@ -1,4 +1,4 @@
-﻿#include "event_loop.h"
+#include "event_loop.h"
 namespace micagent {
 EventLoop::EventLoop(int32_t thread_pool_size,uint32_t trigger_threads,uint32_t capacity,uint32_t thread_nums):\
     m_index(0),m_timer_queue(new TimerQueue()),m_thread_pool(new thread_pool(thread_pool_size)),\

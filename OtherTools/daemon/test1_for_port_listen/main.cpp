@@ -1,4 +1,4 @@
-﻿#include <sys/select.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 #include <stdio.h>
 #include<random>
