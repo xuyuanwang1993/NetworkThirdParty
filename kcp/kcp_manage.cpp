@@ -60,7 +60,7 @@ void kcp_interface::start_work()
     //读到的数据输入kcp进行处理
     auto interface=shared_from_this();
     m_udp_channel->setReadCallback([interface](Channel *chn){
-        shared_ptr<char[]> buf(new char[IKCP_MTU_DEF]);
+        shared_ptr<char> buf(new char[IKCP_MTU_DEF],std::default_delete<char[]>());
         auto ret=recv(chn->fd(),buf.get(),IKCP_MTU_DEF,0);
         if(ret==0)return false;
         else if (ret>0) {
@@ -69,7 +69,7 @@ void kcp_interface::start_work()
             if(ikcp_input(interface->m_kcp->kcp_ptr(),buf.get(),ret)==0)
             {
                 ikcp_flush(interface->m_kcp->kcp_ptr());
-                std::shared_ptr<char[]> frame_data(new char[interface->m_frame_size]);
+                std::shared_ptr<char> frame_data(new char[interface->m_frame_size],std::default_delete<char[]>());
                 int recv_len=ikcp_recv(interface->m_kcp->kcp_ptr(),frame_data.get(),interface->m_frame_size);
                 if(recv_len>0&&interface->m_recvCB)
                 {

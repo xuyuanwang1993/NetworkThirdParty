@@ -95,9 +95,9 @@ private:
     mutex m_bufcache_mutex;
     struct kcp_buf_cache
     {
-        shared_ptr<char[]>buf;
+        shared_ptr<char>buf;
         int buf_len;
-        kcp_buf_cache(shared_ptr<char[]>_buf,int _buf_len):buf(_buf),buf_len(_buf_len) {}
+        kcp_buf_cache(shared_ptr<char>_buf,int _buf_len):buf(_buf),buf_len(_buf_len) {}
     };
     queue<kcp_buf_cache>m_buf_cache;
 #ifdef DEBUG

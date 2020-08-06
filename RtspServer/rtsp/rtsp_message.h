@@ -4,7 +4,7 @@
 namespace micagent {
 using namespace std;
 class rtsp_message:public buffer_handle{
-    static constexpr uint32_t MAX_TCP_MSS_CACHE=1000;
+    static constexpr uint32_t MAX_TCP_MSS_CACHE=10000;
     typedef enum{
         NONE_PACKET,
         RTCP_PACKET,

@@ -151,7 +151,7 @@ bool kcp_server::start_update_loop(uint32_t interval_ms)
 }
 void kcp_server::hand_read()
 {
-    shared_ptr<char[]>buf(new char[IKCP_MTU_DEF+1]);
+    shared_ptr<char>buf(new char[IKCP_MTU_DEF+1],std::default_delete<char[]>());
     MAKE_ADDR(addr,"0.0.0.0",0);
     socklen_t sock_len=sizeof (addr);
     auto len=recvfrom(m_udp_channel->fd(),buf.get(),IKCP_MTU_DEF,0,(sockaddr *)&addr,&sock_len);
@@ -211,7 +211,7 @@ void kcp_server::handle_cache()
                 ikcp_flush(iter->second->kcp);
                 auto frame_len=ikcp_peeksize(iter->second->kcp);
                 if(frame_len<=0)return;
-                std::shared_ptr<char[]> frame_data(new char[frame_len]);
+                std::shared_ptr<char> frame_data(new char[frame_len],std::default_delete<char[]>());
                 int recv_len=ikcp_recv(iter->second->kcp,frame_data.get(),frame_len);
                 if(recv_len>0&&iter->second->recv_callback)
                 {

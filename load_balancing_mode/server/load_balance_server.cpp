@@ -66,7 +66,7 @@ void load_balance_server::handle_read()
     auto size=recvfrom(m_channel->fd(),buf,1400,0,(sockaddr *)&m_last_recv_addr,&m_sock_len);
     if(size>8){
         auto buf_size=size-8;
-        shared_ptr<char[]>out_string(new char[buf_size]);
+        shared_ptr<char>out_string(new char[buf_size],std::default_delete<char[]>());
         rc4_interface interface(Timer::getTimeNow);
         if(interface.decrypt(buf,out_string.get(),size,buf_size,rc4_interface::generate_key())>0)
         {
@@ -160,7 +160,7 @@ void load_balance_server::check_sessions()
 void load_balance_server::response(const string &buf)
 {
     uint32_t out_size=buf.size()+8;
-    shared_ptr<char[]>output(new char[out_size]);
+    shared_ptr<char>output(new char[out_size],std::default_delete<char[]>());
     rc4_interface interface(Timer::getTimeNow);
     auto ret=interface.encrypt(buf.c_str(),output.get(),buf.size(),out_size);
     if(m_channel){

@@ -55,7 +55,7 @@ test_server::test_server(int32_t thread_pool_size,uint32_t trigger_threads,uint3
             auto new_channel=make_shared<Channel>(sock);
             new_channel->enableReading();
             new_channel->setReadCallback([this](Channel *chn){
-                shared_ptr<char[]>buf(new char[2048]);
+                shared_ptr<char>buf(new char[2048],std::default_delete<char[]>());
                 auto len=recv(chn->fd(),buf.get(),2048,0);
                 if(len==0)return false;
                 if(len>0){
@@ -77,7 +77,7 @@ test_server::test_server(int32_t thread_pool_size,uint32_t trigger_threads,uint3
     m_udp_handle.reset(new Channel(udp_sock));
     m_udp_handle->enableReading();
     m_udp_handle->setReadCallback([this](Channel *chn){
-        shared_ptr<char[]>buf(new char[2048]);
+        shared_ptr<char>buf(new char[2048],std::default_delete<char[]>());
         sockaddr_in addr;
         bzero(&addr,sizeof (addr));
         socklen_t addr_len=sizeof (addr);
@@ -329,7 +329,7 @@ void test_server::handle_add_listen_work(SOCKET fd,queue<string>&param,const soc
                 auto new_channel=make_shared<Channel>(sock);
                 new_channel->enableReading();
                 new_channel->setReadCallback([this](Channel *chn){
-                    shared_ptr<char>buf(new char[2048]);
+                    shared_ptr<char>buf(new char[2048],std::default_delete<char[]>());
                     auto len=recv(chn->fd(),buf.get(),2048,0);
                     if(len==0)return false;
                     return true;

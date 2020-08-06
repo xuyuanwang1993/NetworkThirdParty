@@ -219,7 +219,7 @@ class ProxyInterface{
     //发送缓存最大分片数目
     static constexpr uint16_t MAX_GRADED_CACHE_SIZE=100;
     //帧最大长度
-    static constexpr uint32_t MAX_FRAME_SIZE=1024*1024;
+    static constexpr uint32_t MAX_FRAME_SIZE=10*1024*1024;
     //接收缓存帧结构定义
     struct ProxyFrameCache{
         //应用层媒体类型

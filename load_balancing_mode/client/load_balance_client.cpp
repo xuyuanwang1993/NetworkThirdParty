@@ -56,13 +56,13 @@ pair<bool,neb::CJsonObject>  load_balance_client::find(int64_t time_out)
         Network_Util::Instance().connect(sock,m_server_addr);
     }
     rc4_send(sock,object.ToString());
-    shared_ptr<char[]>recv_buf(new char[1500]);
+    shared_ptr<char>recv_buf(new char[1500],std::default_delete<char[]>());
     auto read_len=read_packet(sock,recv_buf.get(),1500,time_out);
     Network_Util::Instance().close_socket(sock);
     if(read_len<=0)return {false,neb::CJsonObject()};
     else {
         uint32_t out_size=read_len-8;
-        shared_ptr<char[]>output(new char[out_size]);
+        shared_ptr<char>output(new char[out_size],std::default_delete<char[]>());
         rc4_interface interface(Timer::getTimeNow);
         auto ret_len=interface.decrypt(recv_buf.get(),output.get(),read_len,out_size,interface.generate_key());
         return {true,neb::CJsonObject(string(output.get(),ret_len))};
@@ -80,13 +80,13 @@ pair<bool,neb::CJsonObject>  load_balance_client::specific_find(string domain_na
         Network_Util::Instance().connect(sock,m_server_addr);
     }
     rc4_send(sock,object.ToString());
-    shared_ptr<char[]>recv_buf(new char[1500]);
+    shared_ptr<char>recv_buf(new char[1500],std::default_delete<char[]>());
     auto read_len=read_packet(sock,recv_buf.get(),1500,time_out);
     Network_Util::Instance().close_socket(sock);
     if(read_len<=0)return {false,neb::CJsonObject()};
     else {
         uint32_t out_size=read_len-8;
-        shared_ptr<char[]>output(new char[out_size]);
+        shared_ptr<char>output(new char[out_size],std::default_delete<char[]>());
         rc4_interface interface(Timer::getTimeNow);
         auto ret_len=interface.decrypt(recv_buf.get(),output.get(),read_len,out_size,interface.generate_key());
         return {true,neb::CJsonObject(string(output.get(),ret_len))};
@@ -107,7 +107,7 @@ void load_balance_client::update()
 void load_balance_client::rc4_send(SOCKET fd,const string &buf)
 {
     uint32_t out_size=buf.size()+8;
-    shared_ptr<char[]>output(new char[out_size]);
+    shared_ptr<char>output(new char[out_size],std::default_delete<char[]>());
     memset(output.get(),0,out_size);
     rc4_interface interface(Timer::getTimeNow);
     auto ret=interface.encrypt(buf.c_str(),output.get(),buf.size(),out_size);

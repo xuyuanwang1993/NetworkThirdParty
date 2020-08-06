@@ -233,7 +233,7 @@ void listen_mode(uint16_t port){
             auto new_channel=make_shared<Channel>(sock);
             new_channel->enableReading();
             new_channel->setReadCallback([&](Channel *chn){
-                shared_ptr<char>buf(new char[2048]);
+                shared_ptr<char>buf(new char[2048],std::default_delete<char[]>());
                 auto len=recv(chn->fd(),buf.get(),2048,0);
                 if(len==0)return false;
                 if(len>0){

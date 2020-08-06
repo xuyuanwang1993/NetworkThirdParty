@@ -7,21 +7,21 @@ SOURCES += \
     ../../../events_handler/pipe.cpp \
     ../../../events_handler/network_util.cpp \
     ../../../events_handler/event_loop.cpp \
-    ../../../OtherTools/rc4/example/rc4.cpp \
     ../../../OtherTools/MD5/MD5.cpp \
     ../../../json_config/CJsonObject.cpp \
     ../../../json_config/cJSON.c \
     ../../../LOG/c_log.cpp \
-    main.cpp
+    main.cpp \
+    ../../../OtherTools/rc4_interface/example/rc4_interface.cpp
 
 
 
 INCLUDEPATH += $$PWD/.\
- ../../../OtherTools/rc4/example\
  ../../../events_handler/ \
 ../../../OtherTools/MD5\
 ../../../json_config\
 ../../../LOG\
+../../../OtherTools/rc4_interface/example/ \
 ../
 
 DEPENDPATH += $$PWD/.
@@ -39,11 +39,11 @@ HEADERS += \
     ../../../events_handler/network_util.h \
     ../../../events_handler/io_channel.h \
     ../../../events_handler/event_loop.h \
-    ../../../OtherTools/rc4/example/rc4.h \
     ../../../OtherTools/MD5/MD5.h \
     ../../../json_config/CJsonObject.hpp \
     ../../../json_config/cJSON.h \
-    ../../../LOG/c_log.h
+    ../../../LOG/c_log.h \
+    ../../../OtherTools/rc4_interface/example/rc4_interface.h
 
 
 

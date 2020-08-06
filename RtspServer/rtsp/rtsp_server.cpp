@@ -43,6 +43,7 @@ void rtsp_server::removeMediaSession(string suffix)
 bool rtsp_server::updateFrame(MediaSessionId session_id,MediaChannelId id,const AVFrame &frame)
 {
 //safety_check
+    MICAGENT_LOG(LOG_INFO,"%02x  %u",frame.buffer.get()[0],frame.size);
     if(frame.size>MAX_MEDIA_FRAME_SIZE)return false;
     shared_ptr<media_session>session_ptr(nullptr);
     {

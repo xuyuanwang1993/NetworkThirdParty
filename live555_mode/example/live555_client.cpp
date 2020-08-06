@@ -435,7 +435,7 @@ StreamClientState::~StreamClientState() {
 
 // Even though we're not going to be doing anything with the incoming data, we still need to receive it.
 // Define the size of the buffer that we'll use:
-#define DUMMY_SINK_RECEIVE_BUFFER_SIZE 500000
+#define DUMMY_SINK_RECEIVE_BUFFER_SIZE 2000000
 
 H264or5DummySink* H264or5DummySink::createNew(UsageEnvironment& env, MediaSubsession& subsession,StreamClientState &scs , uint32_t channel_id,char const* streamId) {
     return new H264or5DummySink(env, subsession, scs,channel_id,streamId);

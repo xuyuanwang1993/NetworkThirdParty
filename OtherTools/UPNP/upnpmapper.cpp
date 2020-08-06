@@ -65,7 +65,7 @@ string Upnp_Connection::build_xml_packet(string action,std::vector<std::pair<str
 }
 bool Upnp_Connection::onRead()
 {
-    shared_ptr<char[]>buf(new char[4096]);
+    shared_ptr<char>buf(new char[4096],std::default_delete<char[]>());
     bool ret=true;
     while(1){
         int size = recv(m_channel->fd(),buf.get(),4096,0);
