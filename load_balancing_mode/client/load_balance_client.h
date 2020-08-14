@@ -34,7 +34,7 @@ private:
              fd_set fdRead;
             FD_ZERO(&fdRead);
             FD_SET(fd, &fdRead);
-            struct timeval tv = { time_out / 1000, time_out % 1000 * 1000 };
+            struct timeval tv = { static_cast<__time_t>(time_out / 1000), static_cast<__suseconds_t>(time_out % 1000 * 1000 )};
             select(fd + 1,  &fdRead,nullptr, nullptr, &tv);
             if (!FD_ISSET(fd, &fdRead))
             {

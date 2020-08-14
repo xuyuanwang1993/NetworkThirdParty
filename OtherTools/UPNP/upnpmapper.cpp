@@ -423,7 +423,9 @@ void UpnpMapper::Init(EventLoop *event_loop,string lgd_ip)
     m_udp_channel.reset(new Channel(fd));
     m_udp_channel->enableReading();
     m_udp_channel->setReadCallback([this](Channel *chn){
-        struct sockaddr_in addr = {0};
+        struct sockaddr_in addr ;
+    memset(&addr,0,sizeof (addr));
+    memset(&addr,0,sizeof (addr));
         socklen_t addr_len=sizeof addr;
         char buf[4096]={0};
         int len=recvfrom(this->m_udp_channel->fd(),buf,4096,0,(struct sockaddr *)&addr,(socklen_t *)&addr_len);
@@ -528,7 +530,7 @@ void UpnpMapper::removeConnection(SOCKET sockfd)
 }
 void UpnpMapper::addTimeoutEvent(SOCKET sockfd)
 {
-    //m_event_loop->addTimer([this,sockfd](){this->removeConnection(sockfd);return false;},MAX_WAIT_TIME);
+    m_event_loop->addTimer([this,sockfd](){this->removeConnection(sockfd);return false;},MAX_WAIT_TIME);
 }
 void UpnpMapper::send_discover_packet()
 {
@@ -536,7 +538,8 @@ void UpnpMapper::send_discover_packet()
 #if UPNP_LOG_ON
     cout<<"send_discover_packet"<<endl;
 #endif
-    struct sockaddr_in addr = {0};
+    struct sockaddr_in addr ;
+    memset(&addr,0,sizeof (addr));
     addr.sin_family=AF_INET;
     addr.sin_addr.s_addr=inet_addr("239.255.255.250");
     addr.sin_port=htons(1900);

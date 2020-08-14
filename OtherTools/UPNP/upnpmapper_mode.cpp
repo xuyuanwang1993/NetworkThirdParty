@@ -42,7 +42,7 @@ void upnp_helper::add_port_task(SOCKET_TYPE type,uint16_t internal_port,uint16_t
     }
 
 }
-void upnp_helper::delete_port_task(SOCKET_TYPE type,uint16_t external_port,string description)
+void upnp_helper::delete_port_task(SOCKET_TYPE type,uint16_t external_port,string /*description*/)
 {
     if(!m_is_config)return;
     lock_guard<mutex>locker(m_mutex);

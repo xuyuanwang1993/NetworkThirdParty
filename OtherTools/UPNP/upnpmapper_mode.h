@@ -20,7 +20,7 @@ public:
     static upnp_helper &Instance(){static upnp_helper helper;return helper;}
     void config(EventLoop *loop,bool set_net,string lgd_ip);
     void add_port_task(SOCKET_TYPE type,uint16_t internal_port,uint16_t external_port,string description);
-    void delete_port_task(SOCKET_TYPE type,uint16_t external_port,string description);
+    void delete_port_task(SOCKET_TYPE type, uint16_t external_port, string);
     void set_internal_callback(const IpChangeCallback &cb){
         lock_guard<mutex>locker(m_mutex);
         m_internal_callback=cb;

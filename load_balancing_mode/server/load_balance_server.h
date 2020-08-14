@@ -8,10 +8,10 @@ using namespace std;
 class load_balance_server{
     static constexpr int64_t MAX_CHACHE_TIME=30*1000;//30s
     static constexpr int64_t SESSION_CHECK_INTERVAL=10*1000;//10s
-    static constexpr double TWO_POW_32=static_cast<long>(1)<<32;
-    static constexpr double TWO_POW_24=static_cast<long>(1)<<24;
-    static constexpr double TWO_POW_16=static_cast<long>(1)<<16;
-    static constexpr double TWO_POW_8=static_cast<long>(1)<<8;
+    static constexpr double TWO_POW_32=static_cast<int64_t>(1)<<32;
+    static constexpr double TWO_POW_24=static_cast<int64_t>(1)<<24;
+    static constexpr double TWO_POW_16=static_cast<int64_t>(1)<<16;
+    static constexpr double TWO_POW_8=static_cast<int64_t>(1)<<8;
     static constexpr double IP_BASE=TWO_POW_32+TWO_POW_24+TWO_POW_16+TWO_POW_8;
     struct session_info{
         string domain_name;

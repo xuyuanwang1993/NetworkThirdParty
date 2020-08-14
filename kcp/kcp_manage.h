@@ -8,14 +8,6 @@
 #include <unordered_map>
 #include"event_loop.h"
 #include "c_log.h"
-/**
- * @brief IKCP_MTU_DEF KCP MTU分片大小
- */
-extern IUINT32 IKCP_MTU_DEF;
-/**
- * @brief IKCP_WND_RCV 默认接收窗口大小
- */
-extern IUINT32 IKCP_WND_RCV;
 namespace micagent{
 /**
  * @brief RecvDataCallback收到应用层数据帧所调用的函数

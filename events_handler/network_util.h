@@ -89,7 +89,7 @@ public:
             fd_set fdWrite;
             FD_ZERO(&fdWrite);
             FD_SET(sockfd, &fdWrite);
-            struct timeval tv = { time_out_ms / 1000, time_out_ms % 1000 * 1000 };
+            struct timeval tv = { static_cast<__time_t>(time_out_ms / 1000), static_cast<__suseconds_t>(time_out_ms % 1000 * 1000 )};
             select(sockfd + 1, nullptr, &fdWrite, nullptr, &tv);
             if (FD_ISSET(sockfd, &fdWrite))
             {

@@ -1,12 +1,14 @@
 TARGET = core_test
 HEADERS += \
     ../CJsonObject.hpp \
-    ../cJSON.h
+    ../cJSON.h \
+    ../ConfigUtils.h
 
 SOURCES += \
     demo.cpp \
     ../CJsonObject.cpp \
-    ../cJSON.c
+    ../cJSON.c \
+    ../ConfigUtils.cpp
 
 
 CONFIG-=qt

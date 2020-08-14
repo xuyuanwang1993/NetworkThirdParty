@@ -64,7 +64,7 @@ void TimerQueue::loop(){
         unique_lock<mutex> locker(_conn_mutex);
         _conn.wait_for(locker,chrono::milliseconds(time));
     }
-    MICAGENT_MARK("TimerQueue loop exit!");
+    MICAGENT_LOG(LOG_WARNNING,"TimerQueue loop exit!");
     _timers.clear();
     _events.clear();
     {

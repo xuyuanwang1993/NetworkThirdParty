@@ -27,6 +27,7 @@ void TaskScheduler::start()
                 throw runtime_error("TaskScheduler handleEvent!");
             }
         }
+        MICAGENT_LOG(LOG_WARNNING,"TaskScheduler %d exit!",m_id);
     }
 }
 void TaskScheduler::stop()
@@ -203,7 +204,7 @@ bool SelectTaskScheduler::handleEvent()
     /*安全检查*/
     if(max_fd==INVALID_SOCKET)max_fd=0;
     auto timeout=get_time_out();
-    struct timeval tv = { timeout/1000, timeout%1000*1000 };
+    struct timeval tv = { static_cast<__time_t>(timeout / 1000), static_cast<__suseconds_t>(timeout % 1000 * 1000 )};
     int ret = select(max_fd+1, &read_sets, &write_sets, &exception_sets, &tv);
     if(ret<0){
 #if defined(__linux) || defined(__linux__)

@@ -35,7 +35,7 @@ class TaskScheduler{
 public:
     TaskScheduler(int _id=0);
     virtual ~TaskScheduler(){
-        MICAGENT_MARK("mark!");
+        MICAGENT_MARK(" ");
     }
     /**
      * @brief start 事件循环处理，阻塞

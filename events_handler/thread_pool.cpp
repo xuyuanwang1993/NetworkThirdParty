@@ -17,7 +17,7 @@ thread_pool::~thread_pool(){
         if(i->m_thread)i->m_thread.reset();
     }
     m_threads.clear();
-    MICAGENT_MARK("mark");
+    MICAGENT_MARK(" ");
 }
 bool thread_pool::add_thread_task(const ThreadTask &task){
     bool ret=false;

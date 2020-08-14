@@ -108,12 +108,16 @@ static uint32_t UdpRecv(uint32_t sockfd,uint8_t *buffer,uint32_t len,uint32_t ms
                         recvlen = recvfrom(sockfd,buffer,len,0,(struct sockaddr *)&sockaddr,&socklen);
                         if(recvlen > 0)
                                 return recvlen;
-                        if((int)recvlen < 0);
+                        if((int)recvlen < 0){
+
                                 //debug_info("recvfrom error");
+                        }
                 }
         }
-        if(recvlen == 0)
+        if(recvlen == 0){
+
                // debug_info("There is no data to read");
+        }
         return recvlen;
 }
 

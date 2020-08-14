@@ -397,7 +397,19 @@ void ikcp_allocator(void* (*new_malloc)(size_t), void (*new_free)(void*));
 // read conv
 IUINT32 ikcp_getconv(const void *ptr);
 
-
+/**
+ * @brief IKCP_MTU_DEF KCP MTU分片大小
+ */
+extern const IUINT32 IKCP_MTU_DEF;
+extern const IUINT32 IKCP_OVERHEAD;
+/**
+ * @brief IKCP_MTU_DEF KCP MTU分片大小
+ */
+extern const IUINT32 IKCP_MTU_DEF;
+/**
+ * @brief IKCP_WND_RCV 默认接收窗口大小
+ */
+extern const IUINT32 IKCP_WND_RCV;
 #ifdef __cplusplus
 }
 #endif

@@ -173,11 +173,11 @@ public:
      * @return
      */
     bool get_run_status()const{
-    DEBUG_LOCK
-    return _is_running;}
+        DEBUG_LOCK
+                return _is_running;}
     ~TimerQueue(){stop();if(m_thread&&m_thread->joinable())m_thread->join();if(m_thread)m_thread.reset();
-MICAGENT_MARK("mark!");
-    }
+        MICAGENT_MARK(" ");
+                 }
 private:
     /**
      * @brief getTimeRemaining 获取第一个需要执行的定时器的剩余时间

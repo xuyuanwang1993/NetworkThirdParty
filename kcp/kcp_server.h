@@ -11,11 +11,6 @@
 #include"event_loop.h"
 #include "c_log.h"
 #include <unordered_set>
-/**
- * @brief IKCP_MTU_DEF KCP MTU分片大小
- */
-extern IUINT32 IKCP_MTU_DEF;
-extern IUINT32 IKCP_OVERHEAD;
 namespace micagent {
 using KCPSERVER_RECVCALLBACK=function<void(const char *buf,int len,void *session,void *kcp_server) >;
 using KCPSERVER_CLOSECALLBACK=function<void (uint32_t conv_id)>;

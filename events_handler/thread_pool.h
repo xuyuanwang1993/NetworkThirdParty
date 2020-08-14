@@ -62,6 +62,7 @@ class thread_pool{
                         m_pool->m_task_queue.pop();
                     }
                 }
+                MICAGENT_LOG(LOG_WARNNING,"thread_pool %d exit",m_id);
             });
         }
     };

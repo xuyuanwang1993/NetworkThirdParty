@@ -61,7 +61,7 @@ bool Network_Util::connect(SOCKET sockfd,string ip,uint16_t port,uint32_t time_o
             fd_set fdWrite;
             FD_ZERO(&fdWrite);
             FD_SET(sockfd, &fdWrite);
-            struct timeval tv = { time_out_ms / 1000, time_out_ms % 1000 * 1000 };
+            struct timeval tv = { static_cast<__time_t>(time_out_ms / 1000), static_cast<__suseconds_t>(time_out_ms % 1000 * 1000 )};
             select(sockfd + 1, nullptr, &fdWrite, nullptr, &tv);
             if (FD_ISSET(sockfd, &fdWrite))
             {
@@ -93,7 +93,7 @@ bool Network_Util::connect(SOCKET sockfd,const sockaddr_in &addr,uint32_t time_o
             fd_set fdWrite;
             FD_ZERO(&fdWrite);
             FD_SET(sockfd, &fdWrite);
-            struct timeval tv = { time_out_ms / 1000, time_out_ms % 1000 * 1000 };
+            struct timeval tv = { static_cast<__time_t>(time_out_ms / 1000), static_cast<__suseconds_t>(time_out_ms % 1000 * 1000 )};
             select(sockfd + 1, nullptr, &fdWrite, nullptr, &tv);
             if (FD_ISSET(sockfd, &fdWrite))
             {
@@ -272,6 +272,8 @@ void Network_Util::set_reuse_port(SOCKET sockfd)
 #ifdef SO_REUSEPORT
     int on = 1;
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, (const char*)&on, sizeof(on));
+#else
+    (void)sockfd;
 #endif
 }
 bool Network_Util::bind(SOCKET sockfd,uint16_t port,uint32_t index){
@@ -445,7 +447,7 @@ const vector<Network_Util::net_interface_info> & Network_Util::get_net_interface
                         struct ifreq ifr2;
                         strcpy(ifr2.ifr_name,ifreq->ifr_name);
                         uint8_t mac[6]={0};
-                            char mac1[128]={0};
+                        char mac1[128]={0};
                         if((ioctl(sockfd,SIOCGIFHWADDR,&ifr2) )== 0)
                         {
                             memcpy(mac,ifr2.ifr_hwaddr.sa_data,6);
@@ -485,8 +487,8 @@ const vector<Network_Util::net_interface_info> & Network_Util::get_net_interface
                     {
                         char buffer[20];
                         sprintf_s(buffer, "%.2x-%.2x-%.2x-%.2x-%.2x-%.2x", p_iter->Address[0],
-                            p_iter->Address[1], p_iter->Address[2], p_iter->Address[3],
-                            p_iter->Address[4], p_iter->Address[5]);
+                                p_iter->Address[1], p_iter->Address[2], p_iter->Address[3],
+                                p_iter->Address[4], p_iter->Address[5]);
                         if(pIpAdapterInfo->Type== MIB_IF_TYPE_ETHERNET)m_net_interface_info_cache.push_back(net_interface_info("MIB_IF_TYPE_ETHERNET", pIpAddrString->IpAddress.String,buffer));
                         else if(pIpAdapterInfo->Type == IF_TYPE_IEEE80211)m_net_interface_info_cache.push_back(net_interface_info("IF_TYPE_IEEE80211", pIpAddrString->IpAddress.String,buffer));
                         else m_net_interface_info_cache.push_back(net_interface_info("UNKNOWN", pIpAddrString->IpAddress.String));
@@ -555,12 +557,25 @@ bool Network_Util::get_peer_addr(SOCKET sockfd,struct sockaddr_in *addr)
 }
 string Network_Util::parase_domain(const string &domain_info)
 {
-    char ip[20]={0};
-    auto ret=gethostbyname(domain_info.c_str());
-    if(ret)return inet_ntop(AF_INET,ret->h_addr_list[0],ip,20);
-    else {
-        return string();
+    string ret=string();
+    struct addrinfo hints;
+    struct addrinfo *result;
+    int  s;
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_INET;    /* Allow IPv4 or IPv6 */
+    hints.ai_socktype = SOCK_DGRAM; /* Datagram socket */
+    hints.ai_flags = AI_PASSIVE;    /* For wildcard IP address */
+    hints.ai_protocol = 0;          /* Any protocol */
+    hints.ai_canonname = nullptr;
+    hints.ai_addr = nullptr;
+    hints.ai_next = nullptr;
+    s = getaddrinfo(domain_info.c_str(), nullptr, &hints, &result);
+    if (s != 0) {
+        return ret;
     }
+    ret=inet_ntoa((reinterpret_cast<struct sockaddr_in *>(result->ai_addr))->sin_addr);
+    freeaddrinfo(result);
+    return ret;
 }
 bool Network_Util::check_is_multicast(uint32_t net_ip)
 {
