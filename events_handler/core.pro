@@ -9,7 +9,8 @@ HEADERS += \
     task_scheduler.h \
     event_loop.h \
     example/test_server.h \
-    ../LOG/c_log.h
+    ../LOG/c_log.h \
+    timeout_session_task.h
 
 SOURCES += \
     timer_queue.cpp \
@@ -21,7 +22,8 @@ SOURCES += \
     task_scheduler.cpp \
     event_loop.cpp \
     example/test_server.cpp \
-    ../LOG/c_log.cpp
+    ../LOG/c_log.cpp \
+    timeout_session_task.cpp
 
 INCLUDEPATH+= \
 ../LOG

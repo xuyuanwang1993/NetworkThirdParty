@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include<iostream>
 #include"event_loop.h"
+#include "timeout_session_task.h"
 #include <test_server.h>
 using namespace micagent;
 void thread_pool_test();
@@ -15,16 +16,19 @@ void trigger_event_test();
 void network_util_test();
 void task_scheduler_test();
 void event_loop_test(int argc,char *argv[]);
+void time_out_session_cache_test();
 int main(int argc,char *argv[]){
     (void) argc;
     (void)argv;
+    Logger::Instance().register_handle();
     Logger::Instance().set_log_to_std(true);
     //thread_pool_test();
     //time_queue_test();
-   //trigger_event_test();
-//    network_util_test();
+    //trigger_event_test();
+    //    network_util_test();
     //task_scheduler_test();
-   event_loop_test(argc,argv);
+    //event_loop_test(argc,argv);
+    time_out_session_cache_test();
     return 0;
 }
 void thread_pool_test(){
@@ -111,7 +115,7 @@ void time_queue_test(){
     }
     while(getchar()!='8');
     test.stop();
-     t.join();
+    t.join();
 }
 void trigger_event_test()
 {
@@ -136,23 +140,23 @@ void trigger_event_test()
 }
 void network_util_test()
 {
-	Pipe m_pipe;
-	m_pipe.open();
-	SOCKET fd = m_pipe();
-	thread t([fd]() {
-		while (1) {
-			send(fd, "test", sizeof("test"), 0);
-			Timer::sleep(30);
-		}
-		});
-	char buf[128] = { 0 };
+    Pipe m_pipe;
+    m_pipe.open();
+    SOCKET fd = m_pipe();
+    thread t([fd]() {
+        while (1) {
+            send(fd, "test", sizeof("test"), 0);
+            Timer::sleep(30);
+        }
+    });
+    char buf[128] = { 0 };
     while(1){
-		auto ret = recv(fd, buf, 128,0);
+        auto ret = recv(fd, buf, 128,0);
         if (ret > 0)MICAGENT_MARK("11111111111 %s\r\n", buf);
-		else {
-			//perror("recv ");
-		}
-		Timer::sleep(30);
+        else {
+            //perror("recv ");
+        }
+        Timer::sleep(30);
     }
 }
 void task_scheduler_test()
@@ -392,4 +396,45 @@ void event_loop_test(int argc,char *argv[])
     else {
         fprintf(stderr,"run with -h|--help to get help info!\r\n");
     }
+}
+void time_out_session_cache_test()
+{
+    shared_ptr<time_out_session_cache>pre(time_out_session_cache::CreateNew());
+    pre->start();
+    auto value=Timer::getTimeNow();
+    auto key=reinterpret_cast<void *>(value);
+    pre->add_task(key,[value](){
+        printf("diff=%ld    10ms\r\n",Timer::getTimeNow()-value);
+    });
+    value+=1;
+    key=reinterpret_cast<void *>(value);
+    pre->add_task(key,[value](){
+        printf("diff=%ld     20ms\r\n",Timer::getTimeNow()-value);
+    },20);
+    value+=1;
+    key=reinterpret_cast<void *>(value);
+    pre->add_task(key,[value](){
+        printf("diff=%ld    40ms\r\n",Timer::getTimeNow()-value);
+    },40);
+    value+=1;
+    key=reinterpret_cast<void *>(value);
+    pre->add_task(key,[value](){
+        printf("diff=%ld     20ms\r\n",Timer::getTimeNow()-value);
+    },20);
+    value+=1;
+    key=reinterpret_cast<void *>(value);
+    pre->add_task(key,[value,pre](){
+        printf("diff=%ld    5000ms\r\n",Timer::getTimeNow()-value);
+        auto new_value=value+1;
+       auto  key=reinterpret_cast<void *>(new_value);
+        pre->add_task(key,[new_value](){
+            printf("diff=%ld     10000\r\n",Timer::getTimeNow()-new_value);
+        },10000);
+    },5000);
+
+
+    while (getchar()!='8') {
+        continue;
+    }
+    pre->stop();
 }
