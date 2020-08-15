@@ -419,8 +419,8 @@ void time_out_session_cache_test()
     value+=1;
     key=reinterpret_cast<void *>(value);
     pre->add_task(key,[value](){
-        printf("diff=%ld     20ms\r\n",Timer::getTimeNow()-value);
-    },20);
+        printf("diff=%ld     60ms\r\n",Timer::getTimeNow()-value);
+    },60);
     value+=1;
     key=reinterpret_cast<void *>(value);
     pre->add_task(key,[value,pre](){
@@ -432,6 +432,11 @@ void time_out_session_cache_test()
         },10000);
     },5000);
 
+    for(int i=0;i<2;i++)
+    {
+        Timer::sleep(1);
+        pre->update_by_step(key,100);
+    }
 
     while (getchar()!='8') {
         continue;

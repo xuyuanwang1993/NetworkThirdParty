@@ -17,6 +17,15 @@ namespace micagent {
 using namespace std;
 using TimeoutCallback=function<void()>;
 class time_out_session_cache{
+    struct  cache_session{
+        TimeoutCallback callback;
+        int64_t last_timeout;
+        uint32_t base_time_out_ms;
+        void update(int64_t time_now){
+            last_timeout=time_now+base_time_out_ms;
+        }
+    };
+
     /**
      * @brief DEFAULT_INTERVAL 工作线程默认执行间隔
      */
@@ -24,7 +33,8 @@ class time_out_session_cache{
 public:
     static time_out_session_cache *CreateNew(){return new time_out_session_cache();}
     void remove_task(void *source_ptr);
-    void update_task(void *source_ptr,uint32_t step_ms=1);
+    void update_task(void *source_ptr);
+    void update_by_step(void *source_ptr,uint32_t time_ms=1);
     bool add_task(void *source_ptr,const TimeoutCallback &callback,uint32_t base_time_out_ms=10);
     void start();
     void stop();
@@ -44,8 +54,8 @@ private:
     shared_ptr<thread>m_work_thread;
     mutex m_mutex;
     condition_variable m_cv;
-    map<pair<int64_t,uint64_t>,TimeoutCallback>m_task_map;
-    map<uint64_t,pair<int64_t,TimeoutCallback>>m_session_map;
+    map<pair<int64_t,uint64_t>,shared_ptr<cache_session>>m_task_map;
+    map<uint64_t,shared_ptr<cache_session>>m_session_map;
     atomic_bool m_exit_flag;
 };
 }

@@ -5,18 +5,29 @@ void time_out_session_cache::remove_task(void *source_ptr)
     lock_guard<mutex>locker(m_mutex);
     auto iter=m_session_map.find(from_ptr_to_num(source_ptr));
     if(iter!=std::end(m_session_map)){
-        m_task_map.erase(make_pair(iter->second.first,iter->first));
+        m_task_map.erase(make_pair(iter->second->last_timeout,iter->first));
         m_session_map.erase(iter);
     }
 }
-void time_out_session_cache::update_task(void *source_ptr,uint32_t step_ms)
+void time_out_session_cache::update_task(void *source_ptr)
 {
     lock_guard<mutex>locker(m_mutex);
     auto iter=m_session_map.find(from_ptr_to_num(source_ptr));
     if(iter!=std::end(m_session_map)){
-        m_task_map.erase(make_pair(iter->second.first,iter->first));
-        iter->second.first+=step_ms;
-        m_task_map.emplace(make_pair(iter->second.first,iter->first),iter->second.second);
+        m_task_map.erase(make_pair(iter->second->last_timeout,iter->first));
+        iter->second->update(getTimeNow());
+        m_task_map.emplace(make_pair(iter->second->last_timeout,iter->first),iter->second);
+    }
+}
+void time_out_session_cache::update_by_step(void *source_ptr,uint32_t time_ms)
+{
+    lock_guard<mutex>locker(m_mutex);
+    auto iter=m_session_map.find(from_ptr_to_num(source_ptr));
+    if(iter!=std::end(m_session_map)){
+        m_task_map.erase(make_pair(iter->second->last_timeout,iter->first));
+        iter->second->base_time_out_ms+=time_ms;
+        iter->second->last_timeout+=time_ms;
+        m_task_map.emplace(make_pair(iter->second->last_timeout,iter->first),iter->second);
     }
 }
 bool time_out_session_cache::add_task(void *source_ptr, const TimeoutCallback &callback, uint32_t base_time_out_ms)
@@ -25,10 +36,13 @@ bool time_out_session_cache::add_task(void *source_ptr, const TimeoutCallback &c
     auto iter=m_session_map.find(from_ptr_to_num(source_ptr));
     bool ret=false;
     if(iter==std::end(m_session_map)){
-        auto time_out=getTimeNow()+base_time_out_ms;
         auto index=from_ptr_to_num(source_ptr);
-        m_session_map.emplace(index,make_pair(time_out,callback));
-        m_task_map.emplace(make_pair(time_out,index),callback);
+        shared_ptr<cache_session>session(new cache_session());
+        session->callback=callback;
+        session->base_time_out_ms=base_time_out_ms;
+        session->update(getTimeNow());
+        m_session_map.emplace(index,session);
+        m_task_map.emplace(make_pair(session->last_timeout,index),session);
         ret=true;
         m_cv.notify_one();
     }
@@ -44,11 +58,11 @@ void time_out_session_cache::start()
             while(!m_exit_flag){
                 auto time_now=getTimeNow();
                 while(!m_task_map.empty()&&m_task_map.begin()->first.first<=time_now){
-                    auto callback=m_task_map.begin()->second;
+                    auto session=m_task_map.begin()->second;
                     m_session_map.erase(m_task_map.begin()->first.second);
                     m_task_map.erase(m_task_map.begin());
                     if(locker.owns_lock())locker.unlock();
-                    callback();
+                    session->callback();
                     if(!locker.owns_lock())locker.lock();
                 }
                 auto time_out=DEFAULT_INTERVAL;
