@@ -163,7 +163,7 @@ public:
         string dev_name;
         string ip;
         string mac;
-        net_interface_info(const string &_dev_name,const string & _ip,const string &_mac):dev_name(_dev_name),ip(_ip),mac(_mac){
+        net_interface_info(const string &_dev_name="default",const string & _ip="0.0.0.0",const string &_mac="ff:ff:ff:ff:ff:ff"):dev_name(_dev_name),ip(_ip),mac(_mac){
 
         }
     };

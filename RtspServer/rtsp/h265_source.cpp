@@ -4,6 +4,7 @@
 #endif
 
 #include "h265_source.h"
+#include "Base64.h"
 #include <cstdio>
 #include <chrono>
 #if defined(__linux) || defined(__linux__)
@@ -60,22 +61,16 @@ bool h265_source::check_frames(media_frame_type type, AVFrame &frame)
             m_send_counts=m_frameRate*2+2;
         }
         else if (type==FRAME_SPS) {
-            if(!m_frame_sps){
-                m_frame_sps.reset(new AVFrame(frame.size));
-                memcpy(m_frame_sps.get()->buffer.get(),frame.buffer.get(),frame.size);
-            }
+            m_frame_sps.reset(new AVFrame(frame.size));
+            memcpy(m_frame_sps.get()->buffer.get(),frame.buffer.get(),frame.size);
         }
         else if (type==FRAME_VPS) {
-            if(!m_frame_vps){
-                m_frame_vps.reset(new AVFrame(frame.size));
-                memcpy(m_frame_vps.get()->buffer.get(),frame.buffer.get(),frame.size);
-            }
+            m_frame_vps.reset(new AVFrame(frame.size));
+            memcpy(m_frame_vps.get()->buffer.get(),frame.buffer.get(),frame.size);
         }
         else if (type==FRAME_PPS) {
-            if(!m_frame_pps){
                 m_frame_pps.reset(new AVFrame(frame.size));
                 memcpy(m_frame_pps.get()->buffer.get(),frame.buffer.get(),frame.size);
-            }
         }
         else if (type==FRAME_SEI) {
             m_last_sei.reset(new AVFrame(frame.size));
@@ -112,6 +107,65 @@ string h265_source::getMediaDescription(uint16_t port)
 string h265_source::getAttribute()
 {
     return string("a=rtpmap:96 H265/90000");
+}
+std::string h265_source::getAttributeFmtp()
+{
+    string ret("");
+    do{
+        MICAGENT_MARK("");
+        if(!m_frame_pps||!m_frame_sps||!m_frame_vps)break;
+        MICAGENT_MARK("");
+        shared_ptr<uint8_t> vpsWEB(new uint8_t[m_frame_vps->size],std::default_delete<uint8_t[]>());
+        auto vpsWEBSize = removeH264or5EmulationBytes(vpsWEB, m_frame_vps->size, m_frame_vps->buffer, m_frame_vps->size);
+        MICAGENT_MARK("");
+        if (vpsWEBSize < 6/*'profile_tier_level' offset*/ + 12/*num 'profile_tier_level' bytes*/) break;
+        MICAGENT_MARK("");
+        uint8_t const* profileTierLevelHeaderBytes = &vpsWEB.get()[6];
+        unsigned profileSpace  = profileTierLevelHeaderBytes[0]>>6; // general_profile_space
+        unsigned profileId = profileTierLevelHeaderBytes[0]&0x1F; // general_profile_idc
+        unsigned tierFlag = (profileTierLevelHeaderBytes[0]>>5)&0x1; // general_tier_flag
+        unsigned levelId = profileTierLevelHeaderBytes[11]; // general_level_idc
+        u_int8_t const* interop_constraints = &profileTierLevelHeaderBytes[5];
+        char interopConstraintsStr[100];
+        sprintf(interopConstraintsStr, "%02X%02X%02X%02X%02X%02X",
+                interop_constraints[0], interop_constraints[1], interop_constraints[2],
+                interop_constraints[3], interop_constraints[4], interop_constraints[5]);
+
+        auto sprop_vps = micagent::base64Encode(m_frame_vps->buffer.get() ,m_frame_vps->size);
+        auto sprop_sps = micagent::base64Encode(m_frame_sps->buffer.get() ,m_frame_sps->size);
+        auto sprop_pps = micagent::base64Encode(m_frame_pps->buffer.get() ,m_frame_pps->size);
+
+        char const* fmtpFmt =
+                "a=fmtp:%d profile-space=%u"
+                ";profile-id=%u"
+                ";tier-flag=%u"
+                ";level-id=%u"
+                ";interop-constraints=%s"
+                ";sprop-vps=%s"
+                ";sprop-sps=%s"
+                ";sprop-pps=%s\r\n";
+        unsigned fmtpFmtSize = strlen(fmtpFmt)
+                + 3 /* max num chars: rtpPayloadType */ + 20 /* max num chars: profile_space */
+                + 20 /* max num chars: profile_id */
+                + 20 /* max num chars: tier_flag */
+                + 20 /* max num chars: level_id */
+                + strlen(interopConstraintsStr)
+                + sprop_vps.size()
+                +sprop_sps.size()
+                + sprop_pps.size();
+        shared_ptr<char>fmtp(new char[fmtpFmtSize],std::default_delete<char[]>());
+        sprintf(fmtp.get(), fmtpFmt,
+                m_payload, profileSpace,
+                profileId,
+                tierFlag,
+                levelId,
+                interopConstraintsStr,
+                sprop_vps.c_str(),
+                sprop_sps.c_str(),
+                sprop_pps.c_str());
+        ret=fmtp.get();
+    }while(0);
+    return ret;
 }
 bool h265_source::handleFrame(MediaChannelId channelId, AVFrame frame)
 {

@@ -4,7 +4,10 @@
 using namespace micagent;
 rtsp_server::rtsp_server(uint16_t listen_port,uint32_t netinterface_index):tcp_server (listen_port,netinterface_index),m_remove_timer_id(INVALID_TIMER_ID)
 {
-    Network_Util::Instance().get_net_interface_info();
+    auto net=Network_Util::Instance().get_net_interface_info();
+    if(!net.empty()){
+        m_net_info=net[0];
+    }
 }
 MediaSessionId rtsp_server::addMediaSession(shared_ptr<media_session>session)
 {
@@ -14,7 +17,8 @@ MediaSessionId rtsp_server::addMediaSession(shared_ptr<media_session>session)
         auto ret=session->getSessionid();
         auto suffix=session->getSuffix();
         if(m_suffix_map.find(suffix)!=end(m_suffix_map)||m_session_map.find(ret)!=end(m_session_map))break;
-        MICAGENT_LOG(LOG_WARNNING,"play rtsp stream using url  rtsp://%s:%hu/%s",get_ip().c_str(),get_port(),suffix.c_str());
+        MICAGENT_LOG(LOG_WARNNING," dev %s mac %s example:play rtsp stream using url  rtsp://%s:%hu/%s ",m_net_info.dev_name.c_str(),m_net_info.mac.c_str(),\
+        m_net_info.ip.c_str(),get_port(),suffix.c_str());
         m_session_map.emplace(ret,session);
         m_suffix_map.emplace(suffix,ret);
         return ret;
@@ -27,6 +31,7 @@ void rtsp_server::removeMediaSession(MediaSessionId id)
     auto iter=m_session_map.find(id);
     if(iter!=end(m_session_map)){
         auto session=iter->second;
+        MICAGENT_LOG(LOG_ERROR,"remove stream %s!",session->getSuffix().c_str());
         if(session)m_suffix_map.erase(session->getSuffix());
         m_session_map.erase(iter);
     }
@@ -36,6 +41,7 @@ void rtsp_server::removeMediaSession(string suffix)
     lock_guard<mutex>locker(m_session_mutex);
     auto iter=m_suffix_map.find(suffix);
     if(iter!=end(m_suffix_map)){
+        MICAGENT_LOG(LOG_ERROR,"remove stream %s!",suffix.c_str());
         m_session_map.erase(iter->second);
         m_suffix_map.erase(iter);
     }
@@ -43,7 +49,6 @@ void rtsp_server::removeMediaSession(string suffix)
 bool rtsp_server::updateFrame(MediaSessionId session_id,MediaChannelId id,const AVFrame &frame)
 {
 //safety_check
-    MICAGENT_LOG(LOG_INFO,"%02x  %u",frame.buffer.get()[0],frame.size);
     if(frame.size>MAX_MEDIA_FRAME_SIZE)return false;
     shared_ptr<media_session>session_ptr(nullptr);
     {
@@ -53,7 +58,7 @@ bool rtsp_server::updateFrame(MediaSessionId session_id,MediaChannelId id,const 
         session_ptr=iter->second;
         if(!session_ptr)return false;
     }
-    return (session_ptr->getClientsNums()>0)?session_ptr->updateFrame(id,frame):true;
+    return session_ptr->updateFrame(id,frame);
 }
 void rtsp_server::setFrameRate(MediaSessionId session_id,uint32_t frame_rate)
 {

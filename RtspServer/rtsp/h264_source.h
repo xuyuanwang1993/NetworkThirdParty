@@ -24,6 +24,8 @@ public:
 
     // SDP媒体属性 a=
     virtual std::string getAttribute();
+    //a=fmtp copy from live555
+    virtual std::string getAttributeFmtp();
 
     bool handleFrame(MediaChannelId channelId, AVFrame frame);
     bool handleGopCache(MediaChannelId channelid,shared_ptr<rtp_connection>connection);

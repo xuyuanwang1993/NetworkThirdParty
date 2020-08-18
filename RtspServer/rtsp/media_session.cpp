@@ -92,7 +92,6 @@ bool media_session::updateFrame(MediaChannelId channel,const AVFrame &frame)
             m_proxy_session_map.erase(iter++);
         }
     }
-    if(m_rtp_connections.empty())return true;
     if(m_media_source[channel]){
 #if ENABLE_GOP_CACHE
         for(auto i:m_rtp_connections)
@@ -200,6 +199,13 @@ string media_session::get_sdp_info (const string & version)
                      "%s\r\n",
                      m_media_source[chn]->getAttribute().c_str());
 
+            //getAttributeFmtp will add "\r\n" if it's not empty
+            auto fmtp=m_media_source[chn]->getAttributeFmtp();
+            if(!fmtp.empty()){
+                snprintf(buf+strlen(buf), sizeof(buf)-strlen(buf),
+                         "%s",
+                         fmtp.c_str());
+            }
             snprintf(buf+strlen(buf), sizeof(buf)-strlen(buf),
                      "a=control:track%d\r\n", chn);
         }

@@ -5,6 +5,7 @@
 #include "h264_source.h"
 #include <cstdio>
 #include <chrono>
+#include "Base64.h"
 #if defined(__linux) || defined(__linux__)
 #include <sys/time.h>
 #endif
@@ -56,16 +57,12 @@ bool h264_source::check_frames(media_frame_type type, AVFrame frame)
             m_send_counts=m_frameRate*2+2;
         }
         else if (type==FRAME_SPS) {
-            if(!m_frame_sps){
-                m_frame_sps.reset(new AVFrame(frame.size));
-                memcpy(m_frame_sps.get()->buffer.get(),frame.buffer.get(),frame.size);
-            }
+            m_frame_sps.reset(new AVFrame(frame.size));
+            memcpy(m_frame_sps.get()->buffer.get(),frame.buffer.get(),frame.size);
         }
         else if (type==FRAME_PPS) {
-            if(!m_frame_pps){
-                m_frame_pps.reset(new AVFrame(frame.size));
-                memcpy(m_frame_pps.get()->buffer.get(),frame.buffer.get(),frame.size);
-            }
+            m_frame_pps.reset(new AVFrame(frame.size));
+            memcpy(m_frame_pps.get()->buffer.get(),frame.buffer.get(),frame.size);
         }
         else if (type==FRAME_SEI) {
             m_last_sei.reset(new AVFrame(frame.size));
@@ -103,7 +100,35 @@ string h264_source::getAttribute()
 {
     return string("a=rtpmap:96 H264/90000");
 }
-
+std::string h264_source::getAttributeFmtp()
+{
+    string ret("");
+    do{
+        if(!m_frame_sps||!m_frame_pps)break;
+        // Set up the "a=fmtp:" SDP line for this stream:
+        shared_ptr<uint8_t>spsWEB(new uint8_t[m_frame_sps->size],std::default_delete<uint8_t[]>());
+        auto spsWEBSize = removeH264or5EmulationBytes(spsWEB, m_frame_sps->size, m_frame_sps->buffer, m_frame_sps->size);
+        if (spsWEBSize < 4) break;
+        uint32_t profileLevelId = (spsWEB.get()[1]<<16) | (spsWEB.get()[2]<<8) | spsWEB.get()[3];
+        auto sps_base64 = micagent::base64Encode(m_frame_sps->buffer.get() ,m_frame_sps->size);
+        auto pps_base64 = micagent::base64Encode(m_frame_pps->buffer.get() ,m_frame_pps->size);
+        char const* fmtpFmt =
+                "a=fmtp:%d packetization-mode=1"
+                ";profile-level-id=%06X"
+                ";sprop-parameter-sets=%s,%s\r\n";
+        unsigned fmtpFmtSize = strlen(fmtpFmt)
+                + 3 /* max char len */
+                + 6 /* 3 bytes in hex */
+                + sps_base64.size() + pps_base64.size();
+        shared_ptr<char>fmtp(new char[fmtpFmtSize],std::default_delete<char[]>());
+        sprintf(fmtp.get(), fmtpFmt,
+                m_payload,
+                profileLevelId,
+                sps_base64.c_str(), pps_base64.c_str());
+        ret=fmtp.get();
+    }while(0);
+    return  ret;
+}
 bool h264_source::handleFrame(MediaChannelId channelId, AVFrame frame)
 {
     auto type=this->get_frame_type(frame.buffer.get()[0]);

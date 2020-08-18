@@ -49,6 +49,8 @@ public:
 
     // SDP媒体属性 a=
     virtual std::string getAttribute()  = 0;
+    //a=fmtp
+    virtual std::string getAttributeFmtp(){return string("");}
 
     virtual bool handleFrame(MediaChannelId channelId, AVFrame frame) = 0;
     virtual bool handleGopCache(MediaChannelId /*channelid*/,shared_ptr<rtp_connection>/*connection*/){return false;}
@@ -64,6 +66,26 @@ public:
     { return m_clockRate; }
     virtual void setFrameRate(uint32_t frameRate){(void)frameRate;}
     int64_t getLastSendTime()const{return m_last_micro_send_time;}
+
+    static uint32_t removeH264or5EmulationBytes(shared_ptr<uint8_t>to_ptr, uint32_t toMaxSize,
+                                                const shared_ptr<uint8_t>from_ptr, uint32_t fromSize) {
+        unsigned toSize = 0;
+        unsigned i = 0;
+        auto from=from_ptr.get();
+        auto to=to_ptr.get();
+        while (i < fromSize && toSize+1 < toMaxSize) {
+            if (i+2 < fromSize && from[i] == 0 && from[i+1] == 0 && from[i+2] == 3) {
+                to[toSize] = to[toSize+1] = 0;
+                toSize += 2;
+                i += 3;
+            } else {
+                to[toSize] = from[i];
+                toSize += 1;
+                i += 1;
+            }
+        }
+        return toSize;
+    }
 protected:
     MediaType m_mediaType = NONE;
     uint32_t m_payload = 0;

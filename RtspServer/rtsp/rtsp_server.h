@@ -91,6 +91,7 @@ private:
     std::mutex m_session_mutex;
     std::unordered_map<MediaSessionId,shared_ptr<media_session>>m_session_map;
     std::unordered_map<string,MediaSessionId>m_suffix_map;
+    Network_Util::net_interface_info m_net_info;
 };
 }
 #endif // RTSP_SERVER_H
