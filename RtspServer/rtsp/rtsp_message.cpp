@@ -11,9 +11,9 @@ bool rtsp_message::insert_packet(const char *buf,uint32_t buf_len)
     do{
         lock_guard<mutex>locker(m_mutex);
         if(!m_is_send){
-            if(m_buf_cache->filled_size()+buf_len>MAX_PACKET_SIZE){
+            if(m_buf_cache->filled_size()+buf_len>MAX_TCP_MSS_CACHE){
                 MICAGENT_LOG(LOG_ERROR,"packet overflow the packet cache!");
-                m_buf_cache.reset();
+                m_buf_cache->reset();
                 ret=false;
                 break;
             }

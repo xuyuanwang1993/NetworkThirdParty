@@ -4,10 +4,7 @@
 using namespace micagent;
 rtsp_server::rtsp_server(uint16_t listen_port,uint32_t netinterface_index):tcp_server (listen_port,netinterface_index),m_remove_timer_id(INVALID_TIMER_ID)
 {
-    auto net=Network_Util::Instance().get_net_interface_info();
-    if(!net.empty()){
-        m_net_info=net[0];
-    }
+
 }
 MediaSessionId rtsp_server::addMediaSession(shared_ptr<media_session>session)
 {

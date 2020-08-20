@@ -31,7 +31,8 @@ HEADERS += \
     ../API/API_RtspServer.h \
     ../../json_config/CJsonObject.hpp \
     ../../json_config/cJSON.h \
-    ../../OtherTools/DelayControl/delay_control.h
+    ../../OtherTools/DelayControl/delay_control.h \
+    ../../OtherTools/Base64/Base64.h
 
 LIBS+= -lpthread
 
@@ -67,7 +68,8 @@ SOURCES += \
     ../API/API_RtspServer.cpp \
     ../../json_config/CJsonObject.cpp \
     ../../json_config/cJSON.c \
-    ../../OtherTools/DelayControl/delay_control.cpp
+    ../../OtherTools/DelayControl/delay_control.cpp \
+    ../../OtherTools/Base64/Base64.cpp
 
 INCLUDEPATH += ..\
 ../../LOG \
@@ -77,6 +79,7 @@ INCLUDEPATH += ..\
 ../../OtherTools/MD5/ \
 ../API/ \
 ../../OtherTools/DelayControl/ \
+../../OtherTools/Base64/ \
 
 CONFIG-=qt
 

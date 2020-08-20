@@ -23,7 +23,7 @@ int main(int argc,char *argv[]){
     }
     uint16_t port=8554;
     if(argc==3)port=stoul(argv[2]);
-    Logger::Instance().set_log_to_std(false);
+    Logger::Instance().set_log_to_std(true);
     Logger::Instance().register_handle();
 #if 0
     EventLoop loop;
@@ -77,15 +77,15 @@ int main(int argc,char *argv[]){
     Api_rtsp_server::Api_Rtsp_Server_Init_And_Start(handle,port);
     //Api_rtsp_server::Api_Rtsp_Server_AddAuthorization(handle,"admin","micagent");
     Api_rtsp_server::Media_Info media_info;
-    media_info.frameRate=25;
+    media_info.frameRate=60;
     delay_control_base *delay=nullptr;
     if(strstr(argv[1],"h264")!=nullptr){
         media_info.viedo_type=Api_rtsp_server::H264;
-        delay=new h264_delay_control();
+        delay=new h264_delay_control(media_info.frameRate);
     }
     else {
         media_info.viedo_type=Api_rtsp_server::H265;
-        delay=new h265_delay_control();
+        delay=new h265_delay_control(media_info.frameRate);
     }
     auto session_id=Api_rtsp_server::Api_Rtsp_Server_Add_Stream(handle,"test",media_info);
     micagent::file_reader_base file(argv[1]);

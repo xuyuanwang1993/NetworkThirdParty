@@ -25,6 +25,7 @@ protected:
     uint16_t m_server_port;
     ChannelPtr m_listen_channel;
     unordered_map<SOCKET,shared_ptr<tcp_connection>>m_connections;
+    Network_Util::net_interface_info m_net_info;
 };
 }
 #endif // TCP_SERVER_H

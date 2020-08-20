@@ -11,8 +11,12 @@ tcp_server::tcp_server(uint16_t listen_port,uint32_t netinterface_index):m_regis
     Network_Util::Instance().set_reuse_addr(fd);
     Network_Util::Instance().set_reuse_port(fd);
     Network_Util::Instance().make_noblocking(fd);
+    auto net=Network_Util::Instance().get_net_interface_info();
+    if(!net.empty()){
+        m_net_info=net[0];
+    }
     Network_Util::Instance().bind(fd,listen_port,netinterface_index);
-    m_server_ip=Network_Util::Instance().get_local_ip(fd);
+    m_server_ip=m_net_info.ip;
     //check
     m_server_port=Network_Util::Instance().get_local_port(fd);
     if(m_server_port!=listen_port){
