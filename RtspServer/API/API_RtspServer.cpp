@@ -139,3 +139,8 @@ void Api_rtsp_server::Api_Rtsp_Add_Frame_Control(std::shared_ptr<Api_rtsp_server
     if(!handle||!handle->is_run) return ;
     handle->server->setFrameRate(session_id,frame_rate);
 }
+void Api_rtsp_server::Api_Rtsp_Set_NewConnection_Callback(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,const micagent::NEW_CONNECTION_CALLBACK &callback)
+{
+    if(!handle||!handle->server) return ;
+    handle->server->setNewRtspConnection(callback);
+}

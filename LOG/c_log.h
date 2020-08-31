@@ -3,6 +3,8 @@
 #define C_LOG_H
 /*
  * compile with -std=c++11 [-DDEBUG]
+ * complie with -DBACKTRACE and link with -rdynamic to open backtrace support
+ * you can call print_backtrace to log the backtrace info
  */
 #include <cstdio>
 #include<cstdarg>
@@ -39,6 +41,7 @@ enum LOG_LEVEL{
     LOG_ERROR,
     LOG_FATALERROR,
     LOG_BREAK_POINT,
+    LOG_BACKTRACE,
 };
 using MAX_LOG_CACHE_CALLBACK=function<void (const string&)>;
 class Logger{
@@ -48,8 +51,8 @@ class Logger{
     const char LINE_END[3]={'\r','\n','\0'};
 #endif
      const uint64_t MAX_LOG_MESSAGE_SIZE=4*1024;//4k
-    const int  MAX_TRACE_SIZE=100;
-    const int  MIN_TRACE_SIZE=5;
+    const int  MAX_TRACE_SIZE=256;
+    const int  MIN_TRACE_SIZE=64;
     const LOG_LEVEL MIN_LOG_LEVEL=LOG_DEBUG;
     const LOG_LEVEL MAX_LOG_LEVEL=LOG_FATALERROR;
     const int MAX_LOG_FILE_SIZE=2*1024*1024;//2M
@@ -70,7 +73,7 @@ public:
     bool set_log_path(const string &path,const string &proname);
     /*设置最小打印等级*/
     void set_minimum_log_level(int level);
-    /*设置trace队列大小，不超过100，最小为10*/
+    /*设置trace队列大小，不超过256，最小为64*/
     void set_dump_size(int size);
     /*设置是否在新建目录时清除log或log文件超出大小时删除原有log*/
     void set_clear_flag(bool clear);
@@ -93,6 +96,13 @@ public:
     bool get_register_status()const{
         DEBUG_LOCK
                 return m_registered;
+    }
+    //获取堆栈信息
+    void print_backtrace();
+    //获取当前堆栈容量
+    int get_dump_size()const{
+        std::lock_guard<mutex> locker(m_dump_mutex);
+        return m_dump_max_size;
     }
 private:
     Logger();

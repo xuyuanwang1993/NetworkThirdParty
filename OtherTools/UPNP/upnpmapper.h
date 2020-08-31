@@ -57,12 +57,51 @@ class UpnpMapper{
     friend class Upnp_Connection;
     const int MAX_WAIT_TIME=5000;//5s
 public:
+    /**
+     * @brief Instance single instance
+     * @return
+     */
     static UpnpMapper &Instance(){static UpnpMapper instance;return instance; }
+    /**
+     * @brief Init init the UpnpMapper
+     * @param event_loop
+     * @param lgd_ip the external router'ip
+     */
     void Init(EventLoop *event_loop,string lgd_ip);
+    /**
+     * @brief Api_addportMapper add a port mapper
+     * @param type TCP/UDP
+     * @param internal_ip
+     * @param internal_port
+     * @param external_port
+     * @param description
+     * @param callback if add success the callback will catch a  true param input
+     * @param alive_time the time it will be kept and set to 0 for forever
+     */
     void Api_addportMapper(SOCKET_TYPE type,string internal_ip,int internal_port,int external_port,string description,UPNPCALLBACK callback=nullptr,int alive_time=0);
+    /**
+     * @brief Api_GetSpecificPortMappingEntry
+     * @param type TCP/UDP
+     * @param external_port
+     * @param callback if port map existed,the callback will catch a  true param input
+     */
     void Api_GetSpecificPortMappingEntry(SOCKET_TYPE type,int external_port,UPNPCALLBACK callback=nullptr);
+    /**
+     * @brief Api_deleteportMapper delete a port map on external_port
+     * @param type TCP/UDP
+     * @param external_port
+     * @param callback  if port map is deleted,the callback will catch a  true param input
+     */
     void Api_deleteportMapper(SOCKET_TYPE type,int external_port,UPNPCALLBACK callback=nullptr);
+    /**
+     * @brief Api_GetNewexternalIP get the new external ip
+     * @param callback
+     */
     void Api_GetNewexternalIP(UPNPCALLBACK callback=nullptr);
+    /**
+     * @brief APi_getexternalIP get the external ip cache
+     * @return
+     */
     string APi_getexternalIP(){return m_wan_ip;}
     bool Api_discoverOk(){return m_init_ok;}
 protected:

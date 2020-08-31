@@ -6,17 +6,32 @@
 namespace micagent {
 using namespace std;
 class dns_server{
+    /**
+     * @brief MAX_CHACHE_TIME max time a time out dns cache will be saved
+     */
     static constexpr int64_t MAX_CHACHE_TIME=5*60*1000;//5min
+    /**
+     * @brief SESSION_CHECK_INTERVAL check_interval for session int uint ms
+     */
     static constexpr int64_t SESSION_CHECK_INTERVAL=30*1000;//30s
     /*database operation*/
+    /**
+     * @brief The port_info struct describe a port map info
+     */
     struct port_info{
         port_info():name(""),internal_port(0),external_port(0){
 
         }
+        /**
+         * @brief name application's name
+         */
         string name;
         uint16_t internal_port;
         uint16_t external_port;
     };
+    /**
+     * @brief The data_session struct
+     */
     struct data_session{
         uint32_t data_base_id;
         string domain_name;
@@ -70,10 +85,26 @@ class dns_server{
             if(iter!=m_session_map.end())m_session_map.erase(iter);
         }
     };
+    /*database operation end*/
 public:
+    /**
+     * @brief dns_server init a dns server
+     * @param port work port
+     * @param cache_time session's cache name
+     */
     dns_server(uint16_t port,int64_t cache_time=MAX_CHACHE_TIME);
+    /**
+     * @brief config set the base event loop
+     * @param loop
+     */
     void config(EventLoop *loop);
+    /**
+     * @brief start_work add task into event loop
+     */
     void start_work();
+    /**
+     * @brief stop_work remove task from event loop
+     */
     void stop_work();
     ~dns_server();
 private:
@@ -84,7 +115,14 @@ private:
     void handle_dns_find(neb::CJsonObject&object);
     void handle_update(neb::CJsonObject&object);
     void handle_port_check();
+    /**
+     * @brief check_sessions judge and remove time out session
+     */
     void check_sessions();
+    /**
+     * @brief response response the buf int rc4
+     * @param buf
+     */
     void response(const string &buf);
 private:
     static data_base m_data_base;

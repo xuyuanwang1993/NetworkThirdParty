@@ -1,8 +1,8 @@
 TARGET=io_core_test
 DEBUG ?=
 OBJ_DIR = .OBJS
-LD_FLAGS = -lpthread
-CFLAGS += -g -DDEBUG
+LD_FLAGS = -rdynamic -lpthread 
+CFLAGS += -g -DDEBUG 
 CXX_FLAGS += -std=c++11 
 WORK_DIR = .\
 	..\

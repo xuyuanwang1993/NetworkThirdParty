@@ -1,9 +1,11 @@
 HEADERS += \
-    ../io_output/io_output.h
+    ../io_output/io_output.h \
+    ../bits_helper/bits_helper.h
 
 SOURCES += \
     main.cpp \
-    ../io_output/io_output.cpp
+    ../io_output/io_output.cpp \
+    ../bits_helper/bits_helper.cpp
 
  MOC_DIR +=.moc
 RCC_DIR +=.rcc
@@ -12,5 +14,6 @@ LIBS += -lpthread
 CONFIG-=qt
 INCLUDEPATH += ../ \
 ../io_output \
+../bits_helper/ \
 
 QMAKE_CXXFLAGS+= '-DDEBUG'

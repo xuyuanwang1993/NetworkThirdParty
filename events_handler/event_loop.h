@@ -139,6 +139,9 @@ private:
      * @brief m_fd_map 缓存fd与TaskScheduler的对应信息
      */
     unordered_map<SOCKET,int> m_fd_map;
+    /**
+     * @brief m_is_stop  record the status of EventLoop.The EventLoop will be unusable when m_is_stop becomes true;
+     */
     atomic_bool m_is_stop;
 };
 }

@@ -11,6 +11,9 @@
 #include <vector>
 namespace micagent {
 using namespace std;
+/**
+ * @brief The daemon_instance class a daemon class that restart dead process and abnomal application
+ */
 class daemon_instance{
     struct pro_check_task{
         uint32_t index;

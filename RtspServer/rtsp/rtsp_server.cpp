@@ -2,7 +2,8 @@
 #include"rtsp_connection.h"
 #include "network_util.h"
 using namespace micagent;
-rtsp_server::rtsp_server(uint16_t listen_port,uint32_t netinterface_index):tcp_server (listen_port,netinterface_index),m_remove_timer_id(INVALID_TIMER_ID)
+rtsp_server::rtsp_server(uint16_t listen_port,uint32_t netinterface_index):tcp_server (listen_port,netinterface_index),m_remove_timer_id(INVALID_TIMER_ID),\
+m_new_connection_callback(nullptr)
 {
 
 }

@@ -19,9 +19,12 @@
 #include<unordered_map>
 #include<chrono>
 #include<mutex>
+#include<functional>
 namespace micagent{
+using namespace std;
     class rtsp_server;
     class EventLoop;
+using NEW_CONNECTION_CALLBACK=function<void(string ip,uint16_t port ,string url)>;
 };
 using std::endl;
 using std::cout;
@@ -77,6 +80,8 @@ public:
     }Frame_type;
     static bool Api_Rtsp_Push_Frame(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,const void *tmp_buf,int buf_size,int channel_id=0,int64_t micro_time_now=0);
     static void Api_Rtsp_Add_Frame_Control(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,uint32_t session_id,uint32_t frame_rate);
+    //设置新RTSP连接回调函数
+    static void Api_Rtsp_Set_NewConnection_Callback(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,const micagent::NEW_CONNECTION_CALLBACK &callback);
 private:
     Api_rtsp_server(){}
     ~Api_rtsp_server(){}

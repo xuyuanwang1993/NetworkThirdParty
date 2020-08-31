@@ -20,17 +20,69 @@ class http_request{
     static constexpr const int KEY_MAX_LEN=128;
     static constexpr const int VALUE_MAX_LEN=1024;
 public:
+    /**
+     * @brief http_request init an empty http request
+     * @param api set the http request access path
+     */
     http_request(const string &api="/");
+    /**
+     * @brief http_request init a http request that copy header from src
+     * @param src
+     */
     http_request(const http_request&src);
+    /**
+     * @brief update when you recv a http request ,you can call this function to input the data streaming
+     * @param buf
+     * @param buf_len
+     * @details this function will notify the receiver who blocks in calling get_body
+     */
     void update(const char *buf,uint32_t buf_len);
+    /**
+     * @brief set_head set the head item
+     * @param key
+     * @param value
+     */
     void set_head(const string &key,const string &value);
+    /**
+     * @brief set_api set the http access path
+     * @param api
+     */
     void set_api(const string&api);
+    /**
+     * @brief set_body modify body and set the content-length
+     * @param body
+     * @param content_type
+     */
     void set_body(const string &body,const string&content_type=DEFAULT_CONTENT_TYPE);
+    /**
+     * @brief get_head_info get the head item
+     * @param key
+     * @return
+     */
     string get_head_info(const string &key)const;
+    /**
+     * @brief get_body timeout to get all body when it's ready
+     * @param wait_time_ms max wait time
+     * @return
+     */
     string get_body(int64_t wait_time_ms=0)const;
+    /**
+     * @brief get_api get the access path
+     * @return
+     */
     string get_api()const;
+    /**
+     * @brief build_http_packet get complete http packet
+     * @param reset if it is set true,it will reset all info except the api
+     * @return
+     */
     string build_http_packet(bool reset);
     ~http_request();
+    /**
+     * @brief get_next_line search a http head line
+     * @param input
+     * @return
+     */
     static const char * get_next_line(const char *input);
 private:
     mutable mutex m_mutex;

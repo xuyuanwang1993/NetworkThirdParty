@@ -6,6 +6,7 @@
 #include <media.h>
 namespace micagent {
 using namespace std;
+using RTSP_NEW_CONNECTION_CALLBACK=function<void(string,uint16_t,string)>;
 class rtsp_connection;
 class rtsp_server:public tcp_server{
     static constexpr uint32_t MIN_FRAME_RATE=5;
@@ -65,6 +66,10 @@ public:
     shared_ptr<tcp_connection>new_connection(SOCKET fd);
 
     bool addProxySession(const string &url_sufix,shared_ptr<proxy_session_base>session);
+    void setNewRtspConnection(const RTSP_NEW_CONNECTION_CALLBACK&cb){
+        lock_guard<mutex>locker(m_session_mutex);
+        m_new_connection_callback=cb;
+    }
 protected:
     void remove_invalid_connection();
     TimerId m_remove_timer_id;
@@ -91,6 +96,7 @@ private:
     std::mutex m_session_mutex;
     std::unordered_map<MediaSessionId,shared_ptr<media_session>>m_session_map;
     std::unordered_map<string,MediaSessionId>m_suffix_map;
+    RTSP_NEW_CONNECTION_CALLBACK m_new_connection_callback;
 };
 }
 #endif // RTSP_SERVER_H

@@ -7,6 +7,14 @@
 #include<string.h>
 #include<cstdio>
 #include<cstdlib>
+#ifdef BACKTRACE
+#define BACKTRACE_ON 1
+#else
+#define BACKTRACE_ON 0
+#endif
+#if BACKTRACE_ON
+#include <execinfo.h>
+#endif
 #if defined(__linux) || defined(__linux__)
 #include <sys/stat.h>
 #include<unistd.h>
@@ -22,6 +30,7 @@ constexpr static char log_strings[][20]={
     "ERROR",
     "FATAL_ERROR",
     "BREAK_MARK",
+    "BACKTRACE",
 };
 #if defined(__linux) || defined(__linux__)
 #define PRINT_NONE               "\033[m"
@@ -34,12 +43,13 @@ constexpr static char log_strings[][20]={
 #define PRINT_PURPLE             "\033[0;35m"
 #define PRINT_CYAN               "\033[0;36m"
 constexpr static char log_color[][20] = {
-	PRINT_NONE,
-	PRINT_GREEN,
-	PRINT_YELLOW,
-	PRINT_BROWN,
-	PRINT_RED,
-	PRINT_PURPLE,
+    PRINT_NONE,
+    PRINT_GREEN,
+    PRINT_YELLOW,
+    PRINT_BROWN,
+    PRINT_RED,
+    PRINT_PURPLE,
+    PRINT_BLUE,
 };
 #elif defined(WIN32) || defined(_WIN32)
 #define FOREGROUND_BLUE      0x0001 // text color contains blue.
@@ -50,12 +60,13 @@ constexpr static char log_color[][20] = {
 #define FOREGROUND_YELLOW	0x0006
 #define FOREGROUND_NONE	0x0007
 constexpr static int log_color[] = {
-	FOREGROUND_NONE,
-	FOREGROUND_GREEN,
-	FOREGROUND_YELLOW,
-	FOREGROUND_CYAN,
-	FOREGROUND_RED,
-	FOREGROUND_PURPLE,
+    FOREGROUND_NONE,
+    FOREGROUND_GREEN,
+    FOREGROUND_YELLOW,
+    FOREGROUND_CYAN,
+    FOREGROUND_RED,
+    FOREGROUND_PURPLE,
+    FOREGROUND_BLUE,
 };
 #endif
 string Logger::get_local_time(){
@@ -82,7 +93,7 @@ void Logger::log(int level,const char *file,const char *func,int line,const char
     //小于最小打印等级的log不处理
     {
         DEBUG_LOCK
-         if(level<m_level||level>LOG_BREAK_POINT)return;
+                if(level<m_level||level>LOG_BACKTRACE)return;
     }
     shared_ptr<char>buf(new char[MAX_LOG_MESSAGE_SIZE+1],std::default_delete<char[]>());
     buf.get()[MAX_LOG_MESSAGE_SIZE]='\0';
@@ -117,45 +128,55 @@ void Logger::log(int level,const char *file,const char *func,int line,const char
 #endif
     }
     if(level==LOG_BREAK_POINT){
-    /*断点信息存储*/
+        /*断点信息存储*/
         lock_guard<mutex> locker(m_dump_mutex);
         while(m_dump_queue.size()>=m_dump_max_size)m_dump_queue.pop();
         m_dump_queue.push(make_shared<string>(buf.get()));
     }
     std::unique_lock<mutex> locker(m_mutex);
-    if(m_log_buf.size()<MAX_LOG_QUEUE_SIZE)m_log_buf.push(make_shared<string>(buf.get()));
-    m_conn.notify_all();
+    if(level==LOG_BACKTRACE){
+        auto time_str=get_local_time();
+        string log_info="[";
+        log_info=log_info+time_str+"]"+buf.get()+LINE_END;
+        if(!open_file()||!append_to_file(log_info))m_write_error_cnt++;
+        if(m_write_error_cnt>MAX_WRITE_ERROR_TRY&&m_env_set)reset_file();
+    }
+    else {
+        if(m_log_buf.size()<MAX_LOG_QUEUE_SIZE)m_log_buf.push(make_shared<string>(buf.get()));
+        m_conn.notify_all();
+    }
+
 }
 bool Logger::set_log_path(const string &path,const string &proname){
     std::lock_guard<mutex> locker(m_mutex);
     if(m_fp){
-    fclose(m_fp);
-    m_fp=nullptr;
+        fclose(m_fp);
+        m_fp=nullptr;
     }
     if(m_clear_flag)reset_file();
     m_env_set=false;
     m_save_path=path;
     m_pro_name=proname;
 #if defined(__linux) || defined(__linux__)
-	if (m_save_path.empty()) {
-		m_save_path = ".";
-		m_save_path += DIR_DIVISION;
-	}
-	else mkdir(m_save_path.c_str(), 0777);
-	if (access(m_save_path.c_str(), F_OK | W_OK) != -1)m_env_set = true;
+    if (m_save_path.empty()) {
+        m_save_path = ".";
+        m_save_path += DIR_DIVISION;
+    }
+    else mkdir(m_save_path.c_str(), 0777);
+    if (access(m_save_path.c_str(), F_OK | W_OK) != -1)m_env_set = true;
 #elif defined(WIN32) || defined(_WIN32)
-	m_env_set = true;
-	if (m_save_path.empty()) {
-		m_save_path = ".";
-		m_save_path += DIR_DIVISION;
-	}
-	else if( CreateDirectory(m_save_path.c_str(), nullptr)!=0)m_env_set=false;
+    m_env_set = true;
+    if (m_save_path.empty()) {
+        m_save_path = ".";
+        m_save_path += DIR_DIVISION;
+    }
+    else if( CreateDirectory(m_save_path.c_str(), nullptr)!=0)m_env_set=false;
 #endif
     return m_env_set;
 }
 void Logger::set_minimum_log_level(int level){
     DEBUG_LOCK
-    if(level<LOG_DEBUG)m_level.exchange(LOG_DEBUG);
+            if(level<LOG_DEBUG)m_level.exchange(LOG_DEBUG);
     else if(level>LOG_FATALERROR)m_level.exchange(LOG_FATALERROR);
     else {
         m_level.exchange(level);
@@ -174,7 +195,7 @@ void Logger::set_clear_flag(bool clear)
 }
 void Logger::set_log_file_size(long size)
 {
-lock_guard<mutex> locker(m_mutex);
+    lock_guard<mutex> locker(m_mutex);
     m_max_file_size=size;
     if(m_max_file_size<MIN_LOG_FILE_SIZE)m_max_file_size=MIN_LOG_FILE_SIZE;
     else if(m_max_file_size>MAX_LOG_FILE_SIZE)m_max_file_size=MAX_LOG_FILE_SIZE;
@@ -184,15 +205,15 @@ string Logger::get_dump_info()const{
     string ret_string;
     auto tmp_queue(m_dump_queue);
     while(!tmp_queue.empty()){
-    ret_string+=*tmp_queue.front().get();
-    ret_string+=LINE_END;
-    tmp_queue.pop();
+        ret_string+=*tmp_queue.front().get();
+        ret_string+=LINE_END;
+        tmp_queue.pop();
     }
     return ret_string;
 }
 Logger::Logger():m_registered(false),m_stop(false),m_fp(nullptr),m_save_path(string(".")+DIR_DIVISION),m_env_set(false),m_level(MIN_LOG_LEVEL),m_clear_flag(false)\
-,m_max_file_size(MIN_LOG_FILE_SIZE),m_dump_max_size(MIN_TRACE_SIZE)\
-,m_log_cnt(0),m_max_log_cnt(MIN_LOG_CACHE_CNT),m_cache_callback(nullptr),m_write_error_cnt(0),m_log_to_std(false)
+  ,m_max_file_size(MIN_LOG_FILE_SIZE),m_dump_max_size(MIN_TRACE_SIZE)\
+  ,m_log_cnt(0),m_max_log_cnt(MIN_LOG_CACHE_CNT),m_cache_callback(nullptr),m_write_error_cnt(0),m_log_to_std(false)
 {
 
 }
@@ -201,7 +222,7 @@ void Logger::register_handle()
     if(!get_register_status()){
         {
             DEBUG_LOCK
-            m_registered.exchange(true);
+                    m_registered.exchange(true);
             m_stop.exchange(false);
         }
         unique_lock<mutex>locker(m_mutex);
@@ -212,7 +233,7 @@ void Logger::unregister_handle()
 {
     {
         DEBUG_LOCK
-        m_stop.exchange(true);
+                m_stop.exchange(true);
     }
     {
         unique_lock<mutex>locker(m_mutex);
@@ -223,7 +244,7 @@ void Logger::unregister_handle()
     if(m_thread&&m_thread->joinable())m_thread->join();
     {
         DEBUG_LOCK
-        m_registered.exchange(false);
+                m_registered.exchange(false);
     }
 }
 Logger::~Logger(){
@@ -236,7 +257,7 @@ bool Logger::open_file()
         if(!m_env_set||m_save_path.empty())break;
         if(!m_fp){
             auto time_string=get_local_time();
-			for (auto& i : time_string)if (i == ' ')i = '#'; else if (i == ':')i = '-';
+            for (auto& i : time_string)if (i == ' ')i = '#'; else if (i == ':')i = '-';
             string file_name=m_save_path+DIR_DIVISION+time_string+"#"+m_pro_name+".log";
             m_fp=fopen(file_name.c_str(),"w+");
             if(m_fp)ret=true;
@@ -248,7 +269,7 @@ bool Logger::open_file()
                 m_fp=nullptr;
                 if(m_clear_flag)reset_file();
                 auto time_string=get_local_time();
-				for (auto& i : time_string)if (i == ' ')i = '#'; else if (i == ':')i = '-';
+                for (auto& i : time_string)if (i == ' ')i = '#'; else if (i == ':')i = '-';
                 string file_name=m_save_path+DIR_DIVISION+time_string+"#"+m_pro_name+".log";
                 m_fp=fopen(file_name.c_str(),"w+");
                 if(m_fp)ret=true;
@@ -275,7 +296,7 @@ void Logger::run(){
         if(m_log_buf.empty())continue;
         auto time_str=get_local_time();
         while(!m_log_buf.empty()){
-        string log_info="[";
+            string log_info="[";
             log_info=log_info+time_str+"]"+*m_log_buf.front()+LINE_END;
             {/*添加cache*/
                 lock_guard<mutex> cache_locker(m_cache_mutex);
@@ -323,16 +344,56 @@ string Logger::get_log_cache()
     return ret;
 }
 void Logger::reset_file(){
-	m_write_error_cnt = 0;
-	string file_name = m_save_path;
-	if (!m_save_path.empty())file_name += DIR_DIVISION;
-	file_name += "*.log";
+    m_write_error_cnt = 0;
+    string file_name = m_save_path;
+    if (!m_save_path.empty())file_name += DIR_DIVISION;
+    file_name += "*.log";
 #if defined(__linux) || defined(__linux__)
-	string cmd = "rm -rf ";
-	cmd += file_name;
+    string cmd = "rm -rf ";
+    cmd += file_name;
 #elif defined(WIN32) || defined(_WIN32)
-	string cmd = "del ";
-	cmd += file_name;
+    string cmd = "del ";
+    cmd += file_name;
 #endif
-	system(cmd.c_str());
+    system(cmd.c_str());
+}
+void Logger::print_backtrace()
+{
+#if BACKTRACE_ON
+    //输出程序的绝对路径
+    char buffer[4096];
+    memset(buffer, 0, sizeof(buffer));
+    auto count = readlink("/proc/self/exe", buffer, sizeof(buffer));
+    if(count > 0){
+        buffer[count] = '\n';
+        buffer[count + 1] = 0;
+        MICAGENT_LOG(LOG_BACKTRACE,"%s",buffer);
+    }
+    time_t tSetTime;
+    time(&tSetTime);
+    struct tm* ptm = localtime(&tSetTime);
+    //输出信息的时间
+    memset(buffer, 0, sizeof(buffer));
+    sprintf(buffer, "Dump Time: %d-%d-%d %d:%d:%d\n",
+            ptm->tm_year+1900, ptm->tm_mon+1, ptm->tm_mday,
+            ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+    MICAGENT_LOG(LOG_BACKTRACE,"%s",buffer);
+
+
+    //堆栈
+    auto max_size=get_dump_size();
+    void* DumpArray=nullptr;
+    int    nSize =    backtrace(&DumpArray, max_size);
+    sprintf(buffer, "backtrace rank = %d\n", nSize);
+    MICAGENT_LOG(LOG_BACKTRACE,"%s",buffer);
+    if (nSize > 0){
+        char** symbols = backtrace_symbols(&DumpArray, nSize);
+        if (symbols != nullptr){
+            for (int i=0; i<nSize; i++){
+                MICAGENT_LOG(LOG_BACKTRACE,"%s",symbols[i]);
+            }
+            free(symbols);
+        }
+    }
+#endif
 }

@@ -75,7 +75,10 @@ int main(int argc,char *argv[]){
 #else
     shared_ptr<Api_rtsp_server::Rtsp_Handle>handle(new Api_rtsp_server::Rtsp_Handle);
     Api_rtsp_server::Api_Rtsp_Server_Init_And_Start(handle,port);
-    //Api_rtsp_server::Api_Rtsp_Server_AddAuthorization(handle,"admin","micagent");
+    Api_rtsp_server::Api_Rtsp_Set_NewConnection_Callback(handle,[](string ip,uint16_t port,string url){
+        MICAGENT_LOG(LOG_BACKTRACE,"ip:%s port:%hu url:%s!",ip.c_str(),port,url.c_str());
+    });
+    Api_rtsp_server::Api_Rtsp_Server_AddAuthorization(handle,"admin","micagent");
     Api_rtsp_server::Media_Info media_info;
     media_info.frameRate=60;
     delay_control_base *delay=nullptr;

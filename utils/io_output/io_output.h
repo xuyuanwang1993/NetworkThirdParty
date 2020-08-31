@@ -8,6 +8,12 @@ namespace micagent {
 using namespace std;
 class io_output_base{
 public:
+    struct const_string{
+        const string const_str;
+        const_string(const string &str="\r\n"):const_str(str){
+
+        }
+    };
     io_output_base(){}
     virtual ~io_output_base();
     io_output_base &operator<<(char  c){
@@ -142,6 +148,14 @@ public:
     io_output_base &operator<<(std::string str){
 #ifndef DISABLE_PRINT
         printf("%s",str.c_str());
+        return *this;
+#else
+        return *this;
+#endif
+    }
+    io_output_base &operator<<(const const_string & str){
+#ifndef DISABLE_PRINT
+        printf("%s",str.const_str.c_str());
         return *this;
 #else
         return *this;

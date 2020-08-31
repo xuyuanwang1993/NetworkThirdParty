@@ -17,14 +17,44 @@ class upnp_helper{
         }
     };
 public:
+    /**
+     * @brief Instance single instance
+     * @return
+     */
     static upnp_helper &Instance(){static upnp_helper helper;return helper;}
+    /**
+     * @brief config init the upnp_helper
+     * @param loop event loop
+     * @param set_net whether to add external ip to the default interface
+     * @param lgd_ip the external router's ip
+     */
     void config(EventLoop *loop,bool set_net,string lgd_ip);
+    /**
+     * @brief add_port_task add a continued port map task
+     * @param type TCP/UDP
+     * @param internal_port
+     * @param external_port
+     * @param description
+     */
     void add_port_task(SOCKET_TYPE type,uint16_t internal_port,uint16_t external_port,string description);
+    /**
+     * @brief delete_port_task delete a continued port map task
+     * @param type TCP/UDP
+     * @param external_port
+     */
     void delete_port_task(SOCKET_TYPE type, uint16_t external_port, string);
+    /**
+     * @brief set_internal_callback set the callback when the internal ip is changed
+     * @param cb
+     */
     void set_internal_callback(const IpChangeCallback &cb){
         lock_guard<mutex>locker(m_mutex);
         m_internal_callback=cb;
     }
+    /**
+     * @brief set_external_callback set the callback when the external ip is changed
+     * @param cb
+     */
     void set_external_callback(const IpChangeCallback &cb){
         lock_guard<mutex>locker(m_mutex);
         m_external_callback=cb;

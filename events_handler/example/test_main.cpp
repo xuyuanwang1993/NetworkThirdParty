@@ -441,5 +441,7 @@ void time_out_session_cache_test()
     while (getchar()!='8') {
         continue;
     }
+    Logger::Instance().set_log_path("./","test");
+    Logger::Instance().print_backtrace();
     pre->stop();
 }

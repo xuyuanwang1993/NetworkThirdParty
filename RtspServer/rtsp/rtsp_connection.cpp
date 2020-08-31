@@ -131,6 +131,11 @@ bool rtsp_connection::handleCmdDescribe(map<string ,string>&handle_map)
             MICAGENT_LOG(LOG_DEBUG,"401 Unauthorized %s",url->second.c_str());
             break;
         }
+         if(m_rtsp_server->m_new_connection_callback){
+            string peer_ip=NETWORK.get_peer_ip(fd());
+            uint16_t peer_port=NETWORK.get_peer_port(fd());
+            m_rtsp_server->m_new_connection_callback(peer_ip,peer_port,url->second);
+        }
         media_session->addClient(fd(),m_rtpConnPtr);
         for(int chn=0; chn<MAX_MEDIA_CHANNEL; chn++)
         {
@@ -153,6 +158,7 @@ bool rtsp_connection::handleCmdDescribe(map<string ,string>&handle_map)
             response=rtsp_helper::buildDescribeRes(sdp_info,cseq->second);
         }
     }while(0);
+
     return send_message(response);
 handleCmdDescribeError:
     return false;

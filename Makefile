@@ -18,7 +18,7 @@ TARGET = libRtspserver
 
 
 
-INC  = -I./LOG -I./events_handler -I./network_helper -I./RtspServer/rtsp -I./OtherTools/MD5 -I./RtspServer/API
+INC  = -I./LOG -I./events_handler -I./network_helper -I./RtspServer/rtsp -I./OtherTools/MD5 -I./RtspServer/API -I./OtherTools/Base64
 LIB  =
 
 LD_FLAGS  = -Wl,--gc-sections -lrt -pthread -lpthread -ldl -lm $(DEBUG)
@@ -29,6 +29,7 @@ SRC  += $(notdir $(wildcard ./events_handler/*.cpp))
 SRC  += $(notdir $(wildcard ./network_helper/*.cpp))
 SRC  += $(notdir $(wildcard ./RtspServer/rtsp/*.cpp))
 SRC  += $(notdir $(wildcard ./OtherTools/MD5/*.cpp))
+SRC  += $(notdir $(wildcard ./OtherTools/Base64/*.cpp))
 SRC  += $(notdir $(wildcard ./RtspServer/API/*.cpp))
 OBJS = $(patsubst %.cpp,$(OBJS_PATH)/%.o,$(SRC))
 
@@ -53,6 +54,8 @@ $(OBJS_PATH)/%.o : ./RtspServer/rtsp/%.cpp
 	$(CXX) -c  $< -o  $@  $(CXX_FLAGS) $(INC)
 $(OBJS_PATH)/%.o : ./OtherTools/MD5/%.cpp
 	@$(CXX) -c  $< -o  $@  $(CXX_FLAGS) $(INC)
+$(OBJS_PATH)/%.o : ./OtherTools/Base64/%.cpp
+	@$(CXX) -c  $< -o  $@  $(CXX_FLAGS) $(INC)
 $(OBJS_PATH)/%.o : ./RtspServer/API/%.cpp
 	@$(CXX) -c  $< -o  $@  $(CXX_FLAGS) $(INC)
 COPY : BUILD_DIR $(TARGET)
@@ -61,6 +64,7 @@ COPY : BUILD_DIR $(TARGET)
 	@-cp -rf ./network_helper/*.h $(LIB_OUT_DIR)/include/
 	@-cp -rf ./RtspServer/rtsp/*.h $(LIB_OUT_DIR)/include/
 	@-cp -rf ./OtherTools/MD5/*.h $(LIB_OUT_DIR)/include/
+	@-cp -rf ./OtherTools/Base64/*.h $(LIB_OUT_DIR)/include/
 	@-cp -rf ./RtspServer/API/*.h 	  $(LIB_OUT_DIR)/include
 clean:
 	-rm -rf $(LIB_OUT_DIR) 
