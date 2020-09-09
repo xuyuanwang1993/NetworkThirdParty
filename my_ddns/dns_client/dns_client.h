@@ -43,7 +43,7 @@ public:
      * @param account access account
      * @param password access password
      */
-    void config(EventLoop *loop,string domain_name,string account,string password);
+    void config(EventLoop *loop,string domain_name,string account,string password,int64_t upload_interval=UNPDATE_INTERVAL);
     /**
      * @brief reset_server_info
      * @param server_ip new dns_server ip
@@ -152,6 +152,7 @@ private:
     string m_account;
     string m_password;
     SOCKET m_send_fd;
+    int64_t m_upload_interval;
 };
 }
 

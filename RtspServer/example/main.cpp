@@ -80,7 +80,7 @@ int main(int argc,char *argv[]){
     });
     Api_rtsp_server::Api_Rtsp_Server_AddAuthorization(handle,"admin","micagent");
     Api_rtsp_server::Media_Info media_info;
-    media_info.frameRate=60;
+    media_info.frameRate=200;
     delay_control_base *delay=nullptr;
     if(strstr(argv[1],"h264")!=nullptr){
         media_info.viedo_type=Api_rtsp_server::H264;

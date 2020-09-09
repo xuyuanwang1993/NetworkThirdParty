@@ -50,7 +50,7 @@ class Logger{
 #elif defined(WIN32) || defined(_WIN32)
     const char LINE_END[3]={'\r','\n','\0'};
 #endif
-     const uint64_t MAX_LOG_MESSAGE_SIZE=4*1024;//4k
+    const uint64_t MAX_LOG_MESSAGE_SIZE=4*1024;//4k
     const int  MAX_TRACE_SIZE=256;
     const int  MIN_TRACE_SIZE=64;
     const LOG_LEVEL MIN_LOG_LEVEL=LOG_DEBUG;
@@ -163,11 +163,30 @@ private:
 #endif
 };
 }
+//define log macro
 #undef MICAGENT_LOG
+#undef MICAGENT_DEBUG
+#undef MICAGENT_INFO
+#undef MICAGENT_WARNNING
+#undef MICAGENT_ERROR
+#undef MICAGENT_FATALERROR
+#undef MICAGENT_BACKTRACE
 #ifndef MICAGENT_ARM
 #define MICAGENT_LOG(level,fmt,...) micagent::Logger::Instance().log(level,__FILE__, __FUNCTION__,__LINE__, fmt, ##__VA_ARGS__)
+#define MICAGENT_DEBUG(fmt,...) micagent::Logger::Instance().log(micagent::LOG_DEBUG,__FILE__, __FUNCTION__,__LINE__, fmt, ##__VA_ARGS__)
+#define MICAGENT_INFO(fmt,...) micagent::Logger::Instance().log(micagent::LOG_INFO,__FILE__, __FUNCTION__,__LINE__, fmt, ##__VA_ARGS__)
+#define MICAGENT_WARNNING(fmt,...) micagent::Logger::Instance().log(micagent::LOG_WARNNING,__FILE__, __FUNCTION__,__LINE__, fmt, ##__VA_ARGS__)
+#define MICAGENT_ERROR(fmt,...) micagent::Logger::Instance().log(micagent::LOG_ERROR,__FILE__, __FUNCTION__,__LINE__, fmt, ##__VA_ARGS__)
+#define MICAGENT_FATALERROR(fmt,...) micagent::Logger::Instance().log(micagent::LOG_FATALERROR,__FILE__, __FUNCTION__,__LINE__, fmt, ##__VA_ARGS__)
+#define MICAGENT_BACKTRACE(fmt,...) micagent::Logger::Instance().log(micagent::LOG_BACKTRACE,__FILE__, __FUNCTION__,__LINE__, fmt, ##__VA_ARGS__)
 #else
 #define MICAGENT_LOG(level,fmt,...)
+#define MICAGENT_DEBUG(fmt,...)
+#define MICAGENT_INFO(fmt,...)
+#define MICAGENT_WARNNING(fmt,...)
+#define MICAGENT_ERROR(fmt,...)
+#define MICAGENT_FATALERROR(fmt,...)
+#define MICAGENT_BACKTRACE(fmt,...)
 #endif
 #ifdef DEBUG
 #define MICAGENT_MARK(fmt,...) micagent::Logger::Instance().log(micagent::LOG_BREAK_POINT,__FILE__, __FUNCTION__,__LINE__, fmt, ##__VA_ARGS__)

@@ -14,6 +14,7 @@ class load_balance_server{
     static constexpr double TWO_POW_8=static_cast<int64_t>(1)<<8;
     static constexpr double IP_BASE=TWO_POW_32+TWO_POW_24+TWO_POW_16+TWO_POW_8;
     struct session_info{
+        string account;
         string domain_name;
         string ip;
         /*实时负载率0.0 -1.0*/
@@ -21,10 +22,13 @@ class load_balance_server{
         /*权重0.0-1.0*/
         double weight;
         int64_t last_alive_time;
-        session_info(string _domain_name=""):domain_name(_domain_name)\
-        ,ip("0.0.0.0"),priority(0.0),weight(0.0),last_alive_time(Timer::getTimeNow()){
+        session_info(string _account="",string _domain_name=""):account(_account),domain_name(_domain_name)\
+          ,ip("0.0.0.0"),priority(0.0),weight(0.0),last_alive_time(Timer::getTimeNow()){
 
         }
+    };
+    struct account_session{
+        map<string,session_info> session_map;
     };
 
 public:
@@ -37,7 +41,7 @@ public:
 private:
     void handle_read();
     void handle_specific_find(neb::CJsonObject&object);
-    void handle_find();
+    void handle_find(neb::CJsonObject&object);
     void handle_update(neb::CJsonObject&object);
     void check_sessions();
     void response(const string &buf);
@@ -46,7 +50,7 @@ private:
     int64_t m_max_cache_time;
     TimerId m_update_timer;
     ChannelPtr m_channel;
-    map<string,session_info> m_session_cache_map;
+    map<string,account_session> m_session_cache_map;
     mutex m_mutex;
     sockaddr_in m_last_recv_addr;
     socklen_t m_sock_len;

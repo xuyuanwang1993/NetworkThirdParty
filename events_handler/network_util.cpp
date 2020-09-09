@@ -38,7 +38,10 @@ void Network_Util::close_socket(SOCKET sockfd)
 }
 SOCKET Network_Util::build_socket(SOCKET_TYPE type)
 {
-    return socket(AF_INET,type,0);
+    if(type!=SCTP)return socket(AF_INET,type,0);
+    else {
+        return socket(AF_INET,SCTP,IPPROTO_SCTP);
+    }
 }
 bool Network_Util::connect(SOCKET sockfd,string ip,uint16_t port,uint32_t time_out_ms)
 {

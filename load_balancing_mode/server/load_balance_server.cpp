@@ -1,6 +1,7 @@
 #include "load_balance_server.h"
 #include <cstdlib>
 #include<cmath>
+#include<set>
 using namespace micagent;
 using namespace std;
 load_balance_server::load_balance_server(uint16_t port,int64_t cache_time):m_event_loop(nullptr),m_max_cache_time(cache_time),\
@@ -73,9 +74,8 @@ void load_balance_server::handle_read()
             neb::CJsonObject object(out_string.get());
             string cmd;
             if(!object.Get("cmd",cmd))return;
-            printf("%s\r\n",object.ToFormattedString().c_str());
             if (cmd=="find") {
-                handle_find();
+                handle_find(object);
             }
             else if(cmd=="specific_find"){
                 handle_specific_find(object);
@@ -89,32 +89,64 @@ void load_balance_server::handle_read()
 }
 void load_balance_server::handle_specific_find(neb::CJsonObject&object)
 {
+    string account;
+    if(!object.Get("account",account))return;
     string domain_name;
     if(!object.Get("domain_name",domain_name))return;
     neb::CJsonObject res;
     res.Add("cmd","specific_find_response");
+    res.Add("account",account);
     res.Add("domain_name",domain_name);
     lock_guard<mutex>locker(m_mutex);
-    auto iter=m_session_cache_map.find(domain_name);
+    auto iter=m_session_cache_map.find(account);
     if(iter!=m_session_cache_map.end()){
-        res.Add("info","success");
+        auto iter2=iter->second.session_map.find(domain_name);
+        if(iter2!=iter->second.session_map.end())
+        {
+            res.Add("info","success");
+        }
+        else {
+            res.Add("info","domain not online");
+        }
     }
-    else {
+    else{
         res.Add("info","domain not online");
     }
     response(res.ToString());
 }
-void load_balance_server::handle_find()
+void load_balance_server::handle_find(neb::CJsonObject &object)
 {
+    string account;
+    if(!object.Get("account",account))return;
+    neb::CJsonObject exclude_list;
+    if(!object.Get("exclude_list",exclude_list))return;
+    set<string> exclude_domains;
+    auto size=exclude_list.GetArraySize();
+    for(decltype (size)i=0;i<size;i++)
+    {
+        string exclude_domain;
+        if(!exclude_list.Get(i,exclude_domain))break;
+        exclude_domains.insert(exclude_domain);
+    }
     neb::CJsonObject res;
     res.Add("cmd","find_response");
+    res.Add("account",account);
     lock_guard<mutex>locker(m_mutex);
     map<double,string> priority_cache;
     string match_ip=inet_ntoa(m_last_recv_addr.sin_addr);
-    for(auto i:m_session_cache_map){
-        auto tmp=calculate_priority(match_ip,i.second.ip)*(1-i.second.weight)+i.second.priority*i.second.weight;
-        priority_cache.emplace(tmp,i.first);
+    auto iter=m_session_cache_map.find(account);
+    if(iter!=m_session_cache_map.end())
+    {
+        for(auto i:iter->second.session_map){
+            auto check_iter=exclude_domains.find(i.second.domain_name);
+            if(check_iter==exclude_domains.end())
+            {
+                auto tmp=calculate_priority(match_ip,i.second.ip)*(1-i.second.weight)+i.second.priority*i.second.weight;
+                priority_cache.emplace(tmp,i.first);
+            }
+        }
     }
+
     if(priority_cache.empty()){
         res.Add("info","no availiable resource");
     }
@@ -126,6 +158,8 @@ void load_balance_server::handle_find()
 }
 void load_balance_server::handle_update(neb::CJsonObject&object)
 {
+    string account;
+    if(!object.Get("account",account))return;
     string domain_name;
     if(!object.Get("domain_name",domain_name))return;
     double priority;
@@ -133,16 +167,22 @@ void load_balance_server::handle_update(neb::CJsonObject&object)
     double weight;
     if(!object.Get("weight",weight))return;
     lock_guard<mutex>locker(m_mutex);
-    auto iter=m_session_cache_map.find(domain_name);
+    auto iter=m_session_cache_map.find(account);
     if(iter==m_session_cache_map.end()){
-        auto iter2=m_session_cache_map.emplace(domain_name,session_info(domain_name));
+        auto iter2=m_session_cache_map.emplace(account,account_session());
         if(iter2.second)iter=iter2.first;
     }
     if(iter!=m_session_cache_map.end()){
-        iter->second.ip=inet_ntoa(m_last_recv_addr.sin_addr);
-        iter->second.weight=weight;
-        iter->second.priority=priority;
-        iter->second.last_alive_time=Timer::getTimeNow();
+        auto iter2=iter->second.session_map.find(domain_name);
+        if(iter2==iter->second.session_map.end())
+        {
+            auto tmp=iter->second.session_map.emplace(domain_name,session_info(account,domain_name));
+            if(tmp.second)iter2=tmp.first;
+        }
+        iter2->second.ip=inet_ntoa(m_last_recv_addr.sin_addr);
+        iter2->second.weight=weight;
+        iter2->second.priority=priority;
+        iter2->second.last_alive_time=Timer::getTimeNow();
     }
 }
 void load_balance_server::check_sessions()
@@ -151,7 +191,17 @@ void load_balance_server::check_sessions()
     auto time_now=Timer::getTimeNow();
     for(auto iter=m_session_cache_map.begin();iter!=m_session_cache_map.end();)
     {
-        if(time_now-iter->second.last_alive_time>m_max_cache_time)m_session_cache_map.erase(iter++);
+        for(auto iter2=iter->second.session_map.begin();iter2!=iter->second.session_map.end();)
+        {
+            if(time_now-iter2->second.last_alive_time>m_max_cache_time)iter->second.session_map.erase(iter2++);
+            else {
+                iter2++;
+            }
+        }
+        if(iter->second.session_map.empty())
+        {
+            m_session_cache_map.erase(iter++);
+        }
         else {
             iter++;
         }

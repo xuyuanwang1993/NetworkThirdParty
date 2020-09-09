@@ -17,6 +17,7 @@ void network_util_test();
 void task_scheduler_test();
 void event_loop_test(int argc,char *argv[]);
 void time_out_session_cache_test();
+void test_sctp_send_and_recv();
 int main(int argc,char *argv[]){
     (void) argc;
     (void)argv;

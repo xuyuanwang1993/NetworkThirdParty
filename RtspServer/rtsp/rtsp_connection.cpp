@@ -131,12 +131,6 @@ bool rtsp_connection::handleCmdDescribe(map<string ,string>&handle_map)
             MICAGENT_LOG(LOG_DEBUG,"401 Unauthorized %s",url->second.c_str());
             break;
         }
-         if(m_rtsp_server->m_new_connection_callback){
-            string peer_ip=NETWORK.get_peer_ip(fd());
-            uint16_t peer_port=NETWORK.get_peer_port(fd());
-            m_rtsp_server->m_new_connection_callback(peer_ip,peer_port,url->second);
-        }
-        media_session->addClient(fd(),m_rtpConnPtr);
         for(int chn=0; chn<MAX_MEDIA_CHANNEL; chn++)
         {
             auto source = media_session->get_media_source(static_cast<MediaChannelId>(chn));
@@ -261,6 +255,7 @@ handleCmdSetup:
 bool rtsp_connection::handleCmdPlay(map<string ,string>&handle_map)
 {
     auto cseq=handle_map.find("CSeq");
+    bool ret=false;
     string response;
     do{
         if(cseq==handle_map.end())goto handleCmdPlay;
@@ -272,15 +267,25 @@ bool rtsp_connection::handleCmdPlay(map<string ,string>&handle_map)
             break;
         }
         else {
-            m_rtpConnPtr->startPlay();
             auto url=handle_map.find("url");
             if(url!=handle_map.end())m_url=url->second;
             response=rtsp_helper::buildPlayRes(m_rtpConnPtr->get_rtp_Info(m_url).c_str(),session_id,cseq->second,rtsp_server::CONNECTION_TIME_OUT/1000);
+            ret=send_message(response);
+             m_rtpConnPtr->startPlay();
+            auto session_ptr=m_rtsp_server->lookMediaSession(m_url_suffix);
+            if(session_ptr)
+            {
+                session_ptr->addClient(fd(),m_rtpConnPtr);
+            }
+            if(m_rtsp_server->m_new_connection_callback){
+                string peer_ip=NETWORK.get_peer_ip(fd());
+                uint16_t peer_port=NETWORK.get_peer_port(fd());
+                m_rtsp_server->m_new_connection_callback(peer_ip,peer_port,m_url);
+            }
         }
     }while(0);
-    return send_message(response);
 handleCmdPlay:
-    return false;
+    return ret;
 }
 bool rtsp_connection::handleCmdTeardown(map<string ,string>&handle_map)
 {

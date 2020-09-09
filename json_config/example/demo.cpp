@@ -137,21 +137,21 @@ int main(){
     {
         neb::CJsonObject object1;
         object1.Add("port",8554);
-        instance.Add_Mode_Config("rtsp",object1);
+        instance.Update_Mode_Config("rtsp",object1);
         std::cout<<instance.Dump_All_Config()<<"\r\n";
         std::cout<<"-----------------------------------------------"<<"\r\n";
     }
     {
         neb::CJsonObject object1;
         object1.Add("port",8554);
-        std::cout<<instance.Add_Mode_Config("rtsp",object1)<<"\r\n";
+        std::cout<<instance.Update_Mode_Config("rtsp",object1)<<"\r\n";
         std::cout<<instance.Dump_All_Config()<<"\r\n";
         std::cout<<"-----------------------------------------------"<<"\r\n";
     }
     {
         neb::CJsonObject object1;
         object1.Add("port",8554);
-        instance.Add_Mode_Config("rtmp",object1);
+        instance.Update_Mode_Config("rtmp",object1);
         std::cout<<instance.Dump_All_Config()<<"\r\n";
         std::cout<<"-----------------------------------------------"<<"\r\n";
     }
@@ -163,14 +163,14 @@ int main(){
     {
         neb::CJsonObject object1;
         object1.Add("port",554);
-        instance.Change_Mode_Config("rtsp",object1);
+        instance.Update_Mode_Config("rtsp",object1);
         std::cout<<instance.Dump_All_Config()<<"\r\n";
         std::cout<<"-----------------------------------------------"<<"\r\n";
     }
     {
         neb::CJsonObject object1;
         object1.Add("port",8554);
-        instance.Add_Mode_Config("rtmp",object1);
+        instance.Update_Mode_Config("rtmp",object1);
         std::cout<<instance.Dump_All_Config()<<"\r\n";
         std::cout<<"-----------------------------------------------"<<"\r\n";
     }

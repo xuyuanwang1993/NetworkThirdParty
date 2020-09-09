@@ -113,7 +113,7 @@ protected:
        void reset(){write_index=0;read_index=0;is_finished=false;}
        /*向后移动读指针len长度*/
        void retrieve(uint32_t len){
-           if(len+read_index>=read_index)reset();
+           if(len+read_index>=write_index)reset();
            else {
                read_index+=len;
            }

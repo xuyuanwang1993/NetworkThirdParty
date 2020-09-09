@@ -50,7 +50,8 @@ namespace micagent {
 using namespace  std;
 typedef enum{
     TCP=SOCK_STREAM,
-    UDP=SOCK_DGRAM
+    UDP=SOCK_DGRAM,
+    SCTP=SOCK_SEQPACKET,
 }SOCKET_TYPE;
 #define MAKE_ADDR(name,ip,port) sockaddr_in name; \
     bzero(&name,sizeof(name));\

@@ -53,19 +53,23 @@ bool h264_source::check_frames(media_frame_type type, AVFrame frame)
         if(type==FRAME_I){
             //i
             m_last_iframe.reset(new AVFrame(frame.size));
+            m_last_iframe->type=frame.type;
             memcpy(m_last_iframe.get()->buffer.get(),frame.buffer.get(),frame.size);
             m_send_counts=m_frameRate*2+2;
         }
         else if (type==FRAME_SPS) {
             m_frame_sps.reset(new AVFrame(frame.size));
+            m_frame_sps->type=frame.type;
             memcpy(m_frame_sps.get()->buffer.get(),frame.buffer.get(),frame.size);
         }
         else if (type==FRAME_PPS) {
             m_frame_pps.reset(new AVFrame(frame.size));
+            m_frame_pps->type=frame.type;
             memcpy(m_frame_pps.get()->buffer.get(),frame.buffer.get(),frame.size);
         }
         else if (type==FRAME_SEI) {
             m_last_sei.reset(new AVFrame(frame.size));
+            m_last_sei->type=frame.type;
             memcpy(m_last_sei.get()->buffer.get(),frame.buffer.get(),frame.size);
         }
         else {

@@ -34,8 +34,8 @@
 #endif
 
 
-#define MICAGENT_DEBUG
-#ifndef MICAGENT_DEBUG
+#define MICAGENT_DEBUG1
+#ifndef MICAGENT_DEBUG1
 #define MICAGENT_LOG1(fmt,...)
 #else
 #define MICAGENT_LOG1(fmt,...) do{\

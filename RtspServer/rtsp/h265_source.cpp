@@ -58,22 +58,27 @@ bool h265_source::check_frames(media_frame_type type, AVFrame &frame)
             //i
             m_last_iframe.reset(new AVFrame(frame.size));
             memcpy(m_last_iframe.get()->buffer.get(),frame.buffer.get(),frame.size);
+            m_last_iframe->type=frame.type;
             m_send_counts=m_frameRate*2+2;
         }
         else if (type==FRAME_SPS) {
             m_frame_sps.reset(new AVFrame(frame.size));
+            m_frame_sps->type=frame.type;
             memcpy(m_frame_sps.get()->buffer.get(),frame.buffer.get(),frame.size);
         }
         else if (type==FRAME_VPS) {
             m_frame_vps.reset(new AVFrame(frame.size));
+            m_frame_vps->type=frame.type;
             memcpy(m_frame_vps.get()->buffer.get(),frame.buffer.get(),frame.size);
         }
         else if (type==FRAME_PPS) {
                 m_frame_pps.reset(new AVFrame(frame.size));
+                m_frame_pps->type=frame.type;
                 memcpy(m_frame_pps.get()->buffer.get(),frame.buffer.get(),frame.size);
         }
         else if (type==FRAME_SEI) {
             m_last_sei.reset(new AVFrame(frame.size));
+            m_last_sei->type=frame.type;
             memcpy(m_last_sei.get()->buffer.get(),frame.buffer.get(),frame.size);
         }
         else {
@@ -112,14 +117,10 @@ std::string h265_source::getAttributeFmtp()
 {
     string ret("");
     do{
-        MICAGENT_MARK("");
         if(!m_frame_pps||!m_frame_sps||!m_frame_vps)break;
-        MICAGENT_MARK("");
         shared_ptr<uint8_t> vpsWEB(new uint8_t[m_frame_vps->size],std::default_delete<uint8_t[]>());
         auto vpsWEBSize = removeH264or5EmulationBytes(vpsWEB, m_frame_vps->size, m_frame_vps->buffer, m_frame_vps->size);
-        MICAGENT_MARK("");
         if (vpsWEBSize < 6/*'profile_tier_level' offset*/ + 12/*num 'profile_tier_level' bytes*/) break;
-        MICAGENT_MARK("");
         uint8_t const* profileTierLevelHeaderBytes = &vpsWEB.get()[6];
         unsigned profileSpace  = profileTierLevelHeaderBytes[0]>>6; // general_profile_space
         unsigned profileId = profileTierLevelHeaderBytes[0]&0x1F; // general_profile_idc

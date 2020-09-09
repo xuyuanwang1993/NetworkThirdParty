@@ -34,7 +34,6 @@ HEADERS += \
     ../../json_config/cJSON.h \
     ../../network_helper/tcp_connection_helper.h \
     ../../RtspServer/example/file_reader.h \
-    h264parsesps.h \
     ../../OtherTools/DelayControl/delay_control.h \
     ../../OtherTools/UPNP/upnpmapper_mode.h \
     ../../OtherTools/UPNP/upnpmapper.h
@@ -77,7 +76,6 @@ SOURCES += \
     ../../json_config/cJSON.c \
     ../../network_helper/tcp_connection_helper.cpp \
     ../../RtspServer/example/file_reader.cpp \
-    H264ParseSPS.c \
     ../../OtherTools/DelayControl/delay_control.cpp \
     ../../OtherTools/UPNP/upnpmapper_mode.cpp \
     ../../OtherTools/UPNP/upnpmapper.cpp

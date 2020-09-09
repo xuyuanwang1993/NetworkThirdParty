@@ -12,13 +12,14 @@ m_loop(nullptr),m_timer_id(0),m_server_ip(server_ip),m_server_port(dns_port),m_i
     m_server_addr.sin_port=htons(m_server_port);
     Network_Util::Instance().connect(m_send_fd,m_server_addr);
 }
-void dns_client::config(EventLoop *loop,string domain_name,string account,string password)
+void dns_client::config(EventLoop *loop, string domain_name, string account, string password, int64_t upload_interval)
 {
     stop_work();
     lock_guard<mutex>locker(m_mutex);
     m_loop=loop;
     m_domain_name=domain_name;
     m_account=account;
+    m_upload_interval=upload_interval;
     auto tmp=Get_MD5_String(password.c_str(),password.size());
     m_password=tmp;
     free(tmp);
@@ -42,7 +43,7 @@ void dns_client::start_work()
             lock_guard<mutex>locker(m_mutex);
             update();
             return true;
-        },UNPDATE_INTERVAL);
+        },m_upload_interval);
     }
 }
 void dns_client::stop_work()

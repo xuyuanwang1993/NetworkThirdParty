@@ -3550,6 +3550,7 @@ bool CJsonObject::SaveToFile()
 		if (fp) {
 			//fprintf(fp, "%s", print_string.c_str());
 			fwrite(print_string.c_str(), 1, print_string.size(), fp);
+            fflush(fp);
 			fclose(fp);
 			ret = true;
 		}

@@ -2,7 +2,7 @@
 #include"MD5.h"
 using namespace micagent;
 load_balance_client::load_balance_client():\
-m_loop(nullptr),m_timer_id(0),m_is_running(false),m_server_ip("0.0.0.0"),m_server_port(0),m_domain_name("www.test.com")\
+m_loop(nullptr),m_timer_id(0),m_is_running(false),m_server_ip("0.0.0.0"),m_server_port(0),m_account_name("test"),m_domain_name("www.test.com")\
 ,m_weight(0),m_max_load_size(1),m_now_load(0)
 {
     m_send_fd=Network_Util::Instance().build_socket(UDP);
@@ -24,11 +24,13 @@ void load_balance_client::config_server_info(EventLoop *loop,string server_ip,ui
     m_server_addr.sin_port=htons(m_server_port);
     if(m_send_fd!=INVALID_SOCKET)Network_Util::Instance().connect(m_send_fd,m_server_addr);
 }
-void load_balance_client::config_client_info(string domain_name,uint32_t max_load_size,double weight)
+void load_balance_client::config_client_info(string account,string domain_name,uint32_t max_load_size,double weight,int64_t upload_interval)
 {
     lock_guard<mutex>locker(m_mutex);
+    m_account_name=account;
     m_domain_name=domain_name;
     m_max_load_size=max_load_size;
+    m_upload_interval=upload_interval;
     if(m_max_load_size==0)m_max_load_size=1;
     m_weight=weight;
 }
@@ -45,10 +47,23 @@ void load_balance_client::decrease_load(uint32_t load_size)
         m_now_load-=load_size;
     }
 }
-pair<bool,neb::CJsonObject>  load_balance_client::find(int64_t time_out)
+pair<bool,neb::CJsonObject>  load_balance_client::find(string account,set<string>exclude_list,int64_t time_out)
 {
     neb::CJsonObject object;
     object.Add("cmd","find");
+    object.Add(TO_STRING(account),account);
+    neb::CJsonObject exclude_list_object;
+    for(auto i:exclude_list)
+    {
+        exclude_list_object.Add(i);
+    }
+    if(exclude_list_object.IsEmpty())
+    {
+        object.AddEmptySubArray("exclude_list");
+    }
+    else {
+        object.Add("exclude_list",exclude_list_object);
+    }
     SOCKET sock=Network_Util::Instance().build_socket(UDP);
     if(sock==INVALID_SOCKET)return  {false,neb::CJsonObject()};
     {
@@ -68,10 +83,11 @@ pair<bool,neb::CJsonObject>  load_balance_client::find(int64_t time_out)
         return {true,neb::CJsonObject(string(output.get(),ret_len))};
     }
 }
-pair<bool,neb::CJsonObject>  load_balance_client::specific_find(string domain_name,int64_t time_out)
+pair<bool,neb::CJsonObject>  load_balance_client::specific_find(string account, string domain_name, int64_t time_out)
 {
     neb::CJsonObject object;
     object.Add("cmd","specific_find");
+    object.Add(TO_STRING(account),account);
     object.Add(TO_STRING(domain_name),domain_name);
     SOCKET sock=Network_Util::Instance().build_socket(UDP);
     if(sock==INVALID_SOCKET)return  {false,neb::CJsonObject()};
@@ -97,6 +113,7 @@ void load_balance_client::update()
     if(m_send_fd==INVALID_SOCKET)return;
     neb::CJsonObject object;
     object.Add("cmd","update");
+    object.Add(TO_STRING(account),m_account_name);
     object.Add(TO_STRING(domain_name),m_domain_name);
     double priority=m_now_load>=m_max_load_size?100.0:static_cast<double>(m_now_load)/m_max_load_size;
     double weight=priority>1.0?1.0:m_weight;
@@ -123,7 +140,7 @@ void load_balance_client::start_work()
             lock_guard<mutex>locker(m_mutex);
             update();
             return true;
-        },UNPDATE_INTERVAL);
+        },m_upload_interval);
     }
 }
 void load_balance_client::stop_work()

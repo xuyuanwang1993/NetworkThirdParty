@@ -23,7 +23,7 @@ void media_session::setMediaSource(MediaChannelId id,shared_ptr<media_source>sou
                 m_rtp_connections.erase(i++);
             }
             else {
-                if(pkt.type==FRAME_I)ptr->set_see_idr();
+                if(pkt.type==FRAME_I&&ptr->is_Playing(channelId))ptr->set_see_idr();
                 if(ptr->get_see_idr()||pkt.type!=FRAME_P)
                 {
                     if(ptr->sendRtpPacket(channelId,pkt))
@@ -92,20 +92,25 @@ bool media_session::updateFrame(MediaChannelId channel,const AVFrame &frame)
             m_proxy_session_map.erase(iter++);
         }
     }
-    if(m_media_source[channel]){
+    if(m_has_new_client){
 #if ENABLE_GOP_CACHE
-        for(auto i:m_rtp_connections)
+        for(uint32_t i=0;i<MAX_MEDIA_CHANNEL;++i)
         {
-            auto s_rtp_connection=i.second.lock();
-            if(s_rtp_connection&&!s_rtp_connection->get_got_gop()&&!s_rtp_connection->get_see_idr())
+            for(auto j:m_rtp_connections)
             {
-                if(!m_media_source[channel]->handleGopCache(channel,s_rtp_connection)||isMulticast())break;
+                auto s_rtp_connection=j.second.lock();
+                if(s_rtp_connection&&s_rtp_connection->is_Playing(static_cast<MediaChannelId>(i))&&!s_rtp_connection->get_got_gop()&&!s_rtp_connection->get_see_idr())
+                {
+                    if(!m_media_source[static_cast<MediaChannelId>(i)]->handleGopCache(static_cast<MediaChannelId>(i),s_rtp_connection)||isMulticast())break;
+                }
             }
         }
+        m_has_new_client=false;
 #endif
-        return m_media_source[channel]->handleFrame(channel,frame);
+
     }
-    return false;
+    if(m_media_source[channel])return m_media_source[channel]->handleFrame(channel,frame);
+    else return false;
 }
 
 void media_session::initMulticast()
@@ -124,12 +129,20 @@ void media_session::initMulticast()
 bool media_session::addClient(SOCKET rtspfd, std::shared_ptr<rtp_connection> rtpConnPtr)
 {
     lock_guard<mutex>locker(m_mutex);
+    m_has_new_client=true;
     auto iter=m_rtp_connections.find(rtspfd);
-    if(iter==end(m_rtp_connections)){
-        m_rtp_connections.emplace(rtspfd,weak_ptr<rtp_connection>(rtpConnPtr));
-        return true;
+    if(iter!=end(m_rtp_connections)){
+        m_rtp_connections.erase(iter);
     }
-    return false;
+    auto ret=m_rtp_connections.emplace(rtspfd,weak_ptr<rtp_connection>(rtpConnPtr));
+    return ret.second;
+}
+void media_session::notice_new_connection()
+{
+    {
+        lock_guard<mutex>locker(m_mutex);
+        m_has_new_client=true;
+    }
 }
 void  media_session::addProxySession(shared_ptr<proxy_session_base> session)
 {
@@ -232,7 +245,7 @@ vector<media_source_info>media_session::get_media_source_info()const
     return ret;
 }
 media_session::media_session(string rtsp_suffix):m_suffix(rtsp_suffix),m_session_id(generate_session_id()),m_is_multicast(false)\
-  ,m_multicast_ip(""),m_sdp("")
+  ,m_multicast_ip(""),m_sdp(""),m_has_new_client(false)
 {
 #ifdef SAVE_FILE_ACCESS
     m_save_fp=fopen((string(SAVE_FILE_PRFIX)+to_string(m_session_id)).c_str(),"w+");

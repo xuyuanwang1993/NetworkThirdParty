@@ -94,6 +94,7 @@ public:
     uint16_t getMulticastPort(MediaChannelId channelId) const{return m_multicastPort[channelId];}
 
     bool addClient(SOCKET rtspfd, std::shared_ptr<rtp_connection> rtpConnPtr);
+    void notice_new_connection();
     void  addProxySession(shared_ptr<proxy_session_base> session);
     void removeClient(SOCKET rtspfd);
 
@@ -126,6 +127,8 @@ private:
     uint16_t m_multicastPort[MAX_MEDIA_CHANNEL];
 
     string m_sdp;
+
+    bool m_has_new_client;
 #ifdef  SAVE_FILE_ACCESS
     FILE *m_save_fp;
 #endif

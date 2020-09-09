@@ -31,7 +31,7 @@ public:
         lock_guard<mutex>locker(m_mutex);
         m_see_idr=true;
     }
-    bool get_see_idr(){
+    bool get_see_idr()const{
         lock_guard<mutex>locker(m_mutex);
         return m_see_idr;
     }
@@ -39,9 +39,13 @@ public:
         lock_guard<mutex>locker(m_mutex);
         m_got_gop=true;
     }
-    bool get_got_gop(){
+    bool get_got_gop()const{
         lock_guard<mutex>locker(m_mutex);
         return m_got_gop;
+    }
+    bool is_Playing(MediaChannelId channelId)const{
+        lock_guard<mutex>locker(m_mutex);
+        return m_mediaChannelInfo[channelId].isPlay;
     }
 private:
     void dump_rtp_head_info(MediaChannelId channelId);

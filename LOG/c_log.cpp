@@ -7,6 +7,22 @@
 #include<string.h>
 #include<cstdio>
 #include<cstdlib>
+#include<features.h>
+//check UCLIBC
+#ifndef __UCLIBC__
+#ifndef BACKTRACE
+#define BACKTRACE
+#endif
+#else
+#if defined (__GLIBC__)  && __GLIBC__ >= 2 && __GLIBC_MINOR__ >=10
+#ifndef BACKTRACE
+#define BACKTRACE
+#endif
+#endif
+#endif
+
+
+
 #ifdef BACKTRACE
 #define BACKTRACE_ON 1
 #else
@@ -46,8 +62,8 @@ constexpr static char log_color[][20] = {
     PRINT_NONE,
     PRINT_GREEN,
     PRINT_YELLOW,
-    PRINT_BROWN,
     PRINT_RED,
+    PRINT_LIGHT_RED,
     PRINT_PURPLE,
     PRINT_BLUE,
 };
