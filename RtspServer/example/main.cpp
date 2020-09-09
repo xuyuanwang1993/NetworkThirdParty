@@ -106,7 +106,7 @@ int main(int argc,char *argv[]){
                 {
                     micro_time_now=delay->block_wait_next_due(&frameBuf[4]);
                 }
-                Api_rtsp_server::Api_Rtsp_Push_Frame(handle,session_id,frameBuf,frameSize,0,micro_time_now);
+                Api_rtsp_server::Api_Rtsp_Push_Frame(handle,session_id,frameBuf,frameSize,0,micro_time_now/1000);
             }
             else
             {
