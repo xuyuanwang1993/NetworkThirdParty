@@ -30,8 +30,8 @@ class media_source
 public:
     typedef std::function<bool (MediaChannelId channelId, RtpPacket pkt)> SendFrameCallback;
 
-    media_source():m_sendFrameCallback(nullptr),m_last_micro_recv_time(0){
-        auto timePoint = chrono::time_point_cast<chrono::microseconds>(chrono::steady_clock::now());
+    media_source():m_sendFrameCallback(nullptr),m_last_mill_recv_time(0){
+        auto timePoint = chrono::time_point_cast<chrono::milliseconds>(chrono::steady_clock::now());
         m_last_micro_send_time=timePoint.time_since_epoch().count();
     }
     virtual ~media_source();
@@ -54,7 +54,7 @@ public:
 
     virtual bool handleFrame(MediaChannelId channelId, AVFrame frame) = 0;
     virtual bool handleGopCache(MediaChannelId /*channelid*/,shared_ptr<rtp_connection>/*connection*/){return false;}
-    virtual uint32_t getTimeStamp(int64_t micro_time_now=0)=0;
+    virtual uint32_t getTimeStamp(int64_t mill_second=0)=0;
 
     virtual void setSendFrameCallback(const SendFrameCallback &cb)
     { m_sendFrameCallback = cb; }
@@ -92,7 +92,7 @@ protected:
     uint32_t m_clockRate = 0;
     SendFrameCallback m_sendFrameCallback;
     int64_t m_last_micro_send_time;
-    int64_t m_last_micro_recv_time;
+    int64_t m_last_mill_recv_time;
 };
 }
 #endif // MEDIA_SOURCE_H

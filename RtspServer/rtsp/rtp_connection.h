@@ -14,7 +14,7 @@ public:
     bool sendRtpPacket(MediaChannelId id,RtpPacket packet);
     void setClockRate(MediaChannelId channelId, uint32_t clockRate);
     void setPayloadType(MediaChannelId channelId, uint32_t payload);
-    void setBuildTimesTamp(MediaChannelId channelId,int64_t micro_timestamp);
+    void setBuildTimesTamp(MediaChannelId channelId,int64_t mill_timestamp);
     bool setupRtpOverTcp(MediaChannelId channelId, uint16_t rtpChannel, uint16_t rtcpChannel);
     bool setupRtpOverUdp(MediaChannelId channelId, uint16_t rtpPort, uint16_t rtcpPort);
     bool setupRtpOverMulticast(MediaChannelId channelId, std::string ip, uint16_t port);

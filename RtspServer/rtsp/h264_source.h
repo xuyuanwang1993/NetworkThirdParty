@@ -29,7 +29,7 @@ public:
 
     bool handleFrame(MediaChannelId channelId, AVFrame frame);
     bool handleGopCache(MediaChannelId channelid,shared_ptr<rtp_connection>connection);
-     uint32_t getTimeStamp(int64_t micro_time_now=0);
+     uint32_t getTimeStamp(int64_t mill_second=0);
 
      static media_frame_type get_frame_type(uint8_t byte);
      h264_source(uint32_t frameRate=30);

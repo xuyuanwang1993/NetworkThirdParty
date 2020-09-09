@@ -122,18 +122,18 @@ bool aac_source::handleFrame(MediaChannelId channelId, AVFrame frame)
     return true;
 }
 
-uint32_t aac_source::getTimeStamp(int64_t micro_time_now)
+uint32_t aac_source::getTimeStamp(int64_t mill_second)
 {
-    if(m_last_micro_recv_time==0||micro_time_now==0)
+    if(m_last_mill_recv_time==0||mill_second==0)
     {
-        auto timePoint = chrono::time_point_cast<chrono::microseconds>(chrono::steady_clock::now());
+        auto timePoint = chrono::time_point_cast<chrono::milliseconds>(chrono::steady_clock::now());
         m_last_micro_send_time=timePoint.time_since_epoch().count();
-        m_last_micro_recv_time=micro_time_now;
-        return (uint32_t)((m_last_micro_send_time+ 500) / 1000 * m_sampleRate / 1000);
+        m_last_mill_recv_time=mill_second;
+        return (uint32_t)((m_last_micro_send_time) / 1000 * m_sampleRate );
     }
     else {
-        m_last_micro_send_time+=(micro_time_now-m_last_micro_recv_time);
-        m_last_micro_recv_time=micro_time_now;
-        return (uint32_t)((m_last_micro_send_time + 500) / 1000 * m_sampleRate / 1000);
+        m_last_micro_send_time+=(mill_second-m_last_mill_recv_time);
+        m_last_mill_recv_time=mill_second;
+        return (uint32_t)((m_last_micro_send_time ) / 1000 * m_sampleRate );
     }
 }

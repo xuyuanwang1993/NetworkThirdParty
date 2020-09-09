@@ -77,10 +77,10 @@ void rtp_connection::setPayloadType(MediaChannelId channelId, uint32_t payload)
     lock_guard<mutex>locker(m_mutex);
     m_mediaChannelInfo[channelId].rtpHeader.payload = payload;
 }
- void rtp_connection::setBuildTimesTamp(MediaChannelId channelId,int64_t micro_timestamp)
+ void rtp_connection::setBuildTimesTamp(MediaChannelId channelId,int64_t mill_timestamp)
  {
      lock_guard<mutex>locker(m_mutex);
-    m_mediaChannelInfo[channelId].micro_timestamp = micro_timestamp;
+    m_mediaChannelInfo[channelId].mill_timestamp = mill_timestamp;
  }
 bool rtp_connection::setupRtpOverTcp(MediaChannelId channelId, uint16_t rtpChannel, uint16_t rtcpChannel)
 {
@@ -210,7 +210,7 @@ string rtp_connection::get_rtp_Info(const string &url)
     int numChannel = 0;
     for (int chn = 0; chn<MAX_MEDIA_CHANNEL; chn++)
     {
-        uint32_t rtpTime = (uint32_t)((m_mediaChannelInfo[chn].micro_timestamp+500)/1000000*m_mediaChannelInfo[chn].clockRate);
+        uint32_t rtpTime = (uint32_t)((m_mediaChannelInfo[chn].mill_timestamp)/1000*m_mediaChannelInfo[chn].clockRate);
         if (m_mediaChannelInfo[chn].isSetup)
         {
             if (numChannel != 0)

@@ -55,7 +55,7 @@ struct MediaChannelInfo
     bool isSetup;
     bool isPlay;
     bool isRecord;
-    int64_t micro_timestamp;
+    int64_t mill_timestamp;
 };
 
 struct RtpPacket
