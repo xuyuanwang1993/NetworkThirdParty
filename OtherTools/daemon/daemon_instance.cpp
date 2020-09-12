@@ -9,8 +9,8 @@
 #include <unistd.h>
 #include <thread>
 #include "daemon_instance.h"
-#include "CJsonObject.hpp"
 #include <sys/wait.h>
+#include <map>
 using namespace micagent;
 using namespace std;
 using neb::CJsonObject;
@@ -61,7 +61,7 @@ static int create_pid_file(pid_t pid,string file_name)
 
     ret = flock(fd, LOCK_EX);
     if(ret == -1) {
-    char error_info[256]={0};
+        char error_info[256]={0};
         sprintf(error_info,"flock %s fail\n",file_name.c_str());
         perror(error_info);
         close(fd);
@@ -168,6 +168,25 @@ daemon_instance::daemon_instance(string config_path,string mode):m_fd_name("/tmp
     if(!object->Get("task_list",task_list)){
         throw invalid_argument("config with no task_list");
     };
+    char buffer[4096];
+    memset(buffer, 0, sizeof(buffer));
+    auto count = readlink("/proc/self/exe", buffer, sizeof(buffer));
+    if(count > 0){
+        buffer[count] = '\n';
+        buffer[count + 1] = 0;
+    }
+    else {
+        abort();
+    }
+    for (auto i = count; i >=0; --i)
+    {//获取当前路径
+        if (buffer[i] == '/')
+        {
+            buffer[i+1] = '\0';
+            break;
+        }
+    }
+    string pwd_path=buffer;
     auto size=task_list.GetArraySize();
     for(int i=0;i<size;i++)
     {
@@ -180,6 +199,9 @@ daemon_instance::daemon_instance(string config_path,string mode):m_fd_name("/tmp
         if(!json_task.Get("pro_name",task.pro_name))
         {
             throw invalid_argument("config with no pro_name");
+        }
+        if(task.pro_name==PORT_CHECK_SHELL){
+            task.path=pwd_path;
         }
         if(!json_task.Get("cmd_options",task.cmd_options))
         {
@@ -236,7 +258,7 @@ void daemon_instance::task_handle()
                 pid_t pid=fork();
                 if(pid==0)
                 {
-                    printf("%s    run over!\r\n",cmd.c_str());
+                    //printf("%s    run over!\r\n",cmd.c_str());
                     execl("/bin/sh","sh","-c",cmd.c_str(),nullptr);
                     exit(EXIT_SUCCESS);
                 }
@@ -283,7 +305,7 @@ void daemon_instance::exit_handle()
 void daemon_instance::generate_example_config()
 {
     CJsonObject object;
-    object.Add("program_save_path","/tmp/daemon_instance");
+    object.Add("program_save_path",PROGRAM_LOCK_PATH);
     CJsonObject object_task_list;
     CJsonObject task;
     task.Add("path","/");
@@ -299,4 +321,128 @@ void daemon_instance::generate_example_config()
         fwrite(object.ToFormattedString().c_str(),1,str.size(),fp);
         fclose(fp);
     }
+}
+void daemon_instance::modify_run_config(const string &path, neb::CJsonObject &new_entry)
+{
+
+    string pwd_path=get_pwd_path();
+#ifdef DEBUG
+    printf("present work path:%s\r\n",pwd_path.c_str());
+#endif
+    auto object=CJsonObject::CreateInstance(path);
+    do{
+        //check
+        string program_save_path;
+        if(!object->Get("program_save_path",program_save_path))break;
+        CJsonObject task_list;
+        if(!object->Get("task_list",task_list))break;
+        struct tmp_opt{
+            string path;
+            uint32_t wait_time;
+        };
+
+        map<pair<string,string>,tmp_opt>m_old_tasks;
+        {//init
+            auto array_size=task_list.GetArraySize();
+            for(decltype (array_size)i=0;i<array_size;++i)
+            {
+                CJsonObject entry;
+                if(!task_list.Get(i,entry))continue;
+                string pro_name;
+                if(!entry.Get("pro_name",pro_name))continue;
+                string options;
+                if(!entry.Get("cmd_options",options))continue;
+                tmp_opt opt;
+                if(!entry.Get("path",opt.path))continue;
+                if(!entry.Get("wait_time",opt.wait_time))continue;
+                m_old_tasks.emplace(make_pair(pro_name,options),opt);
+            }
+        }
+        {//update
+            auto array_size=new_entry.GetArraySize();
+            for(decltype (array_size)i=0;i<array_size;++i)
+            {
+                CJsonObject entry;
+                if(!new_entry.Get(i,entry))continue;
+                string pro_name;
+                if(!entry.Get("pro_name",pro_name))continue;
+                string options;
+                if(!entry.Get("cmd_options",options))continue;
+                tmp_opt opt;
+                opt.path=pwd_path;
+                if(!entry.Get("wait_time",opt.wait_time))continue;
+                auto iter=m_old_tasks.find(make_pair(pro_name,options));
+                if(iter!=m_old_tasks.end())m_old_tasks.erase(iter);
+                m_old_tasks.emplace(make_pair(pro_name,options),opt);
+            }
+        }
+        {//save
+            CJsonObject new_list;
+            for(auto i:m_old_tasks)
+            {
+                CJsonObject entry;
+                entry.Add("pro_name",i.first.first);
+                entry.Add("cmd_options",i.first.second);
+                entry.Add("path",i.second.path);
+                entry.Add("wait_time",i.second.wait_time);
+                new_list.Add(entry);
+            }
+            object->Replace("task_list",new_list);
+            object->SaveToFile();
+        }
+        return;
+    }while(0);
+    {//create new one
+        CJsonObject new_config;
+        new_config.SetSavePath(path);
+        new_config.Add("program_save_path",PROGRAM_LOCK_PATH);
+        CJsonObject task_list;
+        auto array_size=new_entry.GetArraySize();
+        for(decltype (array_size)i=0;i<array_size;++i)
+        {
+            CJsonObject entry;
+            if(!new_entry.Get(i,entry))continue;
+            string pro_name;
+            if(!entry.Get("pro_name",pro_name))continue;
+            string cmd_options;
+            if(!entry.Get("cmd_options",cmd_options))continue;
+            uint32_t wait_time;
+            if(!entry.Get("wait_time",wait_time))continue;
+            entry.Add("pro_name",pro_name);
+            entry.Add("cmd_options",cmd_options);
+            entry.Add("path",pwd_path);
+            entry.Add("wait_time",wait_time);
+            task_list.Add(entry);
+        }
+        if(task_list.IsEmpty())
+        {
+            new_config.AddEmptySubArray("task_list");
+        }
+        else {
+            new_config.Add("task_list",task_list);
+        }
+        new_config.SaveToFile();
+    }
+}
+ string daemon_instance::get_pwd_path()
+{
+     char buffer[4096];
+    memset(buffer, 0, sizeof(buffer));
+    auto count = readlink("/proc/self/exe", buffer, sizeof(buffer));
+    if(count > 0){
+        buffer[count] = '\n';
+        buffer[count + 1] = 0;
+    }
+    else {
+        abort();
+    }
+    for (auto i = count; i >=0; --i)
+    {//获取当前路径
+        if (buffer[i] == '/')
+        {
+            buffer[i+1] = '\0';
+            break;
+        }
+    }
+    return buffer;
 }

@@ -18,7 +18,8 @@ HEADERS += \
     ../tcp_server.h \
     ../http_request.h \
     ../http_response.h \
-    ../tcp_connection_helper.h
+    ../tcp_connection_helper.h \
+    ../unix_socket_helper.h
 
 SOURCES += \
     ../../LOG/c_log.cpp \
@@ -29,13 +30,14 @@ SOURCES += \
     ../../events_handler/pipe.cpp \
     ../../events_handler/network_util.cpp \
     ../../events_handler/event_loop.cpp \
-    man.cpp \
+    main.cpp \
     ../buffer_handle.cpp \
     ../tcp_connection.cpp \
     ../tcp_server.cpp \
     ../http_request.cpp \
     ../http_response.cpp \
-    ../tcp_connection_helper.cpp
+    ../tcp_connection_helper.cpp \
+    ../unix_socket_helper.cpp
 INCLUDEPATH += \
 ../../LOG \
 ../../events_handler \

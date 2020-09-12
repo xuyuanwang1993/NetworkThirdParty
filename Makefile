@@ -38,6 +38,7 @@ network_helper \
 RtspServer \
 RtspProxy \
 utils \
+applications/core_server \
 
 .PHONY :all  lib app clean help distclean install uninstall
 all : lib app

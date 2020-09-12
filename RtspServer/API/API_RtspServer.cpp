@@ -144,3 +144,9 @@ void Api_rtsp_server::Api_Rtsp_Set_NewConnection_Callback(std::shared_ptr<Api_rt
     if(!handle||!handle->server) return ;
     handle->server->setNewRtspConnection(callback);
 }
+void Api_rtsp_server::Api_Rtsp_Set_MediaSession_Callback(std::shared_ptr<Api_rtsp_server::Rtsp_Handle> handle,const micagent::MEDIA_SESSION_CALLBACK &new_session_cb,\
+                                                         const micagent::MEDIA_SESSION_CALLBACK &delate_session_cb)
+{
+    if(!handle||!handle->server) return ;
+    handle->server->resgisterMediaSessionCallback(new_session_cb,delate_session_cb);
+}

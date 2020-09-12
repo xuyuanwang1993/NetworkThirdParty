@@ -3,13 +3,13 @@
 #include "network_util.h"
 using namespace micagent;
 rtsp_server::rtsp_server(uint16_t listen_port,uint32_t netinterface_index):tcp_server (listen_port,netinterface_index),m_remove_timer_id(INVALID_TIMER_ID),\
-m_new_connection_callback(nullptr)
+m_new_connection_callback(nullptr),m_new_media_session_callback(nullptr),m_delete_media_session_callback(nullptr)
 {
 
 }
 MediaSessionId rtsp_server::addMediaSession(shared_ptr<media_session>session)
 {
-    lock_guard<mutex>locker(m_session_mutex);
+    unique_lock<mutex>locker(m_session_mutex);
     do{
         if(!session)break;
         auto ret=session->getSessionid();
@@ -19,29 +19,50 @@ MediaSessionId rtsp_server::addMediaSession(shared_ptr<media_session>session)
         m_net_info.ip.c_str(),get_port(),suffix.c_str());
         m_session_map.emplace(ret,session);
         m_suffix_map.emplace(suffix,ret);
+        string rtsp_url="rtsp://";
+        rtsp_url+=m_net_info.ip+":"+to_string(get_port())+"/"+suffix;
+        if(m_new_connection_callback)
+        {
+            if(locker.owns_lock())locker.owns_lock();
+            m_new_media_session_callback(rtsp_url);
+        }
         return ret;
     }while(0);
     return INVALID_MediaSessionId;
 }
 void rtsp_server::removeMediaSession(MediaSessionId id)
 {
-    lock_guard<mutex>locker(m_session_mutex);
+    unique_lock<mutex>locker(m_session_mutex);
     auto iter=m_session_map.find(id);
     if(iter!=end(m_session_map)){
         auto session=iter->second;
         MICAGENT_LOG(LOG_ERROR,"remove stream %s!",session->getSuffix().c_str());
         if(session)m_suffix_map.erase(session->getSuffix());
         m_session_map.erase(iter);
+        string rtsp_url="rtsp://";
+        rtsp_url+=m_net_info.ip+":"+to_string(get_port())+"/"+session->getSuffix();
+        if(m_delete_media_session_callback)
+        {
+            if(locker.owns_lock())locker.owns_lock();
+            m_delete_media_session_callback(rtsp_url);
+        }
     }
 }
 void rtsp_server::removeMediaSession(string suffix)
 {
-    lock_guard<mutex>locker(m_session_mutex);
+    unique_lock<mutex>locker(m_session_mutex);
     auto iter=m_suffix_map.find(suffix);
     if(iter!=end(m_suffix_map)){
         MICAGENT_LOG(LOG_ERROR,"remove stream %s!",suffix.c_str());
         m_session_map.erase(iter->second);
         m_suffix_map.erase(iter);
+        string rtsp_url="rtsp://";
+        rtsp_url+=m_net_info.ip+":"+to_string(get_port())+"/"+suffix;
+        if(m_delete_media_session_callback)
+        {
+            if(locker.owns_lock())locker.owns_lock();
+            m_delete_media_session_callback(rtsp_url);
+        }
     }
 }
 bool rtsp_server::updateFrame(MediaSessionId session_id,MediaChannelId id,const AVFrame &frame)

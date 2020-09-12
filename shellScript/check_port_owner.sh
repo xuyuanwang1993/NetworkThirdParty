@@ -16,7 +16,8 @@ if  test -z ${pro_port}  ||  test -z ${pro_name}  ||  test -z ${socket_mode};the
 	exit 0
 else	
 if test $((pro_port)) -gt 0  &&  test $((pro_port)) -le 65535; then
-	printf "input PRO_PORT:%s PRO_NAME:%s mode:%s\n " $pro_port $pro_name $socket_mode
+	printf ""
+#	printf "input PRO_PORT:%s PRO_NAME:%s mode:%s\n " $pro_port $pro_name $socket_mode
 else
 	printf "exit false input port %s range(1-65535)\n" $pro_port
 	exit 0
@@ -41,12 +42,12 @@ if [ -z $program_name ];then
 	exit 0
 fi
 #endi for match program_name
-echo $pro_name
 if [ ${pro_name} != ${program_name} ];then
 	echo "$pro_port $pro_name $socket_mode not matched and kill it!"
 	kill -9 $pid
 else
-	echo "$pro_name($pid) $pro_port $socket_mode matched!"
+	printf ""
+#	echo "$pro_name($pid) $pro_port $socket_mode matched!"
 fi
 ###############################mode udp###############################################
 else
@@ -63,11 +64,11 @@ if [ -z $program_name ];then
 	echo "can't find $pro_name $pro_port $socket_mode!"
 	exit 0
 fi
-echo $pro_name
 if [ ${pro_name} != ${program_name} ];then
 	echo "$pro_name $pro_port $socket_mode not matched $program_name and kill it!"
 	kill -9 $pid
 else
-	echo "$pro_name($pid) $pro_port $socket_mode matched!"
+	printf ""
+#	echo "$pro_name($pid) $pro_port $socket_mode matched!"
 fi
 fi

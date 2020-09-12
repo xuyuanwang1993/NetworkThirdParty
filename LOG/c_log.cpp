@@ -253,8 +253,6 @@ void Logger::unregister_handle()
     }
     {
         unique_lock<mutex>locker(m_mutex);
-        if(m_fp)fclose(m_fp);
-        m_env_set=false;
         m_conn.notify_all();
     }
     if(m_thread&&m_thread->joinable())m_thread->join();
@@ -272,6 +270,7 @@ bool Logger::open_file()
     do{
         if(!m_env_set||m_save_path.empty())break;
         if(!m_fp){
+            if(m_clear_flag)reset_file();
             auto time_string=get_local_time();
             for (auto& i : time_string)if (i == ' ')i = '#'; else if (i == ':')i = '-';
             string file_name=m_save_path+DIR_DIVISION+time_string+"#"+m_pro_name+".log";
@@ -332,7 +331,10 @@ void Logger::run(){
             }
             m_log_buf.pop();
         }
-        m_conn.wait(locker);
+    }
+    if(m_fp){
+        fclose(m_fp);
+        m_fp=nullptr;
     }
 }
 void Logger::set_log_cache_size(int cache_size)

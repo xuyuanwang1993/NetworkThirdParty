@@ -78,6 +78,11 @@ int main(int argc,char *argv[]){
     Api_rtsp_server::Api_Rtsp_Set_NewConnection_Callback(handle,[](string ip,uint16_t port,string url){
         MICAGENT_LOG(LOG_BACKTRACE,"ip:%s port:%hu url:%s!",ip.c_str(),port,url.c_str());
     });
+    Api_rtsp_server::Api_Rtsp_Set_MediaSession_Callback(handle,[](string url_name){
+        MICAGENT_BACKTRACE("%s is created!",url_name.c_str());
+    },[](string url_name){
+        MICAGENT_BACKTRACE("%s is removed!",url_name.c_str());
+    });
     Api_rtsp_server::Api_Rtsp_Server_AddAuthorization(handle,"admin","micagent");
     Api_rtsp_server::Media_Info media_info;
     media_info.frameRate=200;

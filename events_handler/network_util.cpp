@@ -43,6 +43,24 @@ SOCKET Network_Util::build_socket(SOCKET_TYPE type)
         return socket(AF_INET,SCTP,IPPROTO_SCTP);
     }
 }
+SOCKET Network_Util::build_unix_socket(SOCKET_TYPE type,const string &path)
+{
+    SOCKET fd=socket(PF_UNIX,type,0);
+    if(!path.empty()&&fd!=INVALID_SOCKET)
+    {
+        sockaddr_un addr;
+        addr.sun_family=AF_UNIX;
+        strncpy(addr.sun_path,path.c_str(),108);
+        unlink(addr.sun_path);
+        auto ret =::bind(fd,reinterpret_cast<sockaddr *>(&addr),sizeof (addr));
+        if(ret!=0)
+        {
+            NETWORK.close_socket(fd);
+            fd=INVALID_SOCKET;
+        }
+    }
+    return fd;
+}
 bool Network_Util::connect(SOCKET sockfd,string ip,uint16_t port,uint32_t time_out_ms)
 {
     bool isConnected = true;
