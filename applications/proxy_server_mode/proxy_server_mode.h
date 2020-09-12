@@ -10,7 +10,6 @@
 namespace micagent {
 class proxy_server_mode{
 //event_loop
-    //int32_t thread_pool_size=2,uint32_t trigger_threads=2,uint32_t capacity=2000,uint32_t thread_nums=1
     static constexpr int32_t DEFAULT_THREAD_POOL_SIZE=2;
     static constexpr uint32_t DEFAULT_TRIGGER_THREADS=2;
     static constexpr uint32_t DEFAULT_TRIGGER_QUEUE_SIZE=2000;

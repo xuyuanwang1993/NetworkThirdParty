@@ -78,7 +78,7 @@ CFLAGS += -O2 -Wl,--gc-sections -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_1 -D__GCC_HAV
 CXXFLAGS ?=
 CXXFLAGS +=$(CFLAGS) -std=c++11 -ffunction-sections -fdata-sections
 #########################################change############################################
-WORK_DIR = util_test bits_helper io_output
+WORK_DIR = util_test bits_helper io_output observer
 ###########################################################################################
 SRC_FILE += $(wildcard *.c)
 SRC_FILE += $(wildcard *.cpp)
@@ -161,5 +161,7 @@ $(OBJS_OUT_PATH)/%.o : util_test/%.cpp
 $(OBJS_OUT_PATH)/%.o : io_output/%.cpp
 	$(CXX) -c  $< -o  $@  $(CXXFLAGS) $(LOCAL_INCLUDE)
 $(OBJS_OUT_PATH)/%.o : bits_helper/%.cpp
+	$(CXX) -c  $< -o  $@  $(CXXFLAGS) $(LOCAL_INCLUDE)
+$(OBJS_OUT_PATH)/%.o : observer/%.cpp
 	$(CXX) -c  $< -o  $@  $(CXXFLAGS) $(LOCAL_INCLUDE)
 ###########################################################################################

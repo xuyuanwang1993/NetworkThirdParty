@@ -1,6 +1,7 @@
 HEADERS += \
     ../io_output/io_output.h \
-    ../bits_helper/bits_helper.h
+    ../bits_helper/bits_helper.h \
+    ../observer/iobserver.h
 
 SOURCES += \
     main.cpp \
@@ -15,5 +16,6 @@ CONFIG-=qt
 INCLUDEPATH += ../ \
 ../io_output \
 ../bits_helper/ \
+../observer \
 
 QMAKE_CXXFLAGS+= '-DDEBUG'
