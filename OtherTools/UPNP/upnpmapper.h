@@ -23,7 +23,7 @@ class Upnp_Connection{
     friend class UpnpMapper;
 public:
     Upnp_Connection()=delete;
-    Upnp_Connection(UpnpMapper * server,EventLoop *loop, int sockfd,UPNP_COMMAND mode);
+    Upnp_Connection(UpnpMapper * server,weak_ptr<EventLoop>loop, int sockfd,UPNP_COMMAND mode);
     ~Upnp_Connection();
     void start_work();
     void stop_work();
@@ -33,7 +33,7 @@ public:
 private:
     ChannelPtr m_channel;
     UpnpMapper * m_upnp_mapper=nullptr;
-    EventLoop *m_event_loop = nullptr;
+    weak_ptr<EventLoop>m_event_loop ;
     UPNPCALLBACK m_callback=nullptr;
     UPNP_COMMAND m_mode;
     string m_buf;
@@ -67,7 +67,7 @@ public:
      * @param event_loop
      * @param lgd_ip the external router'ip
      */
-    void Init(EventLoop *event_loop,string lgd_ip);
+    void Init(shared_ptr<EventLoop>event_loop,string lgd_ip);
     /**
      * @brief Api_addportMapper add a port mapper
      * @param type TCP/UDP
@@ -117,7 +117,7 @@ private:
     void get_specific_port_mapping_entry(SOCKET_TYPE type,int external_port,UPNPCALLBACK callback=nullptr);
     void delete_port_mapper(SOCKET_TYPE type,int external_port,UPNPCALLBACK callback=nullptr);
     std::shared_ptr<Channel>m_udp_channel;
-    EventLoop *m_event_loop;
+    weak_ptr<EventLoop>m_event_loop;
     string m_lgd_ip;
     int m_lgd_port;
     string m_location_src;
@@ -131,7 +131,8 @@ private:
         Network_Util::Instance().get_net_interface_info(true);
     }
     ~UpnpMapper(){
-        if(m_udp_channel&&m_event_loop)m_event_loop->removeChannel(m_udp_channel);
+        auto event_loop=m_event_loop.lock();
+        if(m_udp_channel&&event_loop)event_loop->removeChannel(m_udp_channel);
     }
 };
 }

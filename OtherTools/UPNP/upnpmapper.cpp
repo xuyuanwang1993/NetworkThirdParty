@@ -4,7 +4,7 @@ using  namespace micagent;
 using  std::cout;
 using  std::endl;
 
-Upnp_Connection::Upnp_Connection(UpnpMapper * server,EventLoop *loop, int sockfd,UPNP_COMMAND mode)
+Upnp_Connection::Upnp_Connection(UpnpMapper * server, weak_ptr<EventLoop> loop, int sockfd, UPNP_COMMAND mode)
     :m_channel(new Channel(sockfd)),m_upnp_mapper(server),m_event_loop(loop),m_mode(mode)
 {
     Network_Util::Instance().make_noblocking(sockfd);
@@ -12,7 +12,9 @@ Upnp_Connection::Upnp_Connection(UpnpMapper * server,EventLoop *loop, int sockfd
         return this->onRead();
     });
     m_channel->setCloseCallback([this](Channel *chn){
-        m_event_loop->removeChannel(chn->fd());
+        auto event_loop=m_event_loop.lock();
+        if(!event_loop)return false;
+        event_loop->removeChannel(chn->fd());
         m_upnp_mapper->removeConnection(chn->fd());
 #if UPNP_LOG_ON
         cout<<"close Upnp_Connection : "<<chn->fd()<<endl;
@@ -23,10 +25,14 @@ Upnp_Connection::Upnp_Connection(UpnpMapper * server,EventLoop *loop, int sockfd
 }
 void Upnp_Connection::start_work()
 {
-    m_event_loop->updateChannel(m_channel);
+    auto event_loop=m_event_loop.lock();
+        if(!event_loop)return ;
+    event_loop->updateChannel(m_channel);
 }
 void Upnp_Connection::stop_work(){
-    m_event_loop->removeChannel(m_channel);
+    auto event_loop=m_event_loop.lock();
+        if(!event_loop)return ;
+    event_loop->removeChannel(m_channel);
 }
 Upnp_Connection::~Upnp_Connection()
 {
@@ -410,7 +416,7 @@ void Upnp_Connection::HandleData()
         break;
     }
 }
-void UpnpMapper::Init(EventLoop *event_loop,string lgd_ip)
+void UpnpMapper::Init(shared_ptr<EventLoop> event_loop, string lgd_ip)
 {
     m_control_url=string();
     m_event_loop=event_loop;
@@ -424,8 +430,8 @@ void UpnpMapper::Init(EventLoop *event_loop,string lgd_ip)
     m_udp_channel->enableReading();
     m_udp_channel->setReadCallback([this](Channel *chn){
         struct sockaddr_in addr ;
-    memset(&addr,0,sizeof (addr));
-    memset(&addr,0,sizeof (addr));
+        memset(&addr,0,sizeof (addr));
+        memset(&addr,0,sizeof (addr));
         socklen_t addr_len=sizeof addr;
         char buf[4096]={0};
         int len=recvfrom(this->m_udp_channel->fd(),buf,4096,0,(struct sockaddr *)&addr,(socklen_t *)&addr_len);
@@ -433,7 +439,9 @@ void UpnpMapper::Init(EventLoop *event_loop,string lgd_ip)
         {
             if(m_lgd_ip==inet_ntoa(addr.sin_addr))
             {
-                this->m_event_loop->removeChannel(this->m_udp_channel);
+                auto event_loop=m_event_loop.lock();
+                if(!event_loop)return true;
+                event_loop->removeChannel(this->m_udp_channel);
 #if UPNP_LOG_ON
                 cout<<"find upnp device!"<<endl;
                 cout<<buf<<endl;
@@ -475,8 +483,11 @@ void UpnpMapper::Init(EventLoop *event_loop,string lgd_ip)
     event_loop->addTimer([this](){
         if(this->m_location_src!=string())
         {
-            this->m_event_loop->removeChannel(m_udp_channel);
-            m_udp_channel.reset();
+            auto event_loop=m_event_loop.lock();
+            if(event_loop){
+                event_loop->removeChannel(m_udp_channel);
+                m_udp_channel.reset();
+            }
             return false;
         }
         send_discover_packet();
@@ -530,7 +541,8 @@ void UpnpMapper::removeConnection(SOCKET sockfd)
 }
 void UpnpMapper::addTimeoutEvent(SOCKET sockfd)
 {
-    m_event_loop->addTimer([this,sockfd](){this->removeConnection(sockfd);return false;},MAX_WAIT_TIME);
+    auto event_loop=m_event_loop.lock();
+    if(event_loop)event_loop->addTimer([this,sockfd](){this->removeConnection(sockfd);return false;},MAX_WAIT_TIME);
 }
 void UpnpMapper::send_discover_packet()
 {

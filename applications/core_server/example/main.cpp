@@ -21,7 +21,13 @@ int main(int argc,char *argv[])
         MICAGENT_INFO("run program!");
         core_server server;
         server.init(argv[1]);
+        thread test([&](
+        ){
+            sleep(3);
+            server.stop();
+        });
         server.start();
+        test.join();
     }
     else {
         MICAGENT_INFO("generate_daemon_config!");

@@ -2,7 +2,7 @@
 #include"MD5.h"
 using namespace micagent;
 load_balance_client::load_balance_client():\
-m_loop(nullptr),m_timer_id(0),m_is_running(false),m_server_ip("0.0.0.0"),m_server_port(0),m_account_name("test"),m_domain_name("www.test.com")\
+m_timer_id(0),m_is_running(false),m_server_ip("0.0.0.0"),m_server_port(0),m_account_name("test"),m_domain_name("www.test.com")\
 ,m_weight(0),m_max_load_size(1),m_now_load(0)
 {
     m_send_fd=Network_Util::Instance().build_socket(UDP);
@@ -13,7 +13,7 @@ m_loop(nullptr),m_timer_id(0),m_is_running(false),m_server_ip("0.0.0.0"),m_serve
     m_server_addr.sin_port=htons(m_server_port);
     Network_Util::Instance().connect(m_send_fd,m_server_addr);
 }
-void load_balance_client::config_server_info(EventLoop *loop,string server_ip,uint16_t server_port)
+void load_balance_client::config_server_info(weak_ptr<EventLoop> loop, string server_ip, uint16_t server_port)
 {
     stop_work();
     lock_guard<mutex>locker(m_mutex);
@@ -133,10 +133,11 @@ void load_balance_client::rc4_send(SOCKET fd,const string &buf)
 void load_balance_client::start_work()
 {
     lock_guard<mutex>locker(m_mutex);
-    if(!m_is_running&&m_loop){
+    auto event_loop=m_loop.lock();
+    if(!m_is_running&&event_loop){
         m_is_running=true;
         update();
-        if(m_timer_id==0)m_timer_id=m_loop->addTimer([this](){
+        if(m_timer_id==0)m_timer_id=event_loop->addTimer([this](){
             lock_guard<mutex>locker(m_mutex);
             update();
             return true;
@@ -146,8 +147,9 @@ void load_balance_client::start_work()
 void load_balance_client::stop_work()
 {
     lock_guard<mutex>locker(m_mutex);
-    if(m_is_running&&m_loop){
-        m_loop->removeTimer(m_timer_id);
+    auto event_loop=m_loop.lock();
+    if(m_is_running&&event_loop){
+        event_loop->removeTimer(m_timer_id);
         m_timer_id=0;
         m_is_running=false;
     }

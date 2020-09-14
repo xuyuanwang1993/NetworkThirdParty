@@ -2,7 +2,7 @@
 #include"MD5.h"
 using namespace micagent;
 dns_client::dns_client(string server_ip,uint16_t dns_port):\
-m_loop(nullptr),m_timer_id(0),m_server_ip(server_ip),m_server_port(dns_port),m_is_running(false)
+m_timer_id(0),m_server_ip(server_ip),m_server_port(dns_port),m_is_running(false)
 {
     m_send_fd=Network_Util::Instance().build_socket(UDP);
     memset(&m_server_addr,0,sizeof (m_server_addr));
@@ -12,7 +12,7 @@ m_loop(nullptr),m_timer_id(0),m_server_ip(server_ip),m_server_port(dns_port),m_i
     m_server_addr.sin_port=htons(m_server_port);
     Network_Util::Instance().connect(m_send_fd,m_server_addr);
 }
-void dns_client::config(EventLoop *loop, string domain_name, string account, string password, int64_t upload_interval)
+void dns_client::config(weak_ptr<EventLoop> loop, string domain_name, string account, string password, int64_t upload_interval)
 {
     stop_work();
     lock_guard<mutex>locker(m_mutex);
@@ -36,10 +36,11 @@ void dns_client::reset_server_info(string server_ip,uint16_t dns_port)
 void dns_client::start_work()
 {
     lock_guard<mutex>locker(m_mutex);
-    if(!m_is_running&&m_loop){
+    auto event_loop=m_loop.lock();
+    if(!m_is_running&&event_loop){
         m_is_running=true;
         update();
-        if(m_timer_id==0)m_timer_id=m_loop->addTimer([this](){
+        if(m_timer_id==0)m_timer_id=event_loop->addTimer([this](){
             lock_guard<mutex>locker(m_mutex);
             update();
             return true;
@@ -50,7 +51,8 @@ void dns_client::stop_work()
 {
     lock_guard<mutex>locker(m_mutex);
     if(m_is_running){
-        m_loop->removeTimer(m_timer_id);
+    auto event_loop=m_loop.lock();
+        if(event_loop)event_loop->removeTimer(m_timer_id);
         m_timer_id=0;
         m_is_running=false;
     }

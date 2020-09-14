@@ -2,7 +2,7 @@
 #include "c_log.h"
 using namespace micagent;
 using namespace std;
-void upnp_helper::config(EventLoop *loop,bool set_net,string lgd_ip)
+void upnp_helper::config(shared_ptr<EventLoop> loop, bool set_net, string lgd_ip)
 {
     if(m_is_config||!loop)return;
     m_is_config.exchange(true);
@@ -74,7 +74,7 @@ void upnp_helper::add_external_ip_to_dev(string ip)
         if(m_external_callback)m_external_callback(m_last_external_ip);
     }
     else {
-        MICAGENT_LOG(LOG_INFO,"external_ip %s is not changed!\r\n",m_last_external_ip.c_str());
+        //MICAGENT_LOG(LOG_INFO,"external_ip %s is not changed!\r\n",m_last_external_ip.c_str());
     }
 }
 void upnp_helper::check_internal_ip()
@@ -91,7 +91,7 @@ void upnp_helper::check_internal_ip()
             if(m_internal_callback)m_internal_callback(internal_ip);
         }
         else {
-            MICAGENT_LOG(LOG_INFO,"internal_ip %s is not changed!\r\n",m_last_internal_ip.c_str());
+           // MICAGENT_LOG(LOG_INFO,"internal_ip %s is not changed!\r\n",m_last_internal_ip.c_str());
         }
     }
 }

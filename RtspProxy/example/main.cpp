@@ -36,7 +36,7 @@ int main(int argc,char *argv[]){
         string stream_name=argv[3];
         string  file_name=argv[4];
         string mode=argv[5];
-        auto tcp_helper=tcp_connection_helper::CreateNew(loop.get());
+        shared_ptr<tcp_connection_helper>tcp_helper(tcp_connection_helper::CreateNew(loop));
         shared_ptr<rtsp_pusher> pusher;
         pusher.reset(rtsp_pusher::CreateNew(tcp_helper,(PTransMode)stoi(mode),stream_name,ip,stoul(port)));
         shared_ptr<media_session> session(media_session::CreateNew("test"));
@@ -63,7 +63,7 @@ int main(int argc,char *argv[]){
                 frame.size=static_cast<uint32_t>(frameSize)-4;
                 frame.buffer.reset(new uint8_t[frame.size],std::default_delete<uint8_t[]>());
                 memcpy(frame.buffer.get(),frameBuf+4,frameSize-4);
-                frame.timestamp=delay->block_wait_next_due(frameBuf+4);
+                frame.timestamp=delay->block_wait_next_due(frameBuf+4)/1000;
                 pusher->proxy_frame(channel_0,frame);
                     //break;
             }
@@ -82,15 +82,15 @@ int main(int argc,char *argv[]){
         uint16_t rtsp_server_port=58554;
         string lgd_ip="192.168.2.3";
         if(argc==2)lgd_ip=argv[1];
-        upnp_helper::Instance().config(loop.get(),true,lgd_ip);
+        upnp_helper::Instance().config(loop,true,lgd_ip);
         upnp_helper::Instance().add_port_task(TCP,rtsp_server_port,rtsp_server_port,"rtsp");
         upnp_helper::Instance().add_port_task(TCP,server_port,server_port,"rtsp_proxy");
         upnp_helper::Instance().add_port_task(UDP,server_port,server_port,"rtsp_proxy");
         shared_ptr<rtsp_server>server(new rtsp_server(rtsp_server_port));
-        server->register_handle(loop.get());
+        server->register_handle(loop);
         shared_ptr<proxy_server>pro_server(new proxy_server(server_port));
         pro_server->set_rtsp_server(server);
-        pro_server->register_handle(loop.get());
+        pro_server->register_handle(loop);
         while (getchar()!='8') continue;
     }
     while (getchar()!='8') continue;

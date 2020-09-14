@@ -43,7 +43,7 @@ void  Api_rtsp_server::Api_Rtsp_Server_Init_And_Start(std::shared_ptr<Api_rtsp_s
     if(!handle->server)
     {
         server.reset(new micagent::rtsp_server(port));
-        server->register_handle(eventLoop.get());
+        server->register_handle(eventLoop);
         handle->server=server;
     }
     else

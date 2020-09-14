@@ -58,7 +58,7 @@ int main(int argc,char *argv[])
     }
     else {
         MICAGENT_MARK("server_ip %s local_port %d!",server_ip.c_str(),local_port);
-        kcp_manager::GetInstance().Config(loop.get());
+        kcp_manager::GetInstance().Config(loop);
         kcp_manager::GetInstance().StartUpdateLoop();
         client_mode(loop,server_ip,local_port,nums);
 
@@ -75,7 +75,7 @@ int main(int argc,char *argv[])
 void server_mode(shared_ptr<EventLoop> loop)
 {
     SOCKET server_fd=Network_Util::Instance().build_socket(TCP);
-    shared_ptr<kcp_server> test_server (new kcp_server(BASE_PORT,loop.get()));
+    shared_ptr<kcp_server> test_server (new kcp_server(BASE_PORT,loop));
     if(test_server->start_update_loop(10)){
         MICAGENT_MARK("kcp_server_run!");
     }

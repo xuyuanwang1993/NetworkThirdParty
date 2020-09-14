@@ -16,10 +16,9 @@ static  int kcp_output(const char *buf, int len, struct IKCPCB *kcp, void *user)
     return ptr->raw_send(buf,len);
 }
 
-kcp_interface::kcp_interface(int fd,unsigned int conv_id,EventLoop *event_loop,RecvDataCallback recvCB,void *data,uint32_t max_frame_size)
+kcp_interface::kcp_interface(int fd,unsigned int conv_id,weak_ptr<EventLoop>event_loop,RecvDataCallback recvCB,void *data,uint32_t max_frame_size)
     :m_udp_channel(new Channel(fd)),m_conv_id(conv_id),m_loop(event_loop),m_recvCB(recvCB),m_data(data),m_frame_size(max_frame_size)
 {
-    if(!m_loop)throw runtime_error("event_loop is invalid!");
     m_kcp.reset(new kcp_save(ikcp_create(conv_id,this)));
     if(m_frame_size>MAX_FRAMESIZE){
         MICAGENT_LOG(LOG_ERROR,"kcp's max frame cache is %d!but now the input frame's max size is %d !\r\n",MAX_FRAMESIZE,m_frame_size);
@@ -80,12 +79,14 @@ void kcp_interface::start_work()
         }
         return true;
     });
-    m_loop->updateChannel(m_udp_channel);
+    auto event_loop=m_loop.lock();
+    if(event_loop)event_loop->updateChannel(m_udp_channel);
 }
 void kcp_interface::exit_work()
 {
     lock_guard<mutex>locker(m_mutex);
-    if(m_udp_channel)m_loop->removeChannel(m_udp_channel);
+    auto event_loop=m_loop.lock();
+    if(event_loop&&m_udp_channel)event_loop->removeChannel(m_udp_channel);
     m_udp_channel.reset();
 }
 int kcp_interface::send_userdata(const char *buf,int len)
@@ -102,7 +103,8 @@ int kcp_interface::raw_send(const char *buf,int len)
 kcp_interface::~kcp_interface()
 {
     MICAGENT_LOG(LOG_INFO,"clear %d",ikcp_getconv(m_kcp->kcp_ptr()));
-    if(m_udp_channel)m_loop->removeChannel(m_udp_channel->fd());
+    auto event_loop=m_loop.lock();
+    if(event_loop&&m_udp_channel)event_loop->removeChannel(m_udp_channel->fd());
 }
 std::shared_ptr<kcp_interface> kcp_manager::AddConnection(SOCKET fd,uint32_t conv_id,RecvDataCallback recvCB,void *m_data,uint32_t max_frame_size)
 {
@@ -139,7 +141,8 @@ std::shared_ptr<kcp_interface> kcp_manager::AddConnection(uint16_t send_port,std
 void kcp_manager::StartUpdateLoop()
 {
     lock_guard<mutex>locker(m_mutex);
-    if(m_loop_timer==0)m_loop_timer=m_event_loop->addTimer(std::bind(&kcp_manager::UpdateLoop,this),10);
+    auto event_loop=m_event_loop.lock();
+    if(event_loop&&m_loop_timer==0)m_loop_timer=event_loop->addTimer(std::bind(&kcp_manager::UpdateLoop,this),10);
 }
 void kcp_manager::StopUpdateLoop()
 {
@@ -147,7 +150,8 @@ void kcp_manager::StopUpdateLoop()
         DEBUG_LOCK
                 m_init.exchange(false);
     }
-    if(m_loop_timer>0)m_event_loop->blockRemoveTimer(m_loop_timer);
+    auto event_loop=m_event_loop.lock();
+    if(event_loop&&m_loop_timer>0)event_loop->blockRemoveTimer(m_loop_timer);
     m_loop_timer=0;
 }
 bool kcp_manager::UpdateLoop()

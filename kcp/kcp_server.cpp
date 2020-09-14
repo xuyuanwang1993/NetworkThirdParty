@@ -2,7 +2,7 @@
 #include <random>
 #include"c_log.h"
 namespace micagent {
-kcp_server::kcp_server(uint16_t port,EventLoop *loop):m_event_loop(loop),m_session_id(0),m_loop_running(false),m_buf_handle_running(false)
+kcp_server::kcp_server(uint16_t port, shared_ptr<EventLoop> loop):m_event_loop(loop),m_session_id(0),m_loop_running(false),m_buf_handle_running(false)
 {
     SOCKET fd=Network_Util::Instance().build_socket(UDP);
     if(fd==INVALID_SOCKET)throw runtime_error("fail to create socket!");
@@ -35,7 +35,8 @@ kcp_server::~kcp_server()
         }
         m_status.wait(locker);
     }
-    if(m_udp_channel)m_event_loop->removeChannel(m_udp_channel);
+    auto event_loop=m_event_loop.lock();
+    if(event_loop&&m_udp_channel)event_loop->removeChannel(m_udp_channel);
 #ifdef DEBUG
     printf("release kcp_server!\r\n");
 #endif
@@ -111,13 +112,15 @@ bool kcp_server::start_update_loop(uint32_t interval_ms)
         interface->hand_read();
         return true;
     });
-    m_event_loop->updateChannel(m_udp_channel);
+    auto event_loop=m_event_loop.lock();
+    if(!event_loop)return false;
+    event_loop->updateChannel(m_udp_channel);
     if(interval_ms<10)interval_ms=10;
     else if(interval_ms>5000)interval_ms=5000;
     if(!get_loop_run_status()){
     DEBUG_LOCK
         m_loop_running.exchange(true);
-        m_loop_running.exchange(m_event_loop->add_thread_task([this,interval_ms](){
+        m_loop_running.exchange(event_loop->add_thread_task([this,interval_ms](){
             while(get_loop_run_status()){
                 this->update_loop();
                 Timer::sleep(interval_ms);
@@ -130,7 +133,7 @@ bool kcp_server::start_update_loop(uint32_t interval_ms)
     if(!get_buf_handle_run_status()){
     DEBUG_LOCK
         m_buf_handle_running.exchange(true);
-        m_buf_handle_running.exchange(m_event_loop->add_thread_task([this](){
+        m_buf_handle_running.exchange(event_loop->add_thread_task([this](){
             unique_lock<mutex>locker(this->m_bufcache_mutex);
             while(get_buf_handle_run_status()){
                 if(!m_buf_cache.empty()){

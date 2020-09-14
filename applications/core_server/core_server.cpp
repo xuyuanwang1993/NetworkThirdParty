@@ -81,13 +81,13 @@ void core_server::start()
         if(!m_dns_server)
         {
             m_dns_server.reset(new dns_server(m_dns_port,m_dns_cache_time_ms));
-            m_dns_server->config(m_event_loop.get());
+            m_dns_server->config(m_event_loop);
         }
         m_dns_server->start_work();
         if(!m_banlance_server)
         {
             m_banlance_server.reset(new load_balance_server(m_load_banlance_port,m_load_banlance_cache_time_ms));
-            m_banlance_server->config(m_event_loop.get());
+            m_banlance_server->config(m_event_loop);
         }
         m_banlance_server->start_work();
     }
@@ -110,18 +110,19 @@ void core_server::stop()
             m_event_loop.reset();
         }
         m_is_running.exchange(false);
-        cin.putback(8);//exit loop
+        {
+            unique_lock<mutex>locker(m_exit_mutex);
+            m_exit_conn.notify_all();
+        }
     }
 }
 void core_server::loop()
 {
     MICAGENT_INFO("loop start!");
-    cin.ignore();
+    unique_lock<mutex>locker(m_exit_mutex);
     while(m_is_running)
     {
-        char c;
-        cin.get(c);
-        if(c=='8')break;
+        m_exit_conn.wait(locker);
     }
     MICAGENT_INFO("loop exit!");
 }

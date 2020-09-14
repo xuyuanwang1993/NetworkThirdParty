@@ -28,6 +28,8 @@ private:
     void load_default_config(const string &json_config_path);
 private:
     mutex m_mutex;
+    mutex m_exit_mutex;
+    condition_variable m_exit_conn;
     shared_ptr<EventLoop>m_event_loop;
     shared_ptr<load_balance_server>m_banlance_server;
     shared_ptr<dns_server>m_dns_server;

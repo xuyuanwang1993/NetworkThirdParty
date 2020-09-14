@@ -81,12 +81,13 @@ protected:
     void remove_invalid_connection();
     TimerId m_remove_timer_id;
     void init_server(){
-        if(!m_loop)return;
+    auto event_loop=m_loop.lock();
+        if(!event_loop)return;
         if(m_remove_timer_id!=INVALID_TIMER_ID){
-            m_loop->removeTimer(m_remove_timer_id);
+            event_loop->removeTimer(m_remove_timer_id);
         }
         weak_ptr<tcp_server> weak_this=shared_from_this();
-        m_remove_timer_id=m_loop->addTimer([weak_this](){
+        m_remove_timer_id=event_loop->addTimer([weak_this](){
             auto strong=weak_this.lock();
             if(!strong)return false;
             auto server=dynamic_cast<rtsp_server*>(strong.get());

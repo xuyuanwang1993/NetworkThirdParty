@@ -97,7 +97,7 @@ public:
      * @brief config set the base event loop
      * @param loop
      */
-    void config(EventLoop *loop);
+    void config(weak_ptr<EventLoop>loop);
     /**
      * @brief start_work add task into event loop
      */
@@ -126,7 +126,7 @@ private:
     void response(const string &buf);
 private:
     static data_base m_data_base;
-    EventLoop *m_event_loop;
+    weak_ptr<EventLoop>m_event_loop;
     int64_t m_max_cache_time;
     TimerId m_update_timer;
     ChannelPtr m_channel;

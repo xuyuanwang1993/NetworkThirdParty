@@ -17,7 +17,8 @@ proxy_server::~proxy_server()
 {
     //移除额外加入到其它模块的资源
     //定时器会自动移除
-    if(m_udp_channel&&m_loop)m_loop->removeChannel(m_udp_channel);
+    auto event_loop=m_loop.lock();
+    if(m_udp_channel&&event_loop)event_loop->removeChannel(m_udp_channel);
     if(m_udp_data_handle_thread&&m_udp_data_handle_thread->joinable())m_udp_data_handle_thread->join();
 }
 shared_ptr<tcp_connection>proxy_server::new_connection(SOCKET fd)
@@ -27,11 +28,12 @@ shared_ptr<tcp_connection>proxy_server::new_connection(SOCKET fd)
 void proxy_server::remove_invalid_connection()
 {
     lock_guard<mutex>locker(m_mutex);
+    auto event_loop=m_loop.lock();
     auto time_now=Timer::getTimeNow();
     for(auto iter=m_connections.begin();iter!=m_connections.end();){
         auto time_diff=proxy_connection::diff_alive_time(dynamic_cast<proxy_connection *>(iter->second.get()),time_now);
         if(time_diff>CONNECTION_TIME_OUT){
-            iter->second->unregister_handle(m_loop);
+            iter->second->unregister_handle(event_loop.get());
             m_connections.erase(iter++);
         }
         else {

@@ -3,7 +3,7 @@
 using namespace micagent;
 using namespace std;
 dns_server::data_base dns_server::m_data_base;
-dns_server::dns_server(uint16_t port,int64_t cache_time):m_event_loop(nullptr),m_max_cache_time(cache_time),\
+dns_server::dns_server(uint16_t port,int64_t cache_time):m_max_cache_time(cache_time),\
     m_update_timer(0),m_sock_len(sizeof (sockaddr_in)),m_is_running(false)
 {
     auto sock=Network_Util::Instance().build_socket(UDP);
@@ -21,7 +21,7 @@ dns_server::dns_server(uint16_t port,int64_t cache_time):m_event_loop(nullptr),m
     memset(&m_last_recv_addr,0,sizeof (m_last_recv_addr));
     m_last_recv_addr.sin_family=AF_INET;
 }
-void dns_server::config(EventLoop *loop)
+void dns_server::config(weak_ptr<EventLoop> loop)
 {
     stop_work();
     lock_guard<mutex>locker(m_mutex);
@@ -30,9 +30,10 @@ void dns_server::config(EventLoop *loop)
 void dns_server::start_work()
 {
     lock_guard<mutex>locker(m_mutex);
-    if(m_is_running||!m_event_loop)return;
-    if(m_channel)m_event_loop->updateChannel(m_channel);
-    if(m_update_timer==0)m_update_timer=m_event_loop->addTimer([this](){
+    auto event_loop=m_event_loop.lock();
+    if(m_is_running||!event_loop)return;
+    if(m_channel)event_loop->updateChannel(m_channel);
+    if(m_update_timer==0)m_update_timer=event_loop->addTimer([this](){
         this->check_sessions();
         return true;
     },SESSION_CHECK_INTERVAL);
@@ -43,9 +44,10 @@ void dns_server::stop_work()
     lock_guard<mutex>locker(m_mutex);
     if(m_is_running){
         m_is_running=false;
-        if(m_channel)m_event_loop->removeChannel(m_channel);
-        if(m_update_timer!=0){
-            m_event_loop->blockRemoveTimer(m_update_timer);
+        auto event_loop=m_event_loop.lock();
+        if(event_loop&&m_channel)event_loop->removeChannel(m_channel);
+        if(event_loop&&m_update_timer!=0){
+            event_loop->blockRemoveTimer(m_update_timer);
             m_update_timer=0;
         }
     }

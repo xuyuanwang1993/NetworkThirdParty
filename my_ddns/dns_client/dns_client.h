@@ -43,7 +43,7 @@ public:
      * @param account access account
      * @param password access password
      */
-    void config(EventLoop *loop,string domain_name,string account,string password,int64_t upload_interval=UNPDATE_INTERVAL);
+    void config(weak_ptr<EventLoop>loop,string domain_name,string account,string password,int64_t upload_interval=UNPDATE_INTERVAL);
     /**
      * @brief reset_server_info
      * @param server_ip new dns_server ip
@@ -106,7 +106,9 @@ public:
      * @return
      */
     pair<bool,neb::CJsonObject> port_check(int64_t time_out=TIME_OUT_TIME);
-    ~dns_client(){if(m_is_running)m_loop->removeTimer(m_timer_id);
+    ~dns_client(){
+    auto event_loop=m_loop.lock();
+    if(m_is_running&&event_loop)event_loop->removeTimer(m_timer_id);
         if(m_send_fd!=INVALID_SOCKET)Network_Util::Instance().close_socket(m_send_fd);
     }
 private:
@@ -141,7 +143,7 @@ private:
     }
 private:
     mutex m_mutex;
-    EventLoop *m_loop;
+    weak_ptr<EventLoop>m_loop;
     TimerId m_timer_id;
     map<string,port_info>m_port_map;
     string m_server_ip;

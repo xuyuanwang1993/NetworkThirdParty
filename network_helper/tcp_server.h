@@ -17,7 +17,7 @@ public:
      * @brief register_handle add the io descriptor to event loop
      * @param loop
      */
-    void register_handle(EventLoop *loop);
+    void register_handle(weak_ptr<EventLoop>loop);
     /**
      * @brief unregister_handle unregister from the event loop
      */
@@ -47,7 +47,7 @@ protected:
     virtual void init_server(){
     }
     void remove_connection(SOCKET fd);
-    EventLoop *m_loop;
+    weak_ptr<EventLoop>m_loop;
     atomic<bool> m_registered;
     mutex m_mutex;
     string m_server_ip;

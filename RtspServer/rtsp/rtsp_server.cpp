@@ -21,7 +21,7 @@ MediaSessionId rtsp_server::addMediaSession(shared_ptr<media_session>session)
         m_suffix_map.emplace(suffix,ret);
         string rtsp_url="rtsp://";
         rtsp_url+=m_net_info.ip+":"+to_string(get_port())+"/"+suffix;
-        if(m_new_connection_callback)
+        if(m_new_media_session_callback)
         {
             if(locker.owns_lock())locker.owns_lock();
             m_new_media_session_callback(rtsp_url);
@@ -105,12 +105,13 @@ bool rtsp_server::addProxySession(const string &url_sufix,shared_ptr<proxy_sessi
 void rtsp_server::remove_invalid_connection()
 {
     lock_guard<mutex>locker(m_mutex);
+    auto event_loop=m_loop.lock();
     auto time_now=Timer::getTimeNow();
     for(auto iter=m_connections.begin();iter!=m_connections.end();){
         auto time_diff=rtsp_connection::diff_alive_time(dynamic_cast<rtsp_connection *>(iter->second.get()),time_now);
         if(time_diff>CONNECTION_TIME_OUT){
             MICAGENT_LOG(LOG_FATALERROR,"%d   is timeout for %ld",iter->first,time_diff);
-            iter->second->unregister_handle(m_loop);
+            if(event_loop)iter->second->unregister_handle(event_loop.get());
             m_connections.erase(iter++);
         }
         else {

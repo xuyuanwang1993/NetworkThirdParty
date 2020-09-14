@@ -14,7 +14,7 @@ class rtsp_pusher:public proxy_session_base ,public enable_shared_from_this<rtsp
 //连接最小超时时间
     static constexpr uint32_t MIN_WAIT_TIME=5000;//5s
 public:
-    static rtsp_pusher *CreateNew(tcp_connection_helper *helper,PTransMode mode,const string &des_name,const string &des_ip ,uint16_t des_port,const string &user_name="",const string &password="")
+    static rtsp_pusher *CreateNew(weak_ptr<tcp_connection_helper>helper,PTransMode mode,const string &des_name,const string &des_ip ,uint16_t des_port,const string &user_name="",const string &password="")
     {
         return new rtsp_pusher(helper,mode,des_name,des_ip,des_port,user_name,password);
     }
@@ -27,7 +27,7 @@ public:
     //修改目标ip 端口信息
     void reset_net_info(string ip,uint16_t des_port);
 private:
-    rtsp_pusher(tcp_connection_helper *helper,PTransMode mode,const string &des_name,const string &des_ip ,uint16_t des_port,const string &user_name,const string &pass_word);
+    rtsp_pusher(weak_ptr<tcp_connection_helper>helper,PTransMode mode,const string &des_name,const string &des_ip ,uint16_t des_port,const string &user_name,const string &pass_word);
     //解析媒体源信息
     void parse_source_info(const vector<media_source_info>&media_source_info);
     //重置连接模块
@@ -52,7 +52,7 @@ private:
 private:
     //初始化参数
     //连接辅助
-    tcp_connection_helper *m_connection_helper;
+    weak_ptr<tcp_connection_helper>m_connection_helper;
     //传输模式
     PTransMode m_mode;
     //在服务器上创建的转发流名称

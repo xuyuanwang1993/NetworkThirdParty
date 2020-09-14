@@ -54,7 +54,7 @@ public:
      * @param clearCB 清理回调函数
      * @param max_frame_size 最大数据帧大小
      */
-    kcp_interface(SOCKET fd,uint32_t conv_id,EventLoop *loop,RecvDataCallback recvCB,void *userdata=nullptr,uint32_t max_frame_size=DEFAULT_FRAME_SIZE);
+    kcp_interface(SOCKET fd,uint32_t conv_id,weak_ptr<EventLoop>loop,RecvDataCallback recvCB,void *userdata=nullptr,uint32_t max_frame_size=DEFAULT_FRAME_SIZE);
     /**
      * @brief change_time_out_time 修改会话超时时间，线程不安全
      * @param time_out_ms 超时时间
@@ -126,7 +126,7 @@ private:
     /**
      * @brief m_loop 存储事件循环
      */
-    EventLoop *m_loop;
+    weak_ptr<EventLoop>m_loop;
     /**
      * @brief m_recvCB 接收回调函数
      */
@@ -162,8 +162,9 @@ public:
      * @brief Config 配置事件循环
      * @param event_loop 外部事件循环指针
      */
-    void Config(EventLoop *event_loop)
+    void Config(shared_ptr<EventLoop>event_loop)
     {
+
         if(!get_init_status()&&event_loop)
         {
             {
@@ -269,7 +270,7 @@ private:
     kcp_manager():m_loop_timer(0){}
     ~kcp_manager(){}
     std::mutex m_mutex;
-    EventLoop *m_event_loop;
+    weak_ptr<EventLoop>m_event_loop;
     /**
      * @brief m_conv_map 会话id:SOCKET 映射表
      */

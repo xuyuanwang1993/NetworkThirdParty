@@ -28,7 +28,7 @@ public:
      * @param set_net whether to add external ip to the default interface
      * @param lgd_ip the external router's ip
      */
-    void config(EventLoop *loop,bool set_net,string lgd_ip);
+    void config(shared_ptr<EventLoop> loop,bool set_net,string lgd_ip);
     /**
      * @brief add_port_task add a continued port map task
      * @param type TCP/UDP
@@ -61,9 +61,10 @@ public:
     }
 private:
     ~upnp_helper(){
-        if(m_loop&&m_check_timer_id)m_loop->blockRemoveTimer(m_check_timer_id);
+    auto event_loop=m_loop.lock();
+        if(event_loop&&m_check_timer_id)event_loop->blockRemoveTimer(m_check_timer_id);
     }
-    upnp_helper():m_is_config(false),m_set_net(false),m_loop(nullptr),m_check_timer_id(INVALID_TIMER_ID),m_check_counts(0),m_lgd_ip(""),m_internal_callback(nullptr),m_external_callback(nullptr),\
+    upnp_helper():m_is_config(false),m_set_net(false),m_check_timer_id(INVALID_TIMER_ID),m_check_counts(0),m_lgd_ip(""),m_internal_callback(nullptr),m_external_callback(nullptr),\
     m_last_external_ip(""),m_last_internal_ip("")
     {
     }
@@ -74,7 +75,7 @@ private:
 private:
     atomic_bool m_is_config;
     bool m_set_net;
-    EventLoop *m_loop;
+    weak_ptr<EventLoop> m_loop;
     TimerId m_check_timer_id;
     uint32_t m_check_counts;
     mutex m_mutex;

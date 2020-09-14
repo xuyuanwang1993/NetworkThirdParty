@@ -33,7 +33,7 @@ class load_balance_server{
 
 public:
     load_balance_server(uint16_t port,int64_t cache_time=MAX_CHACHE_TIME);
-    void config(EventLoop *loop);
+    void config(weak_ptr<EventLoop>loop);
     void start_work();
     void stop_work();
     ~load_balance_server();
@@ -46,7 +46,7 @@ private:
     void check_sessions();
     void response(const string &buf);
 private:
-    EventLoop *m_event_loop;
+    weak_ptr<EventLoop>m_event_loop;
     int64_t m_max_cache_time;
     TimerId m_update_timer;
     ChannelPtr m_channel;

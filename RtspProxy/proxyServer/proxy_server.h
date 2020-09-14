@@ -24,13 +24,14 @@ private:
     TimerId m_remove_timer_id;
     //初始化tcp_server时额外操作
     void init_server(){
-        if(!m_loop)return;
+        auto event_loop=m_loop.lock();
+        if(!event_loop)return;
         //初始化连接检查定时器任务
         if(m_remove_timer_id!=INVALID_TIMER_ID){
-            m_loop->removeTimer(m_remove_timer_id);
+            event_loop->removeTimer(m_remove_timer_id);
         }
         weak_ptr<tcp_server>weak_this(shared_from_this());
-        m_remove_timer_id=m_loop->addTimer([weak_this](){
+        m_remove_timer_id=event_loop->addTimer([weak_this](){
             auto strong=weak_this.lock();
             if(!strong)return false;
             auto server=dynamic_cast<proxy_server*>(strong.get());
@@ -57,7 +58,7 @@ private:
                 return true;
             });
             m_udp_channel->enableReading();
-            m_loop->updateChannel(m_udp_channel);
+            event_loop->updateChannel(m_udp_channel);
         }
         //初始化udp数据处理线程
         if(!m_udp_data_handle_thread)

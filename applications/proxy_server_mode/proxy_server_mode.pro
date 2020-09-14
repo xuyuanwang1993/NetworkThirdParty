@@ -50,7 +50,8 @@ HEADERS += \
     ../../out/include/Iother_tools/delay_control.h \
     ../../out/include/Iother_tools/Base64.h \
     proxy_server_mode.h \
-    ../../out/include/Idns_client/dns_client.h
+    ../../out/include/Idns_client/dns_client.h \
+    ../../out/include/network_helper/unix_socket_helper.h
 
 SOURCES += \
     proxy_server_mode.cpp \

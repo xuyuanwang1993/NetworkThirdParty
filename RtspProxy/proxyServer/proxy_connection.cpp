@@ -127,13 +127,15 @@ bool proxy_connection::handle_write()
     if(m_send_buf->get_first_packet_size()!=0){
         if(!m_channel->isWriting()){
             m_channel->enableWriting();
-            m_proxy_server->m_loop->updateChannel(m_channel);
+            auto loop=m_proxy_server->m_loop.lock();
+            if(loop)loop->updateChannel(m_channel);
         }
     }
     else {
         if(m_channel->isWriting()){
             m_channel->disableWriting();
-            m_proxy_server->m_loop->updateChannel(m_channel);
+           auto loop=m_proxy_server->m_loop.lock();
+            if(loop)loop->updateChannel(m_channel);
         }
     }
     return true;
@@ -153,7 +155,8 @@ bool proxy_connection::send_message(const char *buf,uint32_t buf_len)
     if(!m_send_buf->append(buf,buf_len))return false;
     if(!m_channel->isWriting()){
         m_channel->enableWriting();
-        m_proxy_server->m_loop->updateChannel(m_channel);
+        auto loop=m_proxy_server->m_loop.lock();
+            if(loop)loop->updateChannel(m_channel);
     }
     return true;
 }

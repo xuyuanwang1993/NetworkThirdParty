@@ -19,7 +19,7 @@ public:
      * @param loop event loop
      * @return
      */
-    static tcp_connection_helper *CreateNew(EventLoop *loop);
+    static tcp_connection_helper *CreateNew(weak_ptr<EventLoop>loop);
     /**
      * @brief OpenConnection create a tcp connection
      * @param ip peer's ip
@@ -29,10 +29,10 @@ public:
      */
     void OpenConnection(string ip,uint16_t port,CONNECTION_CALLBACK callback,uint32_t time_out_ms=30);
     ~tcp_connection_helper(){}
-    EventLoop *get_loop()const{return m_loop;}
+    weak_ptr<EventLoop>get_loop()const{return m_loop;}
 private:
-    tcp_connection_helper(EventLoop *loop=nullptr):m_loop(loop){}
-    EventLoop *m_loop;
+    tcp_connection_helper(weak_ptr<EventLoop>loop=weak_ptr<EventLoop>()):m_loop(loop){}
+    weak_ptr<EventLoop>m_loop;
 };
 }
 #endif // TCP_CONNECTION_HELPER_H

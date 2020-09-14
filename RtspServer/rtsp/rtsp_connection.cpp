@@ -34,13 +34,15 @@ bool rtsp_connection::handle_write()
     if(m_send_buf->get_first_packet_size()!=0){
         if(!m_channel->isWriting()){
             m_channel->enableWriting();
-            m_rtsp_server->m_loop->updateChannel(m_channel);
+            auto event_loop=m_rtsp_server->m_loop.lock();
+            if(event_loop)event_loop->updateChannel(m_channel);
         }
     }
     else {
         if(m_channel->isWriting()){
             m_channel->disableWriting();
-            m_rtsp_server->m_loop->updateChannel(m_channel);
+            auto event_loop=m_rtsp_server->m_loop.lock();
+            if(event_loop)event_loop->updateChannel(m_channel);
         }
     }
     return true;
@@ -50,7 +52,8 @@ bool rtsp_connection::send_message(const string &buf)
     if(!m_send_buf->append(buf.c_str(),buf.length()))return false;
     if(!m_channel->isWriting()){
         m_channel->enableWriting();
-        m_rtsp_server->m_loop->updateChannel(m_channel);
+        auto event_loop=m_rtsp_server->m_loop.lock();
+            if(event_loop)event_loop->updateChannel(m_channel);
     }
     return true;
 }
@@ -59,7 +62,8 @@ bool rtsp_connection::send_message(const char *buf,uint32_t buf_len)
     if(!m_send_buf->append(buf,buf_len))return false;
     if(!m_channel->isWriting()){
         m_channel->enableWriting();
-        m_rtsp_server->m_loop->updateChannel(m_channel);
+        auto event_loop=m_rtsp_server->m_loop.lock();
+            if(event_loop)event_loop->updateChannel(m_channel);
     }
     return true;
 }
@@ -228,7 +232,8 @@ bool rtsp_connection::handleCmdSetup(map<string ,string>&handle_map)
                 }
                 else {
                     auto rtcp_fd=m_rtpConnPtr->get_rtcp_fd(channel_id);
-                    if(m_rtcpChannels[channel_id])m_rtsp_server->m_loop->removeChannel(m_rtcpChannels[channel_id]);
+                    auto event_loop=m_rtsp_server->m_loop.lock();
+                    if(m_rtcpChannels[channel_id]&&event_loop)event_loop->removeChannel(m_rtcpChannels[channel_id]);
                     m_rtcpChannels[channel_id].reset(new Channel(rtcp_fd));
                     m_rtcpChannels[channel_id]->set_cycle(true);
                     m_rtcpChannels[channel_id]->setReadCallback([](Channel *chn){
@@ -236,7 +241,7 @@ bool rtsp_connection::handleCmdSetup(map<string ,string>&handle_map)
                         return true;
                     });
                     m_rtcpChannels[channel_id]->enableReading();
-                    m_rtsp_server->m_loop->updateChannel(m_rtcpChannels[channel_id]);
+                    if(event_loop)event_loop->updateChannel(m_rtcpChannels[channel_id]);
                 }
                 auto r_rtp_port=m_rtpConnPtr->get_rtp_port(channel_id);
                 auto r_rtcp_port=m_rtpConnPtr->get_rtcp_port(channel_id);

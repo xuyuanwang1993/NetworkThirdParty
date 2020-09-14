@@ -39,7 +39,7 @@ int main(int argc,char *argv[])
 while(getchar()!='8')continue;
 #else
     load_balance_client client;
-    client.config_server_info(nullptr,server_ip,server_port);
+    client.config_server_info(weak_ptr<EventLoop>(),server_ip,server_port);
     if(argc==3){
         string account=argv[1];
         string domain_name=argv[2];

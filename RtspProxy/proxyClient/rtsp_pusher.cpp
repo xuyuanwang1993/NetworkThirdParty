@@ -1,7 +1,7 @@
 #include "rtsp_pusher.h"
 #include "MD5.h"
 using namespace micagent;
-rtsp_pusher::rtsp_pusher(tcp_connection_helper *helper,PTransMode mode,const string &des_name,const string &des_ip ,uint16_t des_port,const string &user_name="",const string &password=""):\
+rtsp_pusher::rtsp_pusher(weak_ptr<tcp_connection_helper> helper, PTransMode mode, const string &des_name, const string &des_ip , uint16_t des_port, const string &user_name="", const string &password=""):\
     proxy_session_base(),m_connection_helper(helper),m_mode(mode),m_des_name(des_name),m_des_ip(des_ip),m_des_port(des_port),m_user_name(user_name),m_pass_word(password)\
   ,m_media_info_set(false),m_media_info(MAX_MEDIA_CHANNEL,PNONE),m_is_connecting(false),m_udp_fd(INVALID_SOCKET),m_last_time_out(MIN_WAIT_TIME),m_is_authorized(false),\
     m_is_setup(false),m_is_closed(false),m_stream_token(INVALID_MediaSessionId),m_seq(0),m_recv_buf(new proxy_message(false)),m_send_buf(new proxy_message(true))
@@ -83,10 +83,12 @@ void rtsp_pusher::reset_connection()
     if(!m_media_info_set||m_is_connecting||m_is_closed)return;
     m_is_connecting=true;
     if(m_tcp_channel){
-        if(m_connection_helper){
+        auto connection_helper=m_connection_helper.lock();
+        if(connection_helper){
 
-            auto loop=m_connection_helper->get_loop();
-            if(loop)loop->removeChannel(m_tcp_channel);
+            auto loop=connection_helper->get_loop();
+            auto event_loop=loop.lock();
+            if(event_loop)event_loop->removeChannel(m_tcp_channel);
         }
         m_tcp_channel.reset();
     }
@@ -95,8 +97,9 @@ void rtsp_pusher::reset_connection()
     m_stream_token=INVALID_MediaSessionId;
     m_seq=0;
     weak_ptr<rtsp_pusher>weak_this(shared_from_this());
-    if(m_connection_helper){
-        m_connection_helper->OpenConnection(m_des_ip,m_des_port,[weak_this](CONNECTION_STATUS status,SOCKET fd){
+    auto connection_helper=m_connection_helper.lock();
+    if(connection_helper){
+        connection_helper->OpenConnection(m_des_ip,m_des_port,[weak_this](CONNECTION_STATUS status,SOCKET fd){
             auto strong=weak_this.lock();
             if(strong){
                 strong->handle_connect(status,fd);
@@ -158,13 +161,27 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
             if(strong->m_send_buf->get_first_packet_size()!=0){
                 if(!chn->isWriting()){
                     chn->enableWriting();
-                    strong->m_connection_helper->get_loop()->updateChannel(strong->m_tcp_channel);
+                    auto connection_helper=strong->m_connection_helper.lock();
+                    if(connection_helper)
+                    {
+                        auto event_loop=connection_helper->get_loop().lock();
+                        if(event_loop){
+                            event_loop->updateChannel(strong->m_tcp_channel);
+                        }
+                    }
                 }
             }
             else {
                 if(chn->isWriting()){
                     chn->disableWriting();
-                    strong->m_connection_helper->get_loop()->updateChannel(strong->m_tcp_channel);
+                    auto connection_helper=strong->m_connection_helper.lock();
+                    if(connection_helper)
+                    {
+                        auto event_loop=connection_helper->get_loop().lock();
+                        if(event_loop){
+                            event_loop->updateChannel(strong->m_tcp_channel);
+                        }
+                    }
                 }
             }
             return true;
@@ -186,7 +203,9 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
             return true;
         });
         m_tcp_channel->enableReading();
-        auto loop=m_connection_helper->get_loop();
+        auto connection_helper=m_connection_helper.lock();
+        if(!connection_helper)return;
+        auto loop=connection_helper->get_loop().lock();
         if(loop){
             m_proxy_interface.reset(new ProxyInterface(INVALID_MediaSessionId,RAW_TCP,[this](const void *buf,uint32_t buf_len){
                 //TCP协议包发送处理
@@ -204,7 +223,9 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
     else {
         lock_guard<mutex>locker(m_mutex);
         weak_ptr<rtsp_pusher>weak_this(shared_from_this());
-        auto loop=m_connection_helper->get_loop();
+        auto connection_helper=m_connection_helper.lock();
+        if(!connection_helper)return;
+        auto loop=connection_helper->get_loop().lock();
         if(!loop)throw runtime_error("event loop was quit!");
         MICAGENT_LOG(LOG_DEBUG,"%d connect %s  %hu  error for %s!  wait %u ms!",fd,m_des_ip.c_str(),m_des_port,strerror(errno),m_last_time_out);
         if(fd!=INVALID_SOCKET)NETWORK.close_socket(fd);
@@ -257,7 +278,11 @@ bool rtsp_pusher::send_message(const char *buf,uint32_t buf_len)
     if(!m_send_buf->append(buf,buf_len))return false;
     if(!m_tcp_channel->isWriting()){
         m_tcp_channel->enableWriting();
-        m_connection_helper->get_loop()->updateChannel(m_tcp_channel);
+        auto connection_helper=m_connection_helper.lock();
+        if(!connection_helper)return false;
+        auto loop=connection_helper->get_loop().lock();
+        if(!loop)return false;
+        loop->updateChannel(m_tcp_channel);
     }
     return true;
 }

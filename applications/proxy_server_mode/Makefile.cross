@@ -2,7 +2,7 @@
 #config
 #项目名
 #########################################change############################################
-APP_NAME ?= core_server
+APP_NAME ?= proxy_server
 ###########################################################################################
 
 #交叉编译工具前缀
@@ -47,10 +47,14 @@ LOCAL_INCLUDE = -I.
 EXTERN_INCLUDE += $(OUT_PATH)/include/c_log \
 $(OUT_PATH)/include/json_config \
 $(OUT_PATH)/include/netcore \
-$(OUT_PATH)/include/lb_server \
-$(OUT_PATH)/include/Idns_server \
+$(OUT_PATH)/include/lb_client \
+$(OUT_PATH)/include/Idns_client \
 $(OUT_PATH)/include/Iother_tools \
 $(OUT_PATH)/include/Idaemon \
+$(OUT_PATH)/include/network_helper \
+$(OUT_PATH)/include/rtsp_server \
+$(OUT_PATH)/include/rtsp_proxy \
+$(OUT_PATH)/include/IUPNP \
 
 ###########################################################################################
 
@@ -60,9 +64,13 @@ LOCAL_STATIC_LIBS =
 ###########################################################################################
 #本地动态链接库 会被拷至运行文件目录
 #########################################change############################################
-LOCAL_SHARDE_LIBS = $(OUT_PATH)/lib/Idaemon/libIdaemon.$(DLL_LIB_SUFIX) \
-$(OUT_PATH)/lib/lb_server/liblb_server.$(DLL_LIB_SUFIX) \
-$(OUT_PATH)/lib/Idns_server/libIdns_server.$(DLL_LIB_SUFIX) \
+LOCAL_SHARDE_LIBS = $(OUT_PATH)/lib/rtsp_server/librtsp_server.$(DLL_LIB_SUFIX) \
+$(OUT_PATH)/lib/rtsp_proxy/librtsp_proxy.$(DLL_LIB_SUFIX) \
+$(OUT_PATH)/lib/IUPNP/libIUPNP.$(DLL_LIB_SUFIX) \
+$(OUT_PATH)/lib/network_helper/libnetwork_helper.$(DLL_LIB_SUFIX) \
+$(OUT_PATH)/lib/Idaemon/libIdaemon.$(DLL_LIB_SUFIX) \
+$(OUT_PATH)/lib/lb_client/liblb_client.$(DLL_LIB_SUFIX) \
+$(OUT_PATH)/lib/Idns_client/libIdns_client.$(DLL_LIB_SUFIX) \
 $(OUT_PATH)/lib/json_config/libjson_config.$(DLL_LIB_SUFIX) \
 $(OUT_PATH)/lib/Iother_tools/libIother_tools.$(DLL_LIB_SUFIX) \
 $(OUT_PATH)/lib/netcore/libnetcore.$(DLL_LIB_SUFIX) \

@@ -36,7 +36,8 @@ HEADERS += \
     ../../RtspServer/example/file_reader.h \
     ../../OtherTools/DelayControl/delay_control.h \
     ../../OtherTools/UPNP/upnpmapper_mode.h \
-    ../../OtherTools/UPNP/upnpmapper.h
+    ../../OtherTools/UPNP/upnpmapper.h \
+    ../../OtherTools/Base64/Base64.h
 
 LIBS+= -lpthread
 
@@ -78,7 +79,8 @@ SOURCES += \
     ../../RtspServer/example/file_reader.cpp \
     ../../OtherTools/DelayControl/delay_control.cpp \
     ../../OtherTools/UPNP/upnpmapper_mode.cpp \
-    ../../OtherTools/UPNP/upnpmapper.cpp
+    ../../OtherTools/UPNP/upnpmapper.cpp \
+    ../../OtherTools/Base64/Base64.cpp
 
 INCLUDEPATH += ..\
 ../../LOG \
@@ -93,6 +95,7 @@ INCLUDEPATH += ..\
 ../../RtspServer/example/ \
 ../../OtherTools/DelayControl \
 ../../OtherTools/UPNP/ \
+../../OtherTools/Base64/ \
 
 CONFIG-=qt
  MOC_DIR +=.moc

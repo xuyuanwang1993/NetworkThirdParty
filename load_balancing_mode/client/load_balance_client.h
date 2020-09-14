@@ -11,7 +11,7 @@ class load_balance_client{
     static constexpr int64_t UNPDATE_INTERVAL=2*1000;//2s
 public:
     load_balance_client();
-    void config_server_info(EventLoop *loop,string server_ip,uint16_t server_port);
+    void config_server_info(weak_ptr<EventLoop>loop,string server_ip,uint16_t server_port);
     void config_client_info(string account, string domain_name, uint32_t max_load_size, double weight=0.5, int64_t upload_interval=UNPDATE_INTERVAL);
     void increase_load(uint32_t load_size);
     void decrease_load(uint32_t load_size);
@@ -20,7 +20,8 @@ public:
     pair<bool,neb::CJsonObject>  specific_find(string account,string domain_name,int64_t time_out=TIME_OUT_TIME);
     pair<bool,neb::CJsonObject>  find(string account,set<string>exclude_list=set<string>(),int64_t time_out=TIME_OUT_TIME);
     ~load_balance_client(){
-        if(m_is_running)m_loop->removeTimer(m_timer_id);
+        auto event_loop=m_loop.lock();
+        if(event_loop&&m_is_running)event_loop->removeTimer(m_timer_id);
         if(m_send_fd!=INVALID_SOCKET)Network_Util::Instance().close_socket(m_send_fd);
     }
 private:
@@ -47,7 +48,7 @@ private:
     }
 private:
     mutex m_mutex;
-    EventLoop *m_loop;
+    weak_ptr<EventLoop>m_loop;
     TimerId m_timer_id;
     bool m_is_running;
     string m_server_ip;

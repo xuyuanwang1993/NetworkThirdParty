@@ -7,7 +7,11 @@
 #include "rtsp_server.h"
 #include "proxy_server.h"
 #include "upnpmapper_mode.h"
+#include "unix_socket_helper.h"
+#define UNIX_SOCKET_PREFIX "/tmp/"
 namespace micagent {
+using namespace std;
+using neb::CJsonObject;
 class proxy_server_mode{
 //event_loop
     static constexpr int32_t DEFAULT_THREAD_POOL_SIZE=2;
@@ -21,7 +25,7 @@ class proxy_server_mode{
 //load_balance
     static constexpr int64_t DEFAULT_BALANCE_UPLOAD_INTERVAL_MS=2*1000;//2s
     static constexpr uint16_t DEFAULT_BALANCE_PORT=10001;
-    static constexpr uint32_t DEFAULT_MAX_PAYLOAD_SIZE=200;
+    static constexpr uint32_t DEFAULT_MAX_PAYLOAD_SIZE=25;
     static constexpr double DEFAULT_SERVER_WEIGHT=0.5;
 //rtsp_server
     static constexpr uint16_t DEFAULT_RTSP_SERVER_PORT=8554;
@@ -37,6 +41,12 @@ public:
 private:
     void loop();
     void load_default_config(const string &json_config_path);
+    void message_handle();
+    void handle_get_config(const string&from);
+    void handle_update_config(const CJsonObject&object,const string&from);
+    void handle_get_url_info(const string&from);
+    void handle_reload_mode(const string&from);
+    void handle_cmd_unsupported(const string&cmd,const string&from);
 private:
 //event_loop
     int32_t m_event_thread_pool_size;
@@ -55,12 +65,15 @@ private:
     shared_ptr<dns_client>m_dns_client;
 //load_balance
     int64_t m_balance_upload_interval_ms;
+    string m_balance_server_domain;
     uint16_t m_balance_server_port;
     uint32_t m_balance_max_payload_size;
     double m_balance_server_weight;
     shared_ptr<load_balance_client>m_load_balance_client;
 //rtsp_server
     uint16_t m_rtsp_server_port;
+    string m_rtsp_account_name;
+    string m_rtsp_account_password;
     shared_ptr<rtsp_server>m_rtsp_server;
 //rtsp_proxy
     uint16_t m_rtsp_proxy_port;
@@ -70,8 +83,21 @@ private:
     string m_router_ip;
     uint16_t m_rtsp_server_external_port;
     uint16_t m_rtsp_proxy_external_port;
-private://local
+//itself
+    bool m_log_open;
+    string m_log_path;
+private:
+    mutex m_mutex;
+    mutex m_exit_mutex;
+    condition_variable m_exit_conn;
+    shared_ptr<unix_dgram_socket>m_message_fd;
+    ChannelPtr m_message_channel;
+    atomic_bool m_is_running;
+    atomic_bool m_reload_flag;
+    string m_config_path;
     set<string>m_url_set;
+    string m_pro_name;
+    shared_ptr<neb::CJsonObject>m_json_config;
 };
 }
 #endif // PROXY_SERVER_MODE_H

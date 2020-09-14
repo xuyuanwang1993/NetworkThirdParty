@@ -130,62 +130,27 @@
 //	 return 0;
 //}
 int main(){
-    auto &instance=micagent::Config_Manager::Get_Instance();
-    instance.Load_Path("test.json");
-    std::cout<<instance.Dump_All_Config()<<"\r\n";
-    std::cout<<"-----------------------------------------------"<<"\r\n";
+    neb::CJsonObject object;
+    neb::CJsonObject object2;
+    object2.Add("string","test1");
+    object.Add("string","test");
+    object.Add("int",1);
+    uint64_t value=1;
+    object.Add("uint64_t",value);
+    std::string key;
+    while(object.GetKey(key))
     {
-        neb::CJsonObject object1;
-        object1.Add("port",8554);
-        instance.Update_Mode_Config("rtsp",object1);
-        std::cout<<instance.Dump_All_Config()<<"\r\n";
-        std::cout<<"-----------------------------------------------"<<"\r\n";
+        neb::CJsonObject tmp;
+        if(object.Get(key,tmp))
+        {
+            printf("key %s value %s %d\r\n",key.c_str(),tmp.ToFormattedString().c_str(),object2.Replace(key,tmp));
+
+        }
+        else {
+            printf("%s\r\n",object.GetErrMsg().c_str());
+        }
     }
-    {
-        neb::CJsonObject object1;
-        object1.Add("port",8554);
-        std::cout<<instance.Update_Mode_Config("rtsp",object1)<<"\r\n";
-        std::cout<<instance.Dump_All_Config()<<"\r\n";
-        std::cout<<"-----------------------------------------------"<<"\r\n";
-    }
-    {
-        neb::CJsonObject object1;
-        object1.Add("port",8554);
-        instance.Update_Mode_Config("rtmp",object1);
-        std::cout<<instance.Dump_All_Config()<<"\r\n";
-        std::cout<<"-----------------------------------------------"<<"\r\n";
-    }
-    {
-        instance.Delete_Mode_Config("rtmp");
-        std::cout<<instance.Dump_All_Config()<<"\r\n";
-        std::cout<<"-----------------------------------------------"<<"\r\n";
-    }
-    {
-        neb::CJsonObject object1;
-        object1.Add("port",554);
-        instance.Update_Mode_Config("rtsp",object1);
-        std::cout<<instance.Dump_All_Config()<<"\r\n";
-        std::cout<<"-----------------------------------------------"<<"\r\n";
-    }
-    {
-        neb::CJsonObject object1;
-        object1.Add("port",8554);
-        instance.Update_Mode_Config("rtmp",object1);
-        std::cout<<instance.Dump_All_Config()<<"\r\n";
-        std::cout<<"-----------------------------------------------"<<"\r\n";
-    }
-    {
-        neb::CJsonObject object1;
-        std::cout<<instance.Get_Mode_Config("rtsp",object1)<<"\r\n";
-        std::cout<<object1.ToFormattedString()<<"\r\n";
-        std::cout<<"-----------------------------------------------"<<"\r\n";
-    }
-    {
-        neb::CJsonObject object1;
-        std::cout<<instance.Get_Mode_Config("rtmp",object1)<<"\r\n";
-        std::cout<<object1.ToFormattedString()<<"\r\n";
-        std::cout<<"-----------------------------------------------"<<"\r\n";
-    }
-    instance.Save_Config();
+    object2.SetSavePath("./test.json");
+    object2.SaveToFile();
     return 0;
 }

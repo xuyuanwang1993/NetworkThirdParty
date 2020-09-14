@@ -27,8 +27,10 @@ tcp_server::tcp_server(uint16_t listen_port,uint32_t netinterface_index):m_regis
     }
     m_listen_channel.reset(new Channel(fd));
 }
-void tcp_server::register_handle(EventLoop *loop)
+void tcp_server::register_handle(weak_ptr<EventLoop> loop)
 {
+    auto event_loop=loop.lock();
+    if(!event_loop)return;
     if(!m_registered){
         Network_Util::Instance().listen(m_listen_channel->fd(),20);
         m_loop=loop;
@@ -44,7 +46,7 @@ void tcp_server::register_handle(EventLoop *loop)
             return true;
         });
         m_listen_channel->enableReading();
-        m_loop->updateChannel(m_listen_channel);
+        event_loop->updateChannel(m_listen_channel);
         m_registered.exchange(true);
     }
 }
@@ -52,7 +54,8 @@ void tcp_server::unregister_handle()
 {
     if(m_registered){
         m_registered.exchange(false);
-        m_loop->removeChannel(m_listen_channel);
+        auto event_loop=m_loop.lock();
+        if(event_loop)event_loop->removeChannel(m_listen_channel);
     }
 }
 void tcp_server::add_connection(shared_ptr<tcp_connection> conn)
@@ -63,18 +66,20 @@ void tcp_server::add_connection(shared_ptr<tcp_connection> conn)
         this->remove_connection(conn->fd());
     });
     lock_guard<mutex>locker(m_mutex);
+    auto event_loop=m_loop.lock();
+    if(!event_loop)return;
     auto rm_iter=m_connections.find(conn->fd());
     if(rm_iter!=m_connections.end()){
         MICAGENT_LOG(LOG_FATALERROR,"fd %d release error!",conn->fd());
         if(rm_iter->second){
             rm_iter->second->set_fd_reuse(true);
-            rm_iter->second->unregister_handle(m_loop);
+            rm_iter->second->unregister_handle(event_loop.get());
         }
         m_connections.erase(rm_iter);
     }
     auto iter=m_connections.emplace(conn->fd(),conn);
     MICAGENT_LOG(LOG_INFO,"add %u   %s   status:%d %lu",conn->fd(),Logger::get_local_time().c_str(),iter.second,m_connections.size());
-    conn->register_handle(m_loop);
+    conn->register_handle(event_loop.get());
 }
 shared_ptr<tcp_connection>tcp_server::new_connection(SOCKET fd)
 {
@@ -84,9 +89,11 @@ void tcp_server::remove_connection(SOCKET fd)
 {
     if(!m_registered)return;
     lock_guard<mutex>locker(m_mutex);
+    auto event_loop=m_loop.lock();
+    if(!event_loop)return;
     auto iter=m_connections.find(fd);
     if(iter!=end(m_connections)){
-        iter->second->unregister_handle(m_loop);
+        iter->second->unregister_handle(event_loop.get());
         m_connections.erase(iter);
     }
 }

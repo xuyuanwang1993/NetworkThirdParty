@@ -47,7 +47,7 @@ public:
         }
     };
 public:
-    kcp_server(uint16_t port,EventLoop *loop);
+    kcp_server(uint16_t port,shared_ptr<EventLoop>loop);
     kcp_server &operator=(const kcp_server &) = delete;
     kcp_server(const kcp_server &) = delete;
     ~kcp_server();
@@ -68,7 +68,11 @@ public:
     }
     void clear(){
         lock_guard<mutex>locker(m_mutex);
-        if(m_udp_channel)m_event_loop->removeChannel(m_udp_channel);
+        auto event_loop=m_event_loop.lock();
+        if(event_loop)
+        {
+             if(m_udp_channel)event_loop->removeChannel(m_udp_channel);
+        }
         m_udp_channel.reset();
     }
 private:
@@ -77,7 +81,7 @@ private:
     void handle_cache();
     static uint64_t addr_to_uint64(const sockaddr_in &addr);
     mutex m_mutex;
-    EventLoop *m_event_loop;
+    weak_ptr<EventLoop>m_event_loop;
     uint32_t m_session_id;
     unordered_map<uint32_t,shared_ptr<kcp_session>> m_session_map;
     set<uint64_t> m_addr_set;
