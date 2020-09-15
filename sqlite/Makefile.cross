@@ -1,0 +1,46 @@
+#Makefile
+#config
+#项目名
+#########################################change############################################
+APP_NAME ?= sqlite
+###########################################################################################
+
+#交叉编译工具前缀
+CROSS_COMPILE ?=
+#安装目录前缀
+PREFIX ?= /usr/local
+#编译输出目录
+#########################################change############################################
+OUT_PATH ?= ../out
+###########################################################################################
+
+#C编译选项
+CFLAGS ?=
+#C++编译选项
+CXXFLAGS ?=
+
+sqlite_vesion := sqlite-autoconf-3320300
+
+sqlite_build_dir := $(shell pwd)/$(sqlite_vesion)
+sqlite_install_dir := #$(PREFIX)
+
+.PHONY: all lib app clean
+all : lib app
+lib:
+	@rm -rf temp
+	@cp -rf $(sqlite_build_dir) temp
+	@pushd temp >>/dev/null; \
+	 autoreconf -ivf >>/dev/null; \
+	 CC="$(CROSS_COMPILE)gcc" CXX="$(CROSS_COMPILE)g++" \
+	 CFLAGS="$(CFLAGS) -O2" CXXFLAGS="$(CXXFLAGS) -O2" \
+	 ./configure --host=$(CROSS_COMPILE) --prefix=$(sqlite_install_dir) >>/dev/null; \
+	 popd >>/dev/null
+	@make -j8 -C temp >>/dev/null
+	@make install -C temp >>/dev/null
+	@rm -rf temp
+
+app:
+	@echo "no app"
+
+clean:
+	@echo "Clean sqlite"

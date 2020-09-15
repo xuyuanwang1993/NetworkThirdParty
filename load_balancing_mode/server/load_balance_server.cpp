@@ -74,6 +74,7 @@ void load_balance_server::handle_read()
         if(interface.decrypt(buf,out_string.get(),size,buf_size,rc4_interface::generate_key())>0)
         {
             neb::CJsonObject object(out_string.get());
+            printf("%s\r\n",object.ToFormattedString().c_str());
             string cmd;
             if(!object.Get("cmd",cmd))return;
             if (cmd=="find") {

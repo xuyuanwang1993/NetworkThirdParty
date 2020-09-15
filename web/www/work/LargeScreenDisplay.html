@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1 ui-slider=n">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="full-screen" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimal-ui">
+    <title>分布式可视化平台</title>
+    <link rel="stylesheet" href="../css/bootstrap.css">
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/jquery-ui.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/swiper.min.css">
+    <link rel="stylesheet" href="../css/LargeScreenDisplay.css">
+</head>
+<body class="body">
+<div class="c">
+    <div id="v">
+       <ul class="ul-right">
+           <li id="zhu"></li>
+           <li id="li-1"></li>
+           <li id="li-2"></li>
+           <li id="li-3"></li>
+           <li id="li-4"></li>
+           <li id="li-5"></li>
+           <li id="li-6"></li>
+           <li id="li-8">admin_</li>
+           <li id="li-7">退出&nbsp;&nbsp;</li>
+       </ul>
+    </div>
+    <div id="b">
+        <div class="bod" id="ent1">
+            <div class="bod-ent1 bod-ent"></div>
+            </br></br></br></br>
+            <span>创建幕墙</span>
+        </div>
+        <div class="bod" id="ent2">
+            <div class="bod-ent2 bod-ent"></div>
+            </br></br></br></br>
+            <span>预案</span>
+        </div>
+        <div class="bod" id="ent3">
+            <div class="bod-ent3 bod-ent"></div>
+            </br></br></br></br>
+            <span>中控</span>
+        </div>
+        <div class="bod" id="ent4">
+            <div class="bod-ent4 bod-ent"></div>
+            </br></br></br></br>
+            <span>AI语音</span>
+        </div>
+        <div class="bod" id="ent5">
+            <div class="bod-ent5 bod-ent"></div>
+            </br></br></br></br>
+            <span>回显控制</span>
+        </div>
+        <div class="bod" id="ent7">
+            <div class="bod-ent7 bod-ent"></div>
+            </br></br></br></br>
+            <span>信号管理</span>
+        </div>
+    </div>
+    <div id="b2">
+        <div class="cfposk cfpopacity"></div>
+        <div id="cfpo-ent1" class="cfpo-ent">
+            <form class="form1">
+                <div class="bod-name">创建幕墙</div>
+                <span class="p-name">修改屏幕设置</span>
+                <span id="p-name"></span>
+                <div id="div-p-name">
+                    <span>屏幕名称</span>
+                    <input type="text" id="pin">
+                </div>
+                <div id="e-c">
+                    <span id="e-c_sapn">设&nbsp;&nbsp;&nbsp;备</span>
+                    <div id="led">
+                        <div class="btn e-c_box btn-sm">
+                            <input type="radio" class="btn reguar-checkbox btn-xs" id="l-l" name="led_lcd" value="LED"/>
+                            <label for="l-l"></label>
+                        </div>
+                        <span>LED</span>
+                    </div>
+                    <div id="lcd">
+                        <div class="btn e-c_box btn-sm">
+                            <input class="btn reguar-checkbox btn-xs" type="radio" id="e-e" name="led_lcd" value="LCD"/>
+                            <label for="e-e"></label>
+                        </div>
+                        <span>LCD</span>
+                    </div>
+                </div>
+                <div id="copor1" class="copor1-yin">
+                    <div class="bod-inpt1">
+                        <span>行&nbsp;&nbsp;&nbsp;数</span>
+                        <select id="input_row" type="number">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                    <div class="bod-inpt2">
+                        <span>列&nbsp;&nbsp;&nbsp;数</span>
+                        <select id="input_col" type="number">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="bod-inpt-type wen">
+                    <input id="clo1" type="reset" value="取消"/>
+                    <input id="subm1" type="button" value="确定">
+                </div>
+                <div id="ping-dis"></div>
+                <div id="pingMu">
+                    <span id="ping-name">屏幕组命名</span>
+                    <input id="pingmu-name" type="text">
+                    <button type="button" id="pingMu-button">确定</button>
+                    <button type="reset" id="pingMu-cancel">取消</button>
+                </div>
+            </form>
+        </div>
+        <div id="cfpo-ent2" class="cfpo-ent">
+            <form class="form1">
+                <div class="bod-name">预案控制</div>
+                <div class="bod-inpt">
+                    <div id="yuan-ul">
+                        <ul></ul>
+                    </div>
+                </div>
+                <div id="yu-timn" class="bod-inpt">
+                    <select id="yuan-time">
+                        <option value="60">5s</option>
+                        <option value="10">10s</option>
+                        <option value="30">30s</option>
+                        <option value="44">1min</option>
+                        <option value="42">2min</option>
+                        <option value="43">3min</option>
+                    </select>
+                </div>
+                <div id="div-p-p">
+                    <div id="div-pause-play">
+                        <button class="pause-play play" type="button"></button>
+                    </div>
+                    <span id="pause-span">场景轮巡</span>
+                    <div class="icon-block">
+                        <div class="icon-right"></div>
+                        <div class="icon-left"></div>
+                        </br>
+                        <span>场景切换</span>
+                    </div>
+                </div>
+                <div class=" bod-yu-clo">
+                    <input id="clo2" type="button" value="关闭" />
+                </div>
+            </form>
+        </div>
+        <span id="save_name"></span>
+        <div id="save-dis"></div>
+        <div id="save">
+            <input type="text" id="save-input" value=""/>
+            <button type="button" id="save-button">确定</button>
+            <button type="button" id="save-cancel">取消</button>
+        </div>
+        <div id="cfpo-ent3" class="cfpo-ent">
+            <form class="form1" id="form1">
+                <div class="bod-name">环境控制</div>
+                <div id="h-y-z-s-j">
+                    <span>会议桌升降</span>
+                    <input type="checkbox" name="Storage" id="div-h" class="chen"/>
+                    <label for="div-h"><em></em></label>
+                </div>
+                <div id="k-t">
+                    <span>空调</span>
+                    <input type="checkbox" name="Storage" id="div-k" class="chen"/>
+                    <label for="div-k"><em></em></label>
+                </div>
+                <div id="d-p-k-g">
+                    <span>大屏开关</span>
+                    <input type="checkbox" name="Storage" id="div-d" class="chen"/>
+                    <label for="div-d"><em></em></label>
+                </div>
+                <div id="c-l">
+                    <span>窗帘</span>
+                    <input type="checkbox" name="Storage" id="div-c" class="chen"/>
+                    <label for="div-c"><em></em></label>
+                </div>
+                <div id="d-g">
+                    <div id="d-g-slider-vertical">
+                        <a class="ui-slider-handle ui-state-default ui-corner-all" href="#"></a>
+                    </div>
+                    <input id="d-g-sliderValue" disabled="disabled"/>
+
+                </div>
+                <div id="z-k-s-y">
+                    <div id="z-k-slider-vertical">
+                        <a class="ui-slider-handle ui-state-default ui-corner-all" href="#"></a>
+                    </div>
+                    <input id="z-k-sliderValue" disabled="disabled"/>
+                </div>
+                <div id="d-g-span">
+                    <span>灯光</span>
+                </div>
+                <div id="z-k-span">
+                    <span>主控声音</span>
+                </div>
+                <div class=" bod-yu-clo">
+                    <input id="clo3" type="button" value="关闭" />
+                </div>
+            </form>
+        </div>
+        <div id="cfpo-ent4" class="cfpo-ent">
+            <div id="mai"></div>
+        </div>
+        <div id="cfpo-ent5" class="cfpo-ent">
+            <form class="form1">
+                <div class="bod-name">回显控制</div>
+                <div class="bod-inpt">
+                    <span>回显IP设置&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                    <input id="hui_ip" type="text" value="" placeholder="请输入回显IP地址"/>
+                </div>
+                <div class="bod-inpt-type wen">
+                    <input id="clo5" type="reset" value="取消"/>
+                    <input id="subm5" type="button" value="确定">
+                </div>
+            </form>
+        </div>
+        <div id="cfpo-ent7" class="cfpo-ent">
+            <form class="form1">
+                <div class="bod-name">信号管理</div>
+                <div id="bod-xin1">
+                    <div class="bod-inpt-xin">
+                        <span class="msen-biao">搜索信号</span>
+                        <button id="channel" type="button" class="btn btn-default btn-xs">导入</button>
+                        <button id="search" type="button" class="sousuo msen-close">搜索</button>
+                    </div>
+                    <div align="center">
+                        <table id="tab1" class="tb" border="1" cellpadding=0 cellspacing=0>
+                            <tbody>
+                                <tr>
+                                    <td><input type="checkbox" onclick="selectAll(this.checked)" /></td>
+                                    <td>序号</td>
+                                    <td>id</td>
+                                    <td>ipc</td>
+                                    <td></td>
+                                    <td class="div-td">
+                                        <div class="div-tdone">
+                                            <span>···</span>
+                                        </div>
+                                    </td>
+                                    <div class="div-no div-ul">
+                                        <ul>
+                                            <li class="zeng">添加</li>
+                                            <!--<li class="sang">删除</li>-->
+                                        </ul>
+                                    </div>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="bod-table1" align="center">
+                        <table class="tb" border="1" cellpadding=0 cellspacing=0>
+                            <tbody id="list"></tbody>
+                        </table>
+                    </div>
+                    <div id="zeng-kuang" class="kuang kuang-fu">
+                        <div class="msen">
+                            <span class="msen-biao">添加</span>
+                            <span id="guan1" class="msen-close">关闭</span>
+                        </div>
+                        <div class="msen-zeng">
+                            <span>输入卡数量&nbsp;&nbsp;</span>
+                            <input id="input_ru" type="number" value="">
+                        </div>
+                        <div class="msen-que_qu">
+                            <input id="submit1" type="button" value="确定">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                            <input type="reset" value="取消" onclick="re1_click()"/>
+                        </div>
+                        <div class="zuse">注意：手动添加将会删除原有的数据再添加新数据</div>
+                    </div>
+                    <div id="gai-kuang" class="alt_erbox">
+                        <div class="msen">
+                            <span class="msen-biao">修改</span>
+                            <span id="guan2" class="msen-close">关闭</span>
+                        </div>
+                        <div class="msen-xiu">
+                            <input type="hidden" id="hidId"/>
+                            <p>
+                                <span>输入卡类型&nbsp;&nbsp;</span>
+                                <select id="input_ka">
+                                    <option>HDMI</option>
+                                    <option>VGA</option>
+                                    <option>DVI</option>
+                                    <option>SDI</option>
+                                    <option>IP</option>
+                                    <option>AV</option>
+                                </select>
+                            </p>
+                            <p>
+                                <span>描&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;述&nbsp;&nbsp;</span>
+                                <input id="input_miao" type="text" value="" disabled="disabled">
+                            </p>
+                            <p>
+                                <span>叠&nbsp;加&nbsp;文&nbsp;字&nbsp;&nbsp;</span>
+                                <input id="input_die" type="text" value="">
+                            </p>
+                        </div>
+                        <div class="msen-xiu-que_qu msen-que_qu">
+                            <input id="update" type="button" value="确定" />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                            <input type="reset" value="取消" onclick="re2_click()" />
+                        </div>
+                    </div>
+                </div>
+                <div id="bod-xin2">
+                    <div class="bod-inpt-xin">
+                        <span class="msen-biao">导入的信号</span>
+                        <button id="export" type="button" class="btn btn-default btn-xs">导出</button>
+                        <button id="signal_delete" type="button" class="sousuo msen-close">删除</button>
+                    </div>
+                    <div align="center">
+                        <table id="tab2" class="tb" border="1" cellpadding=0 cellspacing=0>
+                            <tbody>
+                            <tr>
+                                <td><input type="checkbox" onclick="selectAllToo(this.checked)" /></td>
+                                <td>序号</td>
+                                <td>ID</td>
+                                <td>IPC</td>
+                                <td>用户名</td>
+                                <td>名称</td>
+                                <td class="div-td">
+                                    <div class="div-tdtoo">
+                                        <span>···</span>
+                                    </div>
+                                </td>
+                                <!--<div class="div-no div-ultoo">
+                                    <ul>
+                                        <li class="too-zeng">添加</li>
+                                        <li class="too-sang">删除</li>
+                                    </ul>
+                                </div>-->
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="bod-table2" align="center">
+                        <table  class="tb" border="1" cellpadding=0 cellspacing=0>
+                            <tbody id="list-too"></tbody>
+                        </table>
+                    </div>
+                    <div id="too-zeng-kuang" class="too-kuang kuang-fu">
+                        <div class="msen">
+                            <span class="msen-biao">添加</span>
+                            <span id="guan3" class="msen-close">关闭</span>
+                        </div>
+                        <div class="msen-zeng">
+                            <span>输出卡数量</span>
+                            <input id="input_chu" type="number" value="">
+                            <select id="select_chu">
+                                <option class="chuang" value="1">1窗</option>
+                                <option class="chuang" value="2" selected="selected">2窗</option>
+                                <option class="chuang" value="3">2窗-2u</option>
+                                <option class="si-chuang" value="4">4窗</option>
+                            </select>
+                        </div>
+                        <div class="msen-tianc-que_qu msen-que_qu">
+                            <input id="submit2" type="button" value="确定">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                            <input type="reset" value="取消" onclick="re3_click()"/>
+                        </div>
+                        <div class="zuse">注意：手动添加将会删除原有的数据再添加新数据</div>
+                    </div>
+                </div>
+                <div class=" bod-yu-clo">
+                    <input id="clo7" type="reset" value="关闭" />
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="n">
+         <div id="div-span" class="div-span-img" onclick="clicking()">
+            <span><a href="../index/test19.html">信号列表</a></span>
+        </div>
+        <div id="hua-an">
+            <div id="hua-xia">
+                <div class="hua-xia"></div>
+            </div>
+            <div id="hua-shang">
+                <div class="hua-shang"></div>
+            </div>
+        </div>
+        <div id="bod-tree">
+            <div id="tree">
+                <div class="swiper-container swiper-container-wen  tree-slio">
+                    <div class="swiper-wrapper swiper-wrapper-wen"></div>
+                </div>
+                <div id="tree-pc" class="tree-slio-pc">
+                    <div id="enen"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="m">
+        <div id="fu1" class="buten-div">
+            <button class="fu-img buten-img" >预案保存</button>
+        </div>
+        <div id="fu2" class="buten-div">
+            <button class="fu-img buten-img">开启回显</button>
+        </div>
+        <div id="fu3" class="buten-div">
+            <button class="fu-img buten-img">坐席管理</button>
+        </div>
+        <div id="fu4" class="buten-div">
+            <button class="fu-img buten-img">全部关闭</button>
+        </div>
+    </div>
+    <div id="a">
+        <div id="mqxians">
+            <table id="tb" border="1" cellpadding=0 cellspacing=0></table>
+        </div>
+    </div>
+    <div id="s">
+        <div id="div-ten" class="div-span-img">
+            <span><a href="../index/test21.html">视频监控</a></span>
+        </div>
+        <div id="div-swp">
+            <div id="en">
+            </div>
+        </div>
+        <div id="sweip">
+            <div id="butleft"></div>
+            <div id="butright"></div>
+        </div>
+        <div id="div-yin">
+            <!--<div class="slider-wrapper" id="slider-wrapper">
+                <input type="range" min="0" max="100" value="7" step="1" title="12">
+            </div>-->
+            <div id="slider-vertical" style="position:absolute;min-height: 90%;height:auto;width:23%;left: 40%;top:3%;background: #9d9d9d;"></div>
+            <input id="sliderValue" disabled="disabled"/>
+        </div>
+        <div id="div-sho">
+            <div id="div-s-sho">
+            </div>
+            </br>
+            </br>
+            </br>
+            <span>信号源收藏</span>
+        </div>
+        <div id="div-lun">
+            <div id="div-s-lun"></div>
+            </br>
+            </br>
+            </br>
+            <span>幕墙组收藏</span>
+        </div>
+    </div>
+    <div id="d">
+        <div id="div-yuan">
+            <div class="yuan"></div>
+            <div id="div-kzsxt">
+                <span>球机</span>
+            </div>
+            <div class="san-shang ton">
+                <div class="triangle-top"></div>
+            </div>
+            <div class="san-zuo pu">
+                <div class="triangle-left"></div>
+            </div>
+            <div class="san-xia ton">
+                <div class="triangle-down"></div>
+            </div>
+            <div class="san-you pu">
+                <div class="triangle-right"></div>
+            </div>
+        </div>
+        <div id="div-fang">
+            <div class="div-fang"></div>
+        </div>
+        <div id="div-suo">
+            <div class="div-suo"></div>
+        </div>
+    </div>
+    <div class="wrap">
+        <ul onmousedown="event.cancelBubble = true">
+            <li>删除</li>
+        </ul>
+    </div>
+    <div id="del-shan">
+        <div id="del-shanchu"></div>
+    </div>
+    <div id="ta_del">
+        <div id="xuan">确认删除<span id="xuan_id"></span>窗口吗？</div>
+        <button type="button" id="ta_co">取消</button>
+        <button type="button" id="ta_que">确认</button>
+    </div>
+    <div id="admin-pin"></div>
+        <div id="admin">
+            <div id="admin-form">
+                <div id="ad-clo">
+                    <button>关闭</button>
+                </div>
+                <div id="ad-name" class="ad-whole">用&nbsp;户&nbsp;名：
+                    <input id="ad-user-name" type="text"/>
+                </div>
+                <div id="ad-pwd" class="ad-whole">密&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;码：
+                    <input id="ad-user-pwd" type="password"/>
+                </div>
+                <div id="ad-xiu" class="ad-whole">
+                    <div id="ad-xiu-pwd">旧&nbsp;密&nbsp;码：
+                        <input id="ad-xiu-user-pwd" type="password"/>
+                    </div>
+                    <div id="ad-xiu-xinpwd" style="">新&nbsp;密&nbsp;码：
+                        <input id="ad-xiu-user-xinpwd" type="password"/>
+                    </div>
+                </div>
+                <div id="ad-reset" class="ad-whole">
+                    <div id="ad-reset-pwd">密&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;码：
+                        <input id="ad-reset-user-pwd" type="password"/>
+                    </div>
+                </div>
+                <div id="ad-iur" class="ad-whole">
+                    <div id="inpwd">设置子账号</div>
+                    <div id="uppwd">修改密码</div>
+                    <div id="reset">查询密码</div>
+                </div>
+                <div id="ad-but">
+                    <button id="ad-subm">确定</button>
+                </div>
+            </div>
+        </div>
+        <div id="up-dis"></div>
+        <div id="up">
+            <div id="up-xiu">修改</div>
+            <span id="up_name"></span>
+            <input type="text" id="up-input"/>
+            <button type="button" id="up-button">确定</button>
+            <button type="button" id="up-cancel">取消</button>
+        </div>
+        <div id="xin-dis"></div>
+        <div id="xin-hao">
+            <span id="xin_name">已删除</span>
+            <div id="div-xin">
+            </div>
+            <div id="xin-close" style="position: absolute;right: 0%;top: 1%;font-size: 1.6vw;">❌</div>
+        </div>
+        <div id="pin-hao">
+            <span id="pin_name">已删除</span>
+            <div id="div-pin">
+            </div>
+            <div id="pin-close">❌</div>
+        </div>
+        <span id="zuo-clo" type="reset">❌</span>
+        <div id="fu3-zuoxi"></div>
+        <div id="zuoxi">坐席触控板</div>
+</div>
+</body>
+<script src="../js/Sortable.js"></script>
+<script src="../js/accept-LargScrDisplay.js"></script>
+<script src="../js/js-LargeScreenDisplay.js"></script>
+<script src="../js/transform.js"></script>
+<script src="../js/alloy_finger.js"></script>
+<script src="../js/to.js"></script>
+<script src="../js/jquery-2.1.1.min.js"></script>
+<script src="../js/jquery-ui.min.js"></script>
+<script src="../js/jquery.ui.mouse.js"></script>
+<script src="../js/jquery.livequery.js"></script>
+<script src="../js/jquery.ui.touch-punch.js"></script>
+<script src="../js/jquery.ui.touch-punch.min.js"></script>
+<script src="../js/touch.js"></script>
+<script src="../js/bootstrap.js"></script>
+<script src="../js/swiper.min.js"></script>
+<script>
+    $(document).ready(function () {
+        getDataSyncOne();
+        getGetWinMode();
+        getSceneInfo();
+        setPipWidgetInfo();
+        getGetScreenGroupInfo();
+    });
+</script>
+<script src="../js/distributed-LargScrDisplay.js"></script>
+</html>

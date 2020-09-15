@@ -3,7 +3,7 @@ using namespace micagent;
 int main(int argc,char *argv[])
 {
     string program=argv[0];
-    auto pos=program.find('/');
+    auto pos=program.find_last_of('/');
     if(pos!=string::npos)
     {
         program=program.substr(pos+1);
@@ -21,13 +21,7 @@ int main(int argc,char *argv[])
         MICAGENT_INFO("run program!");
         core_server server;
         server.init(argv[1]);
-        thread test([&](
-        ){
-            sleep(3);
-            server.stop();
-        });
         server.start();
-        test.join();
     }
     else {
         MICAGENT_INFO("generate_daemon_config!");

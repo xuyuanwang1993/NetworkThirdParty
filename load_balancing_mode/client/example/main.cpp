@@ -3,20 +3,20 @@
 #include <random>
 using namespace micagent;
 using namespace std;
-string server_ip="192.168.2.111";
-uint16_t server_port=10000;
-EventLoop loop;
+string server_ip="139.159.137.87";
+uint16_t server_port=10001;
 int main(int argc,char *argv[])
 {
 
 #if 0
+    shared_ptr<EventLoop> loop(new EventLoop());
     random_device rd;
     int times=2;//rd()%10+10;
-    auto task=[](int index){
+    auto task=[&](int index){
     string account="test";
         string domain_name="www.meanning.com"+to_string(index);
         load_balance_client client;
-        client.config_server_info(&loop,server_ip,server_port);
+        client.config_server_info(loop,server_ip,server_port);
         random_device rd;
         uint32_t load_size=50+rd()%50;
         double weight=static_cast<double>(rd())/UINT32_MAX;

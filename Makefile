@@ -39,6 +39,8 @@ RtspServer \
 RtspProxy \
 utils \
 applications/core_server \
+sqlite \
+web \
 
 .PHONY :all  lib app clean help distclean install uninstall
 all : lib app

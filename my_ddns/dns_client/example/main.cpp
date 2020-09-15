@@ -4,14 +4,17 @@ using namespace micagent;
 using namespace std;
 int main()
 {
-    string test_domain="www.meanning_test.com";
+    string test_domain="www.test11111111.com";
     shared_ptr<EventLoop> loop(new EventLoop());
-    dns_client client("139.159.137.87",10000);
-#if 0
+    dns_client client("139.159.137.88",10000);
+#if 1
     auto ret=client.register_to_server(test_domain,"admin","micagent","test");
     cout<<ret.first<<"  "<<ret.second.ToFormattedString()<<endl;
     client.config(loop,test_domain,"admin","micagent");
     client.start_work();
+    client.reset_server_info("139.159.137.87",10000);
+    ret=client.register_to_server(test_domain,"admin","micagent","test");
+    cout<<ret.first<<"  "<<ret.second.ToFormattedString()<<endl;
     client.set_port_map_item("proxy_port",58554,58554);
     client.set_port_map_item("proxy_control",8555,8555);
     while(1)

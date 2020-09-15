@@ -2,9 +2,9 @@
 #include"MD5.h"
 using namespace micagent;
 dns_client::dns_client(string server_ip,uint16_t dns_port):\
-m_timer_id(0),m_server_ip(server_ip),m_server_port(dns_port),m_is_running(false)
+m_timer_id(0),m_server_ip(server_ip),m_server_port(dns_port),m_is_running(false),m_send_fd(INVALID_SOCKET)
 {
-    m_send_fd=Network_Util::Instance().build_socket(UDP);
+     m_send_fd=Network_Util::Instance().build_socket(UDP);
     memset(&m_server_addr,0,sizeof (m_server_addr));
     m_server_addr.sin_family=AF_INET;
     if(m_send_fd==INVALID_SOCKET)throw runtime_error("can't build udp socket!");
@@ -27,11 +27,16 @@ void dns_client::config(weak_ptr<EventLoop> loop, string domain_name, string acc
 void dns_client::reset_server_info(string server_ip,uint16_t dns_port)
 {
     lock_guard<mutex>locker(m_mutex);
+    if(m_send_fd!=INVALID_SOCKET)NETWORK.close_socket(m_send_fd);
     m_server_ip=server_ip;
     m_server_port=dns_port;
+    m_send_fd=Network_Util::Instance().build_socket(UDP);
+    memset(&m_server_addr,0,sizeof (m_server_addr));
+    m_server_addr.sin_family=AF_INET;
     m_server_addr.sin_addr.s_addr=inet_addr(m_server_ip.c_str());
     m_server_addr.sin_port=htons(m_server_port);
     Network_Util::Instance().connect(m_send_fd,m_server_addr);
+    perror("");
 }
 void dns_client::start_work()
 {

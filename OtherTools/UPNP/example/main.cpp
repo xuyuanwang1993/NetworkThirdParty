@@ -33,8 +33,8 @@ queue<string>spilt_by_space(const string&buf){
 int main2(int argc,char *argv[])
 {
     if(argc<2)exit(-1);
-    EventLoop eventloop(0,1);
-    UpnpMapper::Instance().Init(&eventloop,argv[1]);
+    shared_ptr<EventLoop> eventloop( new EventLoop(0,1));
+    UpnpMapper::Instance().Init(eventloop,argv[1]);
     print_help();
     while(1){
         char cmd[1024]={0};
@@ -116,18 +116,18 @@ int main2(int argc,char *argv[])
             }
         }
     }
-    eventloop.stop();
+    eventloop->stop();
     return 0;
 }
 int main(int argc,char *argv[])
 {
     if(argc<2)return 0;
     string lgd_ip=argv[1];
-    EventLoop eventloop(0,1);
+    shared_ptr<EventLoop> eventloop( new EventLoop(0,1));
     Logger::Instance().set_log_to_std(true);
     Logger::Instance().set_minimum_log_level(LOG_DEBUG);
     Logger::Instance().register_handle();
-    upnp_helper::Instance().config(&eventloop,true,lgd_ip);
+    upnp_helper::Instance().config(eventloop,true,lgd_ip);
     upnp_helper::Instance().add_port_task(TCP,8554,58554,"rtsp");
     upnp_helper::Instance().add_port_task(TCP,1935,51935,"rtmp");
     upnp_helper::Instance().add_port_task(UDP,10000,51000,"dns_mode");

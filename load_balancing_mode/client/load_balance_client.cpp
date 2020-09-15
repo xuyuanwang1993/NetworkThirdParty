@@ -1,17 +1,10 @@
 #include "load_balance_client.h"
 #include"MD5.h"
 using namespace micagent;
-load_balance_client::load_balance_client():\
-m_timer_id(0),m_is_running(false),m_server_ip("0.0.0.0"),m_server_port(0),m_account_name("test"),m_domain_name("www.test.com")\
-,m_weight(0),m_max_load_size(1),m_now_load(0)
+load_balance_client::load_balance_client():m_timer_id(INVALID_TIMER_ID),m_is_running(false),m_server_ip("0.0.0.0"),m_server_port(0),m_account_name("test"),m_domain_name("www.test.com")\
+,m_weight(0),m_max_load_size(1),m_now_load(0),m_send_fd(INVALID_SOCKET)
 {
-    m_send_fd=Network_Util::Instance().build_socket(UDP);
-    memset(&m_server_addr,0,sizeof (m_server_addr));
-    m_server_addr.sin_family=AF_INET;
-    if(m_send_fd==INVALID_SOCKET)throw runtime_error("can't build udp socket!");
-    m_server_addr.sin_addr.s_addr=inet_addr(m_server_ip.c_str());
-    m_server_addr.sin_port=htons(m_server_port);
-    Network_Util::Instance().connect(m_send_fd,m_server_addr);
+
 }
 void load_balance_client::config_server_info(weak_ptr<EventLoop> loop, string server_ip, uint16_t server_port)
 {
@@ -20,9 +13,15 @@ void load_balance_client::config_server_info(weak_ptr<EventLoop> loop, string se
     m_loop=loop;
     m_server_ip=server_ip;
     m_server_port=server_port;
+    m_send_fd=Network_Util::Instance().build_socket(UDP);
+    memset(&m_server_addr,0,sizeof (m_server_addr));
+    if(m_send_fd==INVALID_SOCKET)throw runtime_error("can't build udp socket!");
+    m_server_addr.sin_family=AF_INET;
     m_server_addr.sin_addr.s_addr=inet_addr(m_server_ip.c_str());
     m_server_addr.sin_port=htons(m_server_port);
-    if(m_send_fd!=INVALID_SOCKET)Network_Util::Instance().connect(m_send_fd,m_server_addr);
+    if(m_send_fd!=INVALID_SOCKET){
+        Network_Util::Instance().connect(m_send_fd,m_server_addr);
+    }
 }
 void load_balance_client::config_client_info(string account,string domain_name,uint32_t max_load_size,double weight,int64_t upload_interval)
 {
@@ -137,7 +136,7 @@ void load_balance_client::start_work()
     if(!m_is_running&&event_loop){
         m_is_running=true;
         update();
-        if(m_timer_id==0)m_timer_id=event_loop->addTimer([this](){
+        if(m_timer_id==INVALID_TIMER_ID)m_timer_id=event_loop->addTimer([this](){
             lock_guard<mutex>locker(m_mutex);
             update();
             return true;
@@ -147,10 +146,15 @@ void load_balance_client::start_work()
 void load_balance_client::stop_work()
 {
     lock_guard<mutex>locker(m_mutex);
+    if(m_send_fd!=INVALID_SOCKET)
+    {
+        NETWORK.close_socket(m_send_fd);
+        m_send_fd=INVALID_SOCKET;
+    }
     auto event_loop=m_loop.lock();
     if(m_is_running&&event_loop){
         event_loop->removeTimer(m_timer_id);
-        m_timer_id=0;
+        m_timer_id=INVALID_TIMER_ID;
         m_is_running=false;
     }
 }

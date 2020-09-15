@@ -259,13 +259,13 @@ void proxy_server_mode::start()
             });
             m_rtsp_server->addAuthorizationInfo(m_rtsp_account_name,m_rtsp_account_password);
         }
-        m_rtsp_server->register_handle(m_event_loop.get());
+        m_rtsp_server->register_handle(m_event_loop);
         if(!m_proxy_server)
         {
             m_proxy_server.reset(new proxy_server(m_rtsp_proxy_port));
             m_proxy_server->set_rtsp_server(m_rtsp_server);
         }
-        m_proxy_server->register_handle(m_event_loop.get());
+        m_proxy_server->register_handle(m_event_loop);
         upnp_helper::Instance().config(m_event_loop,m_set_external_ip,m_router_ip);
         upnp_helper::Instance().add_port_task(TCP,m_rtsp_server_port,m_rtsp_server_external_port,"micagent");
         upnp_helper::Instance().add_port_task(UDP,m_rtsp_proxy_port,m_rtsp_proxy_external_port,"micagent");

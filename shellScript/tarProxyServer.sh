@@ -25,5 +25,6 @@ sources="${sources} ${out_path}/bin/Idaemon/*"
 echo $sources
 mkdir -p $sources_name
 cp -ruf  $sources $sources_name
+sed -i "s/core_server/${sources_name}/g" $sources_name/run.sh
 tar -cvf ${sources_name}.tar $sources_name
 rm $sources_name -rf

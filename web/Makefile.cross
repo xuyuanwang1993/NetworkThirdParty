@@ -1,0 +1,97 @@
+#Makefile
+#config
+#项目名
+#########################################change############################################
+APP_NAME ?= web
+###########################################################################################
+
+#交叉编译工具前缀
+CROSS_COMPILE ?=
+#安装目录前缀
+PREFIX ?= /usr/local
+#编译输出目录
+#########################################change############################################
+OUT_PATH ?= ../out
+###########################################################################################
+
+#C编译选项
+CFLAGS ?=
+#C++编译选项
+CXXFLAGS ?=
+
+# boa 配置文件路径
+BOA_DIR ?=
+$(info 你必须修改 config/boa.conf 里面的/web_dir/用于搜索路径)
+
+
+target_dir := $(shell pwd)/install
+
+target_out_dir := $(shell pwd)/
+CC := $(CROSS_COMPILE)gcc
+AR := $(CROSS_COMPILE)ar
+STRIP := $(CROSS_COMPILE)strip
+RANLIB := $(CROSS_COMPILE)ranlib
+
+CROSS_CFLAGS := $(CFLAGS) -Wall
+
+ROOT_DIR := $(shell pwd)
+BAO_SRC := $(ROOT_DIR)/boa
+CGI_SRC := $(ROOT_DIR)/cgi
+WEB_SRC := $(ROOT_DIR)/www
+
+$(shell rm -rf $(target_dir))
+$(shell mkdir -p $(target_dir))
+
+.PHONY: all lib app BOA CGI WEB clean
+all: lib app
+
+app:
+	echo "no app"
+
+lib: CGI BOA WEB
+	@rm -rf $(target_out_dir)/.compile_temp
+	#@mkdir -p $(PREFIX); mv $(target_dir)/* $(PREFIX)
+	@rm -rf $(target_dir)
+
+BOA:
+	@mkdir -p $(target_dir)/bin
+	@rm -rf $(target_out_dir)/.compile_temp/boa
+	@mkdir -p $(target_out_dir)/.compile_temp
+	@cp -af $(BAO_SRC) $(target_out_dir)/.compile_temp/boa
+	@pushd $(target_out_dir)/.compile_temp/boa/src >/dev/null; \
+	./configure >/dev/null; \
+	sed -i "s/CC = gcc/CC = $(CC)/" Makefile; \
+	sed -i "s/CPP = gcc -E/CPP = $(CC) -E/" Makefile; \
+	sed -i "s/ -g//g" Makefile; \
+	make >/dev/null; \
+	$(STRIP) boa boa_indexer; \
+	cp -af boa boa_indexer $(target_dir)/bin; \
+	cp -af ../config $(target_dir); \
+	popd >/dev/null
+	
+CGI:
+	@mkdir -p $(target_dir)/bin
+	@rm -rf $(target_out_dir)/.compile_temp/cgi
+	@mkdir -p $(target_out_dir)/.compile_temp
+	@cp -af $(CGI_SRC) $(target_out_dir)/.compile_temp/cgi
+	@pushd $(target_out_dir)/.compile_temp/cgi/lib  >/dev/null; \
+	sed -i "s/CFLAGS=-g -Wall/CFLAGS=$(CROSS_CFLAGS)/" Makefile; \
+	sed -i "s/CC=gcc/CC=$(CC)/" Makefile; \
+	sed -i "s/AR=ar/AR=$(AR)/" Makefile; \
+	sed -i "s/RANLIB=ranlib/RANLIB=$(RANLIB)/" Makefile; \
+	make libcgic.a >/dev/null; \
+	popd >/dev/null
+	pushd $(target_out_dir)/.compile_temp/cgi  >/dev/null; \
+	make CROSS_COMPILE=$(CROSS_COMPILE) CROSS_CFLAGS="$(CROSS_CFLAGS)" >/dev/null; \
+	popd >/dev/null
+	@mkdir -p $(target_dir)/$(notdir $(WEB_SRC))/cgi-bin
+	@cp $(target_out_dir)/.compile_temp/cgi/web_function.cgi $(target_dir)/$(notdir $(WEB_SRC))/cgi-bin
+	@chmod 777 $(target_dir)/$(notdir $(WEB_SRC))/cgi-bin
+	
+WEB: CGI
+	@cp -af $(WEB_SRC) $(target_dir)
+	
+clean:
+	@echo "Web clean"
+	
+

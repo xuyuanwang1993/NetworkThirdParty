@@ -198,6 +198,7 @@ void dns_server::handle_dns_find(neb::CJsonObject&object)
             }
             res.Add("info","success");
             res.Add("account",account);
+            res.Add("domain_name",domain_name);
             res.Add("internal_ip",iter->second.internal_ip);
             res.Add("external_ip",iter->second.external_ip);
             res.AddEmptySubArray("port_map");

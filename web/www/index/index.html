@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-cale=1 ui-slider=no">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="full-screen" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimal-ui">
+    <title>Title</title>
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body
+        {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #060c21;
+            font-family: 'Poppins',sans-serif;
+        }
+
+        .box{
+            position: absolute;
+            width: 35%;
+            height: 35%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #060c21;
+        }
+         .box:before
+        {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: #fff;
+            z-index: -1;
+        }
+
+        .box:after
+        {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: #fff;
+            z-index: -2;
+            filter: blur(40px);
+
+        }
+        .box:before,
+        .box:after
+        {
+            background: linear-gradient(235deg,#00bcd4,#060c21,#00bcd4);
+        }
+        .content
+        {
+            box-sizing: border-box;
+            color: #fff;
+        }
+        :focus{outline:0;}
+        #deng{
+            position: absolute;
+            left: 10%;
+            top: 5%;
+            font-size: 2.2vw;
+        }
+        #name,#pwd{
+            position: absolute;
+            left: 25%;
+            width: 60%;
+            font-size: 1.2vw;
+        }
+        #name{
+            top: 33%;
+        }
+        #pwd{
+            top: 53%;
+        }
+        #input_name,#input_password{
+            position: absolute;
+            left: 30%;
+            width: 60%;
+            color: #000;
+        }
+        #div-den{
+            position: absolute;
+            left: 25%;
+            top: 75%;
+            width: 54%;
+            height: 12%;
+            font-size: 1.6vw;
+        }
+        #submit{
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #2e6da4;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <div class="content">
+        <div id="deng">
+            登&nbsp;&nbsp;陆
+        </div>
+        <div id="name">用&nbsp;户&nbsp;名
+            <input type="text" id="input_name"/>
+        </div>
+        <div id="pwd">密&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;码
+            <input type="password" id="input_password"/>
+        </div>
+        <div id="div-den">
+            <button style="" id="submit" onclick=jump()>登&nbsp;&nbsp;陆</button>
+        </div>
+    </div>
+</div>
+<script src="../js/jquery-2.1.1.min.js"></script>
+<script src="../js/js-LargeScreenDisplay.js"></script>
+<script>
+    var input_name=document.getElementById("input_name");
+    var input_password=document.getElementById("input_password");
+    $("#input_name").val("amdin");
+    $("#input_password").val("123456");
+    function jump(){
+
+        if(input_name.value==""){
+            alert("请输入用户名");
+            return false;
+        }else if(input_password.value==""){
+            alert("请输入密码");
+            return false;
+        }else {
+            window.location.href = "../work/LargeScreenDisplay.html";
+            return true;
+
+        }
+    }
+    //禁止整个页面所有的右击事件
+    document.oncontextmenu = function(){
+        return false;
+    };
+
+    //判断是否Safari浏览器，禁止缩放大小
+    var userAgent = navigator.userAgent;
+    if (userAgent.indexOf("Safari") > -1) {
+        // 禁止苹果手机或ipad在放大缩小
+        window.onload=function () {
+            document.addEventListener('touchstart',function (event) {
+                if(event.touches.length>1){
+                    event.preventDefault();  //阻止元素的默认行为
+                }
+            })
+            var lastTouchEnd=0;
+            document.addEventListener('touchend',function (event) {
+                var now=(new Date()).getTime();
+                if(now-lastTouchEnd<=300){
+                    event.preventDefault();
+                }
+                lastTouchEnd=now;  //当前为最后一次触摸
+            },false)
+        }
+    }
+    // 阻止ios页面双指放大
+    document.addEventListener('gesturestart', function(event) {
+        event.preventDefault();
+    });
+    //固定页面禁止滑动（好像只对ipad有效，手机还是靠meta完成）
+    var jinzhi=0;
+    document.addEventListener("touchmove",function(e){
+    if(jinzhi==0){
+    e.stopPropagation();
+    }
+    jinzhi=1;
+    },false);
+
+    //强制显示为横屏，ipad的上如果是竖屏显示横的页面子级样式有点走样，对手机端无效果
+    // 直接在最外层的div调用该函数即可
+    changeOrientation($('.body'));
+    function changeOrientation( $print ){
+        var width = document.documentElement.clientWidth;
+        var height =  document.documentElement.clientHeight;
+        if( width < height ){
+            // 竖屏
+            $print.width(height);
+            $print.height(width);
+            $print.css('top',  (height-width)/2 );
+            $print.css('left',  0-(height-width)/2 );
+            $print.css('transform' , 'rotate(90deg)');
+            $print.css('transform-origin' , '50% 50%');
+        }
+        var evt = "onorientationchange" in window ? "orientationchange" : "resize";
+        window.addEventListener(evt, function() {
+            console.log(evt);
+            setTimeout( function(){
+                var width = document.documentElement.clientWidth;
+                    var height =  document.documentElement.clientHeight;
+                    if( width > height ){
+                        // 横屏
+                        $print.width(width);
+                        $print.height(height);
+                        $print.css('top',  0 );
+                        $print.css('left',  0 );
+                        $print.css('transform' , 'none');
+                        $print.css('transform-origin' , '50% 50%');
+                    }
+                    else{
+                        // 竖屏
+                        $print.width(height);
+                        $print.height(width);
+                        $print.css('top',  (height-width)/2 );
+                        $print.css('left',  0-(height-width)/2 );
+                        $print.css('transform' , 'rotate(90deg)');
+                        $print.css('transform-origin' , '50% 50%');
+                    }
+
+            } , 300);
+        }, false);
+    }
+</script>
+</body>
+</html>
