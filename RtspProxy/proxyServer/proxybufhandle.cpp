@@ -1,6 +1,6 @@
 #include "proxybufhandle.h"
 using namespace micagent;
-proxy_message::proxy_message(bool is_send):buffer_handle (MAX_TCP_MSS_CACHE),m_is_send(is_send)
+proxy_message::proxy_message(bool is_send):buffer_handle (MAX_TCP_MSS_CACHE,nullptr,true,PROXY_FRAGMENT_SIZE+sizeof (ProxyHeader)),m_is_send(is_send)
 {
     if(!is_send){
         m_recv_parse.reset(new PStreamParse);

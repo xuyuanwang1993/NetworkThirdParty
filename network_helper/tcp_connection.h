@@ -37,12 +37,16 @@ protected:
         shared_ptr<char>buf(new char[1024],std::default_delete<char[]>());
         auto len=recv(m_channel->fd(),buf.get(),1024,0);
         if(len>0){
+            MICAGENT_INFO("recv %s",string(buf.get(),len).c_str());
             send(m_channel->fd(),buf.get(),len,0);
         }
         return len!=0;
     }
     virtual bool handle_write(){return true;}
-    virtual bool handle_close(){if(m_disconnect_CB)m_disconnect_CB(shared_from_this());return true;}
+    virtual bool handle_close(){
+        if(m_disconnect_CB)
+            m_disconnect_CB(shared_from_this());
+        return true;}
     virtual bool handle_error(){return true;}
     ChannelPtr m_channel;
     atomic_bool m_registered;

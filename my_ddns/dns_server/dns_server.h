@@ -52,7 +52,9 @@ class dns_server{
         string internal_ip;
         map<string,port_info>port_map;
         int64_t last_alive_time;
-        session_info():last_alive_time(Timer::getTimeNow()){
+        string user_account_name;
+        string user_account_password;
+        session_info():last_alive_time(Timer::getTimeNow()),user_account_name(""),user_account_password(""){
 
         }
     };

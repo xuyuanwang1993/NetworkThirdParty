@@ -26,11 +26,13 @@ int main(int argc,char *argv[]){
     Logger::Instance().set_log_to_std(true);
     //Logger::Instance().set_log_path("",to_string(argc));
     Logger::Instance().set_clear_flag(true);
-    Logger::Instance().register_handle();
     //Logger::Instance().set_minimum_log_level(LOG_WARNNING);
     shared_ptr<EventLoop> loop(new EventLoop());
+    uint16_t server_port=8555;
+    uint16_t rtsp_server_port=58554;
     if(argc==6)
     {//client
+        Logger::Instance().register_handle();
         string ip=argv[1];
         string port=argv[2];
         string stream_name=argv[3];
@@ -38,7 +40,7 @@ int main(int argc,char *argv[]){
         string mode=argv[5];
         shared_ptr<tcp_connection_helper>tcp_helper(tcp_connection_helper::CreateNew(loop));
         shared_ptr<rtsp_pusher> pusher;
-        pusher.reset(rtsp_pusher::CreateNew(tcp_helper,(PTransMode)stoi(mode),stream_name,ip,stoul(port)));
+        pusher.reset(rtsp_pusher::CreateNew(tcp_helper,(PTransMode)stoi(mode),stream_name,ip,stoul(port),"admin","micagent"));
         shared_ptr<media_session> session(media_session::CreateNew("test"));
         shared_ptr<delay_control_base> delay;
         if(strstr(file_name.c_str(),"h264")!=nullptr){
@@ -51,35 +53,34 @@ int main(int argc,char *argv[]){
         }
         session->addProxySession(pusher);
         micagent::file_reader_base file(file_name);
-    std::thread t([&](){
-        uint32_t bufSize = 500000;
-        uint8_t *frameBuf = new uint8_t[bufSize];
-        AVFrame frame;
-        while(1)
-        {
-            auto frameSize = file.readFrame(frameBuf, bufSize);
-            if(frameSize > 0)
+        std::thread t([&](){
+            uint32_t bufSize = 500000;
+            uint8_t *frameBuf = new uint8_t[bufSize];
+            AVFrame frame;
+            while(1)
             {
-                frame.size=static_cast<uint32_t>(frameSize)-4;
-                frame.buffer.reset(new uint8_t[frame.size],std::default_delete<uint8_t[]>());
-                memcpy(frame.buffer.get(),frameBuf+4,frameSize-4);
-                frame.timestamp=delay->block_wait_next_due(frameBuf+4)/1000;
-                pusher->proxy_frame(channel_0,frame);
+                auto frameSize = file.readFrame(frameBuf, bufSize);
+                if(frameSize > 0)
+                {
+                    frame.size=static_cast<uint32_t>(frameSize)-4;
+                    frame.buffer.reset(new uint8_t[frame.size],std::default_delete<uint8_t[]>());
+                    memcpy(frame.buffer.get(),frameBuf+4,frameSize-4);
+                    frame.timestamp=delay->block_wait_next_due(frameBuf+4)/1000;
+                    pusher->proxy_frame(channel_0,frame);
                     //break;
+                }
+                else
+                {
+                    break;
+                }
             }
-            else
-            {
-                break;
-            }
+            std::cout<<"exit send_thread"<<std::endl;
         }
-        std::cout<<"exit send_thread"<<std::endl;
-    }
         );
-    t.join();
+        t.join();
     }
-    else {
-        uint16_t server_port=8555;
-        uint16_t rtsp_server_port=58554;
+    else if(argc!=1){
+        Logger::Instance().register_handle();
         string lgd_ip="192.168.2.3";
         if(argc==2)lgd_ip=argv[1];
         upnp_helper::Instance().config(loop,true,lgd_ip);
@@ -87,11 +88,25 @@ int main(int argc,char *argv[]){
         upnp_helper::Instance().add_port_task(TCP,server_port,server_port,"rtsp_proxy");
         upnp_helper::Instance().add_port_task(UDP,server_port,server_port,"rtsp_proxy");
         shared_ptr<rtsp_server>server(new rtsp_server(rtsp_server_port));
+        server->addAuthorizationInfo("admin","micagent");
         server->register_handle(loop);
         shared_ptr<proxy_server>pro_server(new proxy_server(server_port));
         pro_server->set_rtsp_server(server);
         pro_server->register_handle(loop);
         while (getchar()!='8') continue;
+    }
+    else {
+        Logger::Instance().register_handle();
+        while(1){
+            shared_ptr<rtsp_server>server(new rtsp_server(rtsp_server_port));
+            server->addAuthorizationInfo("admin","micagent");
+            server->register_handle(loop);
+            shared_ptr<proxy_server>pro_server(new proxy_server(server_port));
+            pro_server->set_rtsp_server(server);
+            pro_server->register_handle(loop);
+            Timer::sleep(10000);
+        }
+
     }
     while (getchar()!='8') continue;
     loop->stop();

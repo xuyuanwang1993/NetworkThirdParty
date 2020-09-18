@@ -141,6 +141,7 @@ void load_balance_server::handle_find(neb::CJsonObject &object)
     if(iter!=m_session_cache_map.end())
     {
         for(auto i:iter->second.session_map){
+            if(i.second.priority>=1)continue;
             auto check_iter=exclude_domains.find(i.second.domain_name);
             if(check_iter==exclude_domains.end())
             {

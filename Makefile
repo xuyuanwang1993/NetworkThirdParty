@@ -39,17 +39,13 @@ RtspServer \
 RtspProxy \
 utils \
 applications/core_server \
+applications/proxy_server_mode \
 sqlite \
 web \
 
 .PHONY :all  lib app clean help distclean install uninstall
 all : lib app
-	@for subdir in $(SUBDIR); \
-	do \
-		pushd $$subdir >/dev/null; \
-		make  -e -f Makefile.cross; \
-		popd >/dev/null; \
-	done 
+
 app : lib
 	@for subdir in $(SUBDIR); \
 	do \

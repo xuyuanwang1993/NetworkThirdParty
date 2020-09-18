@@ -19,7 +19,9 @@ HEADERS += \
     ../http_request.h \
     ../http_response.h \
     ../tcp_connection_helper.h \
-    ../unix_socket_helper.h
+    ../unix_socket_helper.h \
+    ../tcp_client.h \
+    ../tcp_client_example.h
 
 SOURCES += \
     ../../LOG/c_log.cpp \
@@ -37,7 +39,9 @@ SOURCES += \
     ../http_request.cpp \
     ../http_response.cpp \
     ../tcp_connection_helper.cpp \
-    ../unix_socket_helper.cpp
+    ../unix_socket_helper.cpp \
+    ../tcp_client.cpp \
+    ../tcp_client_example.cpp
 INCLUDEPATH += \
 ../../LOG \
 ../../events_handler \

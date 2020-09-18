@@ -228,6 +228,7 @@ void proxy_server_mode::start()
             m_dns_client->config(m_event_loop,m_dns_domain_name,m_dns_account_name,m_dns_pass_word,m_dns_upload_interval_ms);
             m_dns_client->set_port_map_item("rtsp",m_rtsp_server_port,m_rtsp_server_external_port);
             m_dns_client->set_port_map_item("rtsp_proxy",m_rtsp_proxy_port,m_rtsp_proxy_external_port);
+            m_dns_client->set_user_account_info(m_rtsp_account_name,m_rtsp_account_password);
         }
         m_dns_client->register_to_server(m_dns_domain_name,m_dns_account_name,m_dns_pass_word,m_dns_description);
         m_dns_client->start_work();
@@ -457,6 +458,18 @@ void proxy_server_mode::handle_get_config(const string&from)
     response.Add("response",json_response);
     auto str_response=response.ToString();
     m_message_fd->send(str_response.c_str(),str_response.length(),from);
+}
+void proxy_server_mode::handle_save_config(const string&from)
+{
+    CJsonObject response;
+    CJsonObject json_response;
+    response.Add("cmd","save_config_response");
+    json_response.Add("info","success");
+    response.Add("response",json_response);
+    auto str_response=response.ToString();
+    lock_guard<mutex>locker(m_mutex);
+    m_message_fd->send(str_response.c_str(),str_response.length(),from);
+    m_json_config->SaveToFile();
 }
 void proxy_server_mode::handle_update_config(const CJsonObject&object,const string&from)
 {

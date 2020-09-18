@@ -181,6 +181,8 @@ void dns_server::handle_dns_find(neb::CJsonObject&object)
     if(!object.Get("password",password))return;
     neb::CJsonObject res;
     res.Add("cmd","dns_find_response");
+    res.Add("account",account);
+    res.Add("domain_name",domain_name);
     lock_guard<mutex>locker(m_mutex);
     auto iter=m_session_cache_map.find(domain_name);
     if(iter!=m_session_cache_map.end()){
@@ -197,10 +199,10 @@ void dns_server::handle_dns_find(neb::CJsonObject&object)
                 return;
             }
             res.Add("info","success");
-            res.Add("account",account);
-            res.Add("domain_name",domain_name);
             res.Add("internal_ip",iter->second.internal_ip);
             res.Add("external_ip",iter->second.external_ip);
+            res.Add("user_account_name",iter->second.user_account_name);
+            res.Add("user_account_password",iter->second.user_account_password);
             res.AddEmptySubArray("port_map");
             for(auto i : iter->second.port_map){
                 neb::CJsonObject port_info;
@@ -254,6 +256,8 @@ void dns_server::handle_update(neb::CJsonObject&object)
         }
         free(hash_string);
         object.Get("internal_ip",iter->second.internal_ip);
+        object.Get("user_account_name",iter->second.user_account_name);
+        object.Get("user_account_password",iter->second.user_account_password);
         iter->second.last_alive_time=Timer::getTimeNow();
         iter->second.external_ip=inet_ntoa(m_last_recv_addr.sin_addr);
         neb::CJsonObject port_map;

@@ -9,9 +9,9 @@ namespace micagent {
 using namespace std;
 using neb::CJsonObject;
 class rtsp_pusher:public proxy_session_base ,public enable_shared_from_this<rtsp_pusher>{
-//连接最大超时时间
+    //连接最大超时时间
     static constexpr uint32_t MAX_WAIT_TIME=30*1000;//30s
-//连接最小超时时间
+    //连接最小超时时间
     static constexpr uint32_t MIN_WAIT_TIME=5000;//5s
 public:
     static rtsp_pusher *CreateNew(weak_ptr<tcp_connection_helper>helper,PTransMode mode,const string &des_name,const string &des_ip ,uint16_t des_port,const string &user_name="",const string &password="")
@@ -26,6 +26,19 @@ public:
     void close_connection();
     //修改目标ip 端口信息
     void reset_net_info(string ip,uint16_t des_port);
+    ~rtsp_pusher(){
+        m_is_closed=true;
+        if(m_tcp_channel){
+            send_tear_down_stream();
+            auto connection_helper=m_connection_helper.lock();
+            if(connection_helper){
+
+                auto loop=connection_helper->get_loop();
+                auto event_loop=loop.lock();
+                if(event_loop)event_loop->removeChannel(m_tcp_channel);
+            }
+        }
+    }
 private:
     rtsp_pusher(weak_ptr<tcp_connection_helper>helper,PTransMode mode,const string &des_name,const string &des_ip ,uint16_t des_port,const string &user_name,const string &pass_word);
     //解析媒体源信息
@@ -101,7 +114,7 @@ private:
     mutex m_mutex;
     //tcp收发数据缓冲区
     shared_ptr<proxy_message> m_recv_buf;
-     shared_ptr<proxy_message> m_send_buf;
+    shared_ptr<proxy_message> m_send_buf;
 };
 }
 #endif // RTSP_PUSHER_H

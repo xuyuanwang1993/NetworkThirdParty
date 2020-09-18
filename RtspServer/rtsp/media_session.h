@@ -95,7 +95,7 @@ public:
 
     bool addClient(SOCKET rtspfd, std::shared_ptr<rtp_connection> rtpConnPtr);
     void notice_new_connection();
-    void  addProxySession(shared_ptr<proxy_session_base> session);
+    void  addProxySession(shared_ptr<proxy_session_base> session,bool proxy=false);
     void removeClient(SOCKET rtspfd);
 
     string get_sdp_info (const string & version="");

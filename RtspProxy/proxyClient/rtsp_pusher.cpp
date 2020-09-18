@@ -138,9 +138,19 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
             if(!strong->m_proxy_interface)return false;
             auto ret=strong->m_recv_buf->read_fd(chn->fd());
             if(ret==0){
-                MICAGENT_LOG(LOG_INFO,"%s %d  fd(%d)",strerror(errno),errno,chn->fd());
+                MICAGENT_LOG(LOG_INFO,"%s %d  fd(%d)  ret %d",strerror(errno),errno,chn->fd(),ret);
                 return false;
             }
+            if(ret<0){
+                MICAGENT_LOG(LOG_INFO,"%s %d  fd(%d)  ret %d",strerror(errno),errno,chn->fd(),ret);
+                if(errno==EAGAIN||errno == EINTR){
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+
             if(ret>0){
                 auto size=strong->m_recv_buf->get_packet_nums();
                 shared_ptr<char>buf(new char[8092],std::default_delete<char[]>());
@@ -157,6 +167,7 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
             auto strong=weak_this.lock();
             if(!strong)return false;
             lock_guard<mutex>locker(strong->m_mutex);
+
             if(strong->m_send_buf->send_fd(chn->fd())<0)return false;
             if(strong->m_send_buf->get_first_packet_size()!=0){
                 if(!chn->isWriting()){
@@ -227,7 +238,7 @@ void rtsp_pusher::handle_connect(CONNECTION_STATUS status,SOCKET fd)
         if(!connection_helper)return;
         auto loop=connection_helper->get_loop().lock();
         if(!loop)throw runtime_error("event loop was quit!");
-        MICAGENT_LOG(LOG_DEBUG,"%d connect %s  %hu  error for %s!  wait %u ms!",fd,m_des_ip.c_str(),m_des_port,strerror(errno),m_last_time_out);
+        MICAGENT_LOG(LOG_DEBUG,"%d connect %s  %hu  error for(%d) %s!  wait %u ms!",fd,m_des_ip.c_str(),m_des_port,status,strerror(errno),m_last_time_out);
         if(fd!=INVALID_SOCKET)NETWORK.close_socket(fd);
         loop->addTimer([weak_this](){
             auto strong=weak_this.lock();

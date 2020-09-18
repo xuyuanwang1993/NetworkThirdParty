@@ -1,5 +1,6 @@
 #Makefile
 #config
+SHELL = /bin/bash
 #项目名
 #########################################change############################################
 APP_NAME ?= web
@@ -21,77 +22,63 @@ CXXFLAGS ?=
 
 # boa 配置文件路径
 BOA_DIR ?=
-$(info 你必须修改 config/boa.conf 里面的/web_dir/用于搜索路径)
+$(info 你必须修改 config/boa.conf 里面的/web_dir/用于搜索路径!!!!!!!!!!!!!!!)
 
-
-target_dir := $(shell pwd)/install
-
-target_out_dir := $(shell pwd)/
 CC := $(CROSS_COMPILE)gcc
 AR := $(CROSS_COMPILE)ar
 STRIP := $(CROSS_COMPILE)strip
 RANLIB := $(CROSS_COMPILE)ranlib
 
-CROSS_CFLAGS := $(CFLAGS) -Wall
+src_dir := $(shell pwd)/
+install_dir := $(PREFIX)/
+obj_dir := $(shell cd $(OUT_PATH); pwd)/objs/web/
 
-ROOT_DIR := $(shell pwd)
-BAO_SRC := $(ROOT_DIR)/boa
-CGI_SRC := $(ROOT_DIR)/cgi
-WEB_SRC := $(ROOT_DIR)/www
-
-$(shell rm -rf $(target_dir))
-$(shell mkdir -p $(target_dir))
-
-.PHONY: all lib app BOA CGI WEB clean
+.PHONY: all lib app clean help install uninstall
 all: lib app
 
 app:
-	echo "no app"
+	make -j4 app CROSS_COMPILE="$(CROSS_COMPILE)" CROSS_CFLAGS="$(CFLAGS)" -C $(obj_dir)/cgi
 
-lib: CGI BOA WEB
-	@rm -rf $(target_out_dir)/.compile_temp
-	#@mkdir -p $(PREFIX); mv $(target_dir)/* $(PREFIX)
-	@rm -rf $(target_dir)
+lib:
+	mkdir -p $(obj_dir)
+	cp -rf $(src_dir)/* $(obj_dir)
+	pushd $(obj_dir)/boa/src >/dev/null; \
+	 ./configure >/dev/null; \
+	 popd >/dev/null
+	sed -i "s/CC = gcc/CC = $(CC)/" $(obj_dir)/boa/src/Makefile
+	sed -i "s/CPP = gcc -E/CPP = $(CC) -E/" $(obj_dir)/boa/src/Makefile
+	sed -i "s/ -g//g" $(obj_dir)/boa/src/Makefile
+	make -j4 -C $(obj_dir)/boa/src/ >/dev/null
+	$(STRIP) $(obj_dir)/boa/src/boa
+	$(STRIP) $(obj_dir)/boa/src/boa_indexer
+	
+	make -j4 lib CROSS_COMPILE="$(CROSS_COMPILE)" CROSS_CFLAGS="$(CFLAGS) -fPIC -O2" -C $(obj_dir)/cgi
 
-BOA:
-	@mkdir -p $(target_dir)/bin
-	@rm -rf $(target_out_dir)/.compile_temp/boa
-	@mkdir -p $(target_out_dir)/.compile_temp
-	@cp -af $(BAO_SRC) $(target_out_dir)/.compile_temp/boa
-	@pushd $(target_out_dir)/.compile_temp/boa/src >/dev/null; \
-	./configure >/dev/null; \
-	sed -i "s/CC = gcc/CC = $(CC)/" Makefile; \
-	sed -i "s/CPP = gcc -E/CPP = $(CC) -E/" Makefile; \
-	sed -i "s/ -g//g" Makefile; \
-	make >/dev/null; \
-	$(STRIP) boa boa_indexer; \
-	cp -af boa boa_indexer $(target_dir)/bin; \
-	cp -af ../config $(target_dir); \
-	popd >/dev/null
-	
-CGI:
-	@mkdir -p $(target_dir)/bin
-	@rm -rf $(target_out_dir)/.compile_temp/cgi
-	@mkdir -p $(target_out_dir)/.compile_temp
-	@cp -af $(CGI_SRC) $(target_out_dir)/.compile_temp/cgi
-	@pushd $(target_out_dir)/.compile_temp/cgi/lib  >/dev/null; \
-	sed -i "s/CFLAGS=-g -Wall/CFLAGS=$(CROSS_CFLAGS)/" Makefile; \
-	sed -i "s/CC=gcc/CC=$(CC)/" Makefile; \
-	sed -i "s/AR=ar/AR=$(AR)/" Makefile; \
-	sed -i "s/RANLIB=ranlib/RANLIB=$(RANLIB)/" Makefile; \
-	make libcgic.a >/dev/null; \
-	popd >/dev/null
-	pushd $(target_out_dir)/.compile_temp/cgi  >/dev/null; \
-	make CROSS_COMPILE=$(CROSS_COMPILE) CROSS_CFLAGS="$(CROSS_CFLAGS)" >/dev/null; \
-	popd >/dev/null
-	@mkdir -p $(target_dir)/$(notdir $(WEB_SRC))/cgi-bin
-	@cp $(target_out_dir)/.compile_temp/cgi/web_function.cgi $(target_dir)/$(notdir $(WEB_SRC))/cgi-bin
-	@chmod 777 $(target_dir)/$(notdir $(WEB_SRC))/cgi-bin
-	
-WEB: CGI
-	@cp -af $(WEB_SRC) $(target_dir)
-	
+help:
+	@echo "No help"
+
 clean:
-	@echo "Web clean"
+	make distclean -C $(obj_dir)/boa/src >>/dev/null
+	make clean -C $(obj_dir)/cgi >>/dev/null
+
+install:
+	-install -d $(install_dir)
+	-install -d $(install_dir)/bin/
+	-install -d $(install_dir)/include
+	-install -d $(install_dir)/config
+	-install -d $(install_dir)/www/cgi-bin
+	-install -d $(install_dir)/lib
+	-install $(obj_dir)/boa/src/boa $(install_dir)/bin
+	-install $(obj_dir)/boa/src/boa_indexer $(install_dir)/bin
+	-install $(obj_dir)/boa/config/boa.conf $(install_dir)/config
+	-install $(obj_dir)/boa/config/mime.types $(install_dir)/config
+	-install $(obj_dir)/cgi/web_function.cgi $(install_dir)/www/cgi-bin
+	-install $(obj_dir)/cgi/libcgic.a $(install_dir)/lib
+	-install $(obj_dir)/cgi/libcgic.so $(install_dir)/lib
+	-install $(obj_dir)/cgi/lib/cgic.h $(install_dir)/include
+	cp -rf $(obj_dir)/www $(install_dir)/
+	
+uninstall:
+	rm -rf $(install_dir)/bin/web $(install_dir)/include/web $(install_dir)/lib/web
 	
 

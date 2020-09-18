@@ -3,6 +3,7 @@
 namespace micagent {
 TaskScheduler::TaskScheduler(int _id):m_last_handle_none(false),m_id(_id),m_wake_up_pipe(make_shared<Pipe>()),m_is_running(false),m_last_time_out(MIN_TIME_OUT)
 {
+    m_is_running.exchange(true);
     if(m_wake_up_pipe->open()){
         m_wakeup_channel.reset(new Channel((*m_wake_up_pipe.get())()));
         m_wakeup_channel->setReadCallback([this](Channel *chn){
@@ -17,18 +18,12 @@ TaskScheduler::TaskScheduler(int _id):m_last_handle_none(false),m_id(_id),m_wake
 }
 void TaskScheduler::start()
 {
-    if(!get_running_state()){
-        {
-            DEBUG_LOCK
-            m_is_running.exchange(true);
-        }
         while(get_running_state()){
             if(!handleEvent()){
                 throw runtime_error("TaskScheduler handleEvent!");
             }
         }
         MICAGENT_LOG(LOG_WARNNING,"TaskScheduler %d exit!",m_id);
-    }
 }
 void TaskScheduler::stop()
 {

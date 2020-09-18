@@ -8,6 +8,7 @@
 #include "http_request.h"
 #include"http_response.h"
 #include "unix_socket_helper.h"
+#include "tcp_client_example.h"
 #include <signal.h>
 using namespace std;
 using namespace micagent;
@@ -23,9 +24,11 @@ DECLARE_TEST(tcp_server);
 DECLARE_TEST(http_request);
 DECLARE_TEST(http_response);
 void unix_socket_test(int argc,char *argv[]);
+void tcp_client_test(int argc,char *argv[]);
 int main(int argc,char *argv[])
 {
-    unix_socket_test(argc,argv);
+    tcp_client_test(argc,argv);
+    //unix_socket_test(argc,argv);
     //    SOCKET fd=NETWORK.build_socket(UDP);
     //    sockaddr_in addr;
     //    addr.sin_family=AF_INET;
@@ -252,4 +255,43 @@ void unix_socket_test(int argc,char *argv[])
             printf("recv from peer:%s\r\n",string(buf,len).c_str());
         }
     }
+}
+void tcp_client_test(int argc,char *argv[])
+{
+    Logger::Instance().set_log_to_std(true);
+    Logger::Instance().register_handle();
+    if(argc==1)
+    {
+        shared_ptr <EventLoop>loop(new EventLoop());
+        usleep(20);
+        shared_ptr<tcp_server> server(new tcp_server(20000));
+        server->register_handle(loop);
+        while(getchar()!='8')continue;
+        loop->stop();
+    }
+    else {
+        shared_ptr <EventLoop>loop(new EventLoop());
+        usleep(20);
+        string ip=argv[1];
+        uint16_t port=stoul(argv[2])&0xffff;
+        shared_ptr<tcp_connection_helper>helper(tcp_connection_helper::CreateNew(loop));
+        shared_ptr<tcp_client_example> client( new tcp_client_example (helper,ip,port));
+        client->set_example();
+        client->set_connect_callback([](){
+            MICAGENT_BACKTRACE("connect success!");
+        });
+        client->open_connection();
+        while(1){
+            char buf[1024];
+            memset(buf,0,1024);
+            cin.getline(buf,1024);
+            string message(buf);
+            if(message=="stop")break;
+            message+="\r\n\r\n";
+            client->send_message(message.c_str(),message.length());
+        }
+        loop->stop();
+    }
+
+    Logger::Instance().unregister_handle();
 }

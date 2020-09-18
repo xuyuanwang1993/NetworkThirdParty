@@ -3,6 +3,15 @@ using namespace micagent;
 tcp_server::~tcp_server(){
     MICAGENT_MARK("tcp_server exit!");
     unregister_handle();
+    auto event_loop=m_loop.lock();
+    if(event_loop){
+        MICAGENT_WARNNING("tcp_server clear connections!");
+        for(auto i:m_connections)
+        {
+            i.second->unregister_handle(event_loop.get());
+        }
+    }
+
 }
 tcp_server::tcp_server(uint16_t listen_port,uint32_t netinterface_index):m_registered(false)
 {
@@ -41,7 +50,7 @@ void tcp_server::register_handle(weak_ptr<EventLoop> loop)
             if(!interface)return false;
             auto fd=Network_Util::Instance().accept(chn->fd());
             if(fd!=INVALID_SOCKET){
-                    interface->add_connection(interface->new_connection(fd));
+                interface->add_connection(interface->new_connection(fd));
             }
             return true;
         });
@@ -53,6 +62,7 @@ void tcp_server::register_handle(weak_ptr<EventLoop> loop)
 void tcp_server::unregister_handle()
 {
     if(m_registered){
+        MICAGENT_WARNNING("tcp_server unregister_handle");
         m_registered.exchange(false);
         auto event_loop=m_loop.lock();
         if(event_loop)event_loop->removeChannel(m_listen_channel);

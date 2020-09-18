@@ -63,18 +63,18 @@ private:
         //初始化udp数据处理线程
         if(!m_udp_data_handle_thread)
         {
-            m_udp_data_handle_thread.reset(new thread([weak_this](){
-                auto strong_ptr=weak_this.lock();
-                auto strong=dynamic_cast<proxy_server *>(strong_ptr.get());
-                unique_lock<mutex>locker(strong->m_data_mutex);
-                while(1)
+
+            m_udp_data_handle_thread.reset(new thread([this](){
+                m_udp_thread_running.exchange(true);
+                unique_lock<mutex>locker(m_data_mutex);
+                while(m_udp_thread_running)
                 {//当外部引用为0时，退出线程
-                    if(strong_ptr.use_count()<=1)break;
-                    if(strong->m_data_queue.empty())strong->m_data_cv.wait(locker);
-                    while(!strong->m_data_queue.empty())
+                    if(m_data_queue.empty())m_data_cv.wait(locker);
+                    if(!m_udp_thread_running)break;
+                    while(!m_data_queue.empty())
                     {
-                        strong->udp_data_input(strong->m_data_queue.front());
-                        strong->m_data_queue.pop();
+                        udp_data_input(m_data_queue.front());
+                        m_data_queue.pop();
                     }
                 }
             }));
@@ -101,6 +101,7 @@ private:
     //数据队列
     queue<pair<shared_ptr<char >,uint16_t>>m_data_queue;
     shared_ptr<thread>m_udp_data_handle_thread;
+    atomic_bool m_udp_thread_running;
     //rtsp数据处理接口
     //创建流 删除流 推送数据
     weak_ptr<rtsp_server>m_w_rtsp_server;

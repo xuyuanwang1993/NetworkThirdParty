@@ -144,11 +144,13 @@ void media_session::notice_new_connection()
         m_has_new_client=true;
     }
 }
-void  media_session::addProxySession(shared_ptr<proxy_session_base> session)
+void  media_session::addProxySession(shared_ptr<proxy_session_base> session, bool proxy)
 {
     session->open_connection(get_media_source_info());
-    lock_guard<mutex>locker(m_mutex);
-    m_proxy_session_map.push_back(session);
+    if(proxy){
+        lock_guard<mutex>locker(m_mutex);
+        m_proxy_session_map.push_back(session);
+    }
 }
 void media_session::removeClient(SOCKET rtspfd)
 {

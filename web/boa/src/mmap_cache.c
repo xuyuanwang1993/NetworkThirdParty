@@ -72,7 +72,7 @@ struct mmap_entry *find_mmap(int data_fd, struct stat *s)
         return NULL;
     }
 #ifdef DEBUG
-    fprintf(stderr, "New mmap_list entry %d (hash was %d)\n", i, h);
+    //fprintf(stderr, "New mmap_list entry %d (hash was %d)\n", i, h);
 #endif
     mmap_list_entries_used++;
     mmap_list[i].dev = s->st_dev;

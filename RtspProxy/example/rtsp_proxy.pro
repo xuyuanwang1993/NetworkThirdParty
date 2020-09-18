@@ -98,7 +98,4 @@ INCLUDEPATH += ..\
 ../../OtherTools/Base64/ \
 
 CONFIG-=qt
- MOC_DIR +=.moc
-RCC_DIR +=.rcc
-OBJECTS_DIR +=.obj
 QMAKE_CXXFLAGS+= '-DDEBUG'

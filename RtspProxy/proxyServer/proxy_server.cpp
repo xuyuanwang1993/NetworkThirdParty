@@ -2,7 +2,7 @@
 #include "proxy_connection.h"
 #include "proxy_protocol.h"
 using namespace micagent;
-proxy_server::proxy_server(uint16_t listen_port,uint32_t netinterface_index):tcp_server(listen_port,netinterface_index),m_remove_timer_id(INVALID_TIMER_ID)
+proxy_server::proxy_server(uint16_t listen_port,uint32_t netinterface_index):tcp_server(listen_port,netinterface_index),m_remove_timer_id(INVALID_TIMER_ID),m_udp_thread_running(false)
 {
     Network_Util::Instance().get_net_interface_info();
     //初始化udp包socket
@@ -19,7 +19,11 @@ proxy_server::~proxy_server()
     //定时器会自动移除
     auto event_loop=m_loop.lock();
     if(m_udp_channel&&event_loop)event_loop->removeChannel(m_udp_channel);
+    if(m_remove_timer_id!=INVALID_TIMER_ID&&event_loop)event_loop->removeTimer(m_remove_timer_id);
+    m_udp_thread_running.exchange(false);
+    m_data_cv.notify_all();
     if(m_udp_data_handle_thread&&m_udp_data_handle_thread->joinable())m_udp_data_handle_thread->join();
+    MICAGENT_BACKTRACE("proxy_server exit!");
 }
 shared_ptr<tcp_connection>proxy_server::new_connection(SOCKET fd)
 {

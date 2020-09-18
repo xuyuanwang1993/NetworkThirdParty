@@ -27,7 +27,7 @@ void tcp_connection_helper::OpenConnection(string ip,uint16_t port,CONNECTION_CA
         channel->setWriteCallback([this,callback,timer_id](Channel  *chn){
             if(timer_id!=INVALID_TIMER_ID){
                 auto event_loop=m_loop.lock();
-            if(event_loop)event_loop->blockRemoveTimer(timer_id);
+                if(event_loop)event_loop->blockRemoveTimer(timer_id);
             }
             CONNECTION_STATUS status=CONNECTION_FAILED;
             if(NETWORK.get_socket_error(chn->fd())==0&&NETWORK.get_peer_port(chn->fd())!=0)
@@ -45,7 +45,7 @@ void tcp_connection_helper::OpenConnection(string ip,uint16_t port,CONNECTION_CA
         channel->setReadCallback([this,callback,timer_id](Channel  *chn){
             if(timer_id!=INVALID_TIMER_ID){
                 auto event_loop=m_loop.lock();
-            if(event_loop)event_loop->blockRemoveTimer(timer_id);
+                if(event_loop)event_loop->blockRemoveTimer(timer_id);
             }
             CONNECTION_STATUS status=CONNECTION_FAILED;
             auto event_loop=m_loop.lock();

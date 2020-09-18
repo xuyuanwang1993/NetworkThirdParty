@@ -4,10 +4,10 @@ using namespace micagent;
 using namespace std;
 int main()
 {
-    string test_domain="www.test11111111.com";
+    string test_domain="www.test.com";
     shared_ptr<EventLoop> loop(new EventLoop());
-    dns_client client("139.159.137.88",10000);
-#if 1
+    dns_client client("139.159.137.87",10000);
+#if 0
     auto ret=client.register_to_server(test_domain,"admin","micagent","test");
     cout<<ret.first<<"  "<<ret.second.ToFormattedString()<<endl;
     client.config(loop,test_domain,"admin","micagent");

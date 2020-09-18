@@ -285,7 +285,6 @@ bool ProxyInterface::raw_tcp_handle_packet(shared_ptr<ProxyFrame> frame)
     header.stream_token=m_stream_token;
     header.media_channel=frame->media_channel;
     header.fragment_count=(frame->data_len+P_FRAME_OFFSET)/PROXY_FRAGMENT_SIZE;
-    MICAGENT_LOG(LOG_INFO,"send_frame %hu size:%u %02x",header.frame_seq,header.frame_len,frame->data_buf.get()[0]);
     for(uint16_t i=0;i<header.fragment_count;i++)
     {
         header.fragment_seq=i;

@@ -65,6 +65,12 @@ public:
      * @param internal_port internal port on the equipment
      */
     void set_port_map_item(string name,uint16_t external_port,uint16_t internal_port);
+     /**
+      * @brief set_user_account_info 配置账户及密码
+      * @param account_name
+      * @param account_password
+      */
+     void set_user_account_info(string account_name,string account_password);
     /**
      * @brief register_to_server call this when it works as a dns info uploader
      * @param domain_name it's own domain_name
@@ -155,6 +161,8 @@ private:
     string m_password;
     SOCKET m_send_fd;
     int64_t m_upload_interval;
+    string m_user_account_name;
+    string m_user_account_password;
 };
 }
 

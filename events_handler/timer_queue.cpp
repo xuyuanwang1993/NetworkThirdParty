@@ -4,6 +4,7 @@ using namespace std;
 using namespace std::chrono;
 TimerQueue::TimerQueue():_is_running(false)
 {
+    _is_running.exchange(true);
     m_thread.reset(new thread(&TimerQueue::loop,this));
 }
 TimerId TimerQueue::addTimer(const TimerEvent& event, uint32_t ms)
@@ -52,11 +53,6 @@ void TimerQueue::blockRemoveTimer(TimerId timerId)
     }
 }
 void TimerQueue::loop(){
-    {
-        DEBUG_LOCK
-        if(_is_running)return;
-        _is_running.exchange(true);
-    }
     while(get_run_status()){
         handleTimerEvent();
         auto time=getTimeRemaining();

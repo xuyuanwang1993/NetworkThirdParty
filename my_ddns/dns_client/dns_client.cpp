@@ -2,9 +2,9 @@
 #include"MD5.h"
 using namespace micagent;
 dns_client::dns_client(string server_ip,uint16_t dns_port):\
-m_timer_id(0),m_server_ip(server_ip),m_server_port(dns_port),m_is_running(false),m_send_fd(INVALID_SOCKET)
+    m_timer_id(0),m_server_ip(server_ip),m_server_port(dns_port),m_is_running(false),m_send_fd(INVALID_SOCKET)
 {
-     m_send_fd=Network_Util::Instance().build_socket(UDP);
+    m_send_fd=Network_Util::Instance().build_socket(UDP);
     memset(&m_server_addr,0,sizeof (m_server_addr));
     m_server_addr.sin_family=AF_INET;
     if(m_send_fd==INVALID_SOCKET)throw runtime_error("can't build udp socket!");
@@ -56,7 +56,7 @@ void dns_client::stop_work()
 {
     lock_guard<mutex>locker(m_mutex);
     if(m_is_running){
-    auto event_loop=m_loop.lock();
+        auto event_loop=m_loop.lock();
         if(event_loop)event_loop->removeTimer(m_timer_id);
         m_timer_id=0;
         m_is_running=false;
@@ -73,6 +73,12 @@ void dns_client::set_port_map_item(string name,uint16_t external_port,uint16_t i
     else {
         m_port_map.emplace(name,port_info(name,internal_port,external_port));
     }
+}
+void dns_client::set_user_account_info(string account_name,string account_password)
+{
+    lock_guard<mutex>locker(m_mutex);
+    m_user_account_name=account_name;
+    m_user_account_password=account_password;
 }
 pair<bool,neb::CJsonObject> dns_client::register_to_server(string domain_name,string account,string password,string other_info,int64_t time_out)
 {
@@ -235,6 +241,8 @@ void dns_client::update()
     else {
         object.Add(TO_STRING(internal_ip),net[0].ip);
     }
+    object.Add(TO_STRING(user_account_name),m_user_account_name);
+    object.Add(TO_STRING(user_account_password),m_user_account_password);
     object.AddEmptySubArray("port_map");
     for(auto i: m_port_map){
         neb::CJsonObject port_info;

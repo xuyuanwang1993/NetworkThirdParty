@@ -43,6 +43,7 @@ private:
     void load_default_config(const string &json_config_path);
     void message_handle();
     void handle_get_config(const string&from);
+    void handle_save_config(const string&from);
     void handle_update_config(const CJsonObject&object,const string&from);
     void handle_get_url_info(const string&from);
     void handle_reload_mode(const string&from);

@@ -30,27 +30,32 @@ void EventLoop::stop()
 }
 bool EventLoop::add_thread_task(const ThreadTask &task)
 {
+    if(m_is_stop)return false;
     return m_thread_pool->add_thread_task(task);
 }
 TimerId EventLoop::addTimer(const TimerEvent& event, uint32_t msec)
 {
-    if(!m_timer_queue->get_run_status())return 0;
+    if(m_is_stop||!m_timer_queue->get_run_status())return INVALID_TIMER_ID;
     return m_timer_queue->addTimer(event,msec);
 }
 void EventLoop::removeTimer(TimerId timerId)
 {
+    if(m_is_stop)return;
     if(m_timer_queue->get_run_status())m_timer_queue->removeTimer(timerId);
 }
 void EventLoop::blockRemoveTimer(TimerId timerId)
 {
+    if(m_is_stop)return;
     if(m_timer_queue->get_run_status())m_timer_queue->blockRemoveTimer(timerId);
 }
 bool EventLoop::add_trigger_event(const TriggerEvent & event)
 {
+    if(m_is_stop)return false;
     return m_trigger_queue->add_trigger_event(event);
 }
 void EventLoop::updateChannel(ChannelPtr channel)
 {
+    if(m_is_stop||!channel)return;
     lock_guard<mutex> locker(m_mutex);
     SOCKET fd=channel->fd();
     if(fd!=INVALID_SOCKET){
@@ -64,6 +69,7 @@ void EventLoop::updateChannel(ChannelPtr channel)
     }
 }
 void EventLoop::updateChannel(Channel* channel){
+    if(m_is_stop||!channel)return;
     lock_guard<mutex> locker(m_mutex);
     SOCKET fd=channel->fd();
     if(fd!=INVALID_SOCKET){
@@ -73,6 +79,7 @@ void EventLoop::updateChannel(Channel* channel){
 }
 void EventLoop::removeChannel(ChannelPtr &channel)
 {
+    if(m_is_stop||!channel)return;
     lock_guard<mutex> locker(m_mutex);
     SOCKET fd=channel->fd();
     if(fd!= INVALID_SOCKET){
@@ -85,6 +92,7 @@ void EventLoop::removeChannel(ChannelPtr &channel)
 }
 void EventLoop::removeChannel(SOCKET fd)
 {
+    if(m_is_stop)return;
     lock_guard<mutex> locker(m_mutex);
     if(fd != INVALID_SOCKET){
         auto iter=m_fd_map.find(fd);
@@ -96,7 +104,7 @@ void EventLoop::removeChannel(SOCKET fd)
 }
 shared_ptr<TaskScheduler> EventLoop::get_taskscheduler(int index)
 {
-    if(index>=static_cast<int>(m_TaskSchedulers.size()))return  nullptr;
+    if(m_is_stop||index>=static_cast<int>(m_TaskSchedulers.size()))return  nullptr;
     else if(index==-1)
     {
         index=static_cast<int>(m_index);

@@ -88,7 +88,7 @@ using namespace micagent;
 //seq : 4
 //}
 proxy_connection::proxy_connection(SOCKET fd,proxy_server *server):tcp_connection (fd),m_proxy_server(server),m_recv_buf(new proxy_message(false)),m_send_buf(new proxy_message(true))\
-,m_is_authorized(false),m_is_setup(false),m_stream_token(INVALID_MediaSessionId),m_last_alive_time(Timer::getTimeNow()),m_last_send_timestamp(p_timer_help::getTimesTamp()),m_last_recv_timestamp(m_last_send_timestamp)
+  ,m_is_authorized(false),m_is_setup(false),m_stream_token(INVALID_MediaSessionId),m_last_alive_time(Timer::getTimeNow()),m_last_send_timestamp(p_timer_help::getTimesTamp()),m_last_recv_timestamp(m_last_send_timestamp)
 {
     //初始化转发实例，默认只接受TCP包，进行控制命令处理
     m_proxy_interface.reset(new ProxyInterface(INVALID_MediaSessionId,RAW_TCP,[this](const void *buf,uint32_t buf_len){
@@ -101,16 +101,25 @@ bool proxy_connection::handle_read()
     lock_guard<mutex>locker(m_mutex);
     if(!m_proxy_interface)return false;
     auto ret=m_recv_buf->read_fd(fd());
-    if(ret<=0){
-        MICAGENT_LOG(LOG_INFO,"%s %d",strerror(errno),errno);
+    if(ret==0){
+        MICAGENT_LOG(LOG_INFO,"%s %d   ret %d",strerror(errno),errno,ret);
         return false;
+    }
+    if(ret<0){
+        MICAGENT_LOG(LOG_INFO,"%s %d   ret %d",strerror(errno),errno,ret);
+        if(errno==EAGAIN||errno == EINTR){
+            return true;
+        }
+        else {
+            return false;
+        }
     }
     if(ret>0){
         auto size=m_recv_buf->get_packet_nums();
-        shared_ptr<char>buf(new char[8092],std::default_delete<char[]>());
+        shared_ptr<char>buf(new char[1500],std::default_delete<char[]>());
         for(uint32_t i=0;i<size;i++){
-            memset(buf.get(),0,8092);
-            auto len=m_recv_buf->read_packet(buf.get(),8092);
+            memset(buf.get(),0,1500);
+            auto len=m_recv_buf->read_packet(buf.get(),1500);
             if(len==0)break;
             //此处会调用帧输出回调函数
             //ProxyInterface::dump_header_info(buf.get(),len);
@@ -134,7 +143,7 @@ bool proxy_connection::handle_write()
     else {
         if(m_channel->isWriting()){
             m_channel->disableWriting();
-           auto loop=m_proxy_server->m_loop.lock();
+            auto loop=m_proxy_server->m_loop.lock();
             if(loop)loop->updateChannel(m_channel);
         }
     }
@@ -156,7 +165,7 @@ bool proxy_connection::send_message(const char *buf,uint32_t buf_len)
     if(!m_channel->isWriting()){
         m_channel->enableWriting();
         auto loop=m_proxy_server->m_loop.lock();
-            if(loop)loop->updateChannel(m_channel);
+        if(loop)loop->updateChannel(m_channel);
     }
     return true;
 }
@@ -212,7 +221,7 @@ bool proxy_connection::handle_proxy_media_data(const shared_ptr<ProxyFrame>&fram
         AVFrame new_frame(frame->data_len);
         memcpy(new_frame.buffer.get(),frame->data_buf.get(),frame->data_len);
         new_frame.timestamp=frame->timestamp;
-       //MICAGENT_LOG(LOG_INFO,"%02x      %u %u",new_frame.buffer.get()[0],frame->data_len,frame->timestamp);
+        //MICAGENT_LOG(LOG_INFO,"%02x      %u %u",new_frame.buffer.get()[0],frame->data_len,frame->timestamp);
         return  rtsp_server->updateFrame(m_stream_token,static_cast<MediaChannelId>(frame->media_channel),new_frame);
     }
 }
@@ -296,7 +305,7 @@ void proxy_connection::handle_authorization(CJsonObject &object)
             build_json_response("authorization_ack",seq,P_NONCE_IS_TIME_OUT,"Nonce Is Time Out",response);
             break;
         }
-        auto text=account+nonce+password;
+        auto text=account+nonce+a_password;
         auto tmp=Get_MD5_String(text.c_str(),text.length());
         bool match=password==tmp;
         free(tmp);
