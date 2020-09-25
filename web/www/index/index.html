@@ -1,0 +1,162 @@
+﻿<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>配置</title>
+    <script type="text/javascript" src="../js/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="../js/event.js"></script>
+    <script type="text/javascript" src="../js/api.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/index.css">
+</head>
+
+<body>
+<div class="bg">
+    <div class="menu_box">
+        <div class="box-list box-list1">
+            <div class="box-text">dns</div>
+        </div>
+        <div class="box-list box-list2">
+            <div class="box-text">balance</div>
+        </div>
+        <div class="box-list box-list3">
+            <div class="box-text">rtsp</div>
+        </div>
+        <div class="box-list box-list4">
+            <div class="box-text">log</div>
+        </div>
+        <div class="box-list box-list5">
+            <div class="box-text">url</div>
+        </div>
+    </div>
+
+    <div class="conf_box">
+        <div class="dns_conf conf_info">
+            <div class="param">
+                <label for="dns_upload_interval_ms">DNS上传间隔(毫秒)：</label>
+                <input name="dns_upload_interval_ms" id="dns_upload_interval_ms" onchange="text_change(this)"/>
+            </div>
+            <div class="param">
+                <label for="dns_server_domain">DNS域名：</label>
+                <input name="dns_server_domain" id="dns_server_domain" onchange="text_change(this)"/>
+            </div>
+            <div class="param">
+                <label for="dns_server_port">DNS端口：</label>
+                <input name="dns_server_port" id="dns_server_port" onchange="text_change(this)"/>
+            </div>
+            <div class="param">
+                <label for="dns_domain_name">本地服务器域名：</label>
+                <input name="dns_domain_name" id="dns_domain_name" readonly/>
+            </div>
+            <div class="param">
+                <label for="dns_account_name">本地服务器所属账号：</label>
+                <input name="dns_account_name" id="dns_account_name" readonly/>
+            </div>
+        </div>
+        <div class="balance_conf conf_info">
+            <div class="param">
+                <label for="balance_upload_interval_ms">负载均衡服务器上传间隔(毫秒)：</label>
+                <input name="balance_upload_interval_ms" id="balance_upload_interval_ms" onchange="text_change(this)"/>
+            </div>
+            <div class="param">
+                <label for="balance_server_domain">负载均衡域名：</label>
+                <input name="balance_server_domain" id="balance_server_domain" onchange="text_change(this)"/>
+            </div>
+            <div class="param">
+                <label for="balance_server_port">负载均衡服务器端口：</label>
+                <input name="balance_server_port" id="balance_server_port" onchange="text_change(this)"/>
+            </div>
+            <div class="param">
+                <label for="balance_max_payload_size">负载均衡服务器最大负载大小：</label>
+                <input name="balance_max_payload_size" id="balance_max_payload_size" onchange="text_change(this)"/>
+            </div>
+            <div class="param">
+                <label for="balance_server_weight">负载均衡服务器权重(0-1.0)：</label>
+                <input name="balance_server_weight" id="balance_server_weight" onchange="text_change(this)"/>
+            </div>
+        </div>
+        <div class="rtsp_conf conf_info">
+            <div class="param">
+                <label for="rtsp_server_port"> rtsp服务端口：</label>
+                <input name="rtsp_server_port" id="rtsp_server_port" onchange="text_change(this)"/>
+            </div>
+            <div class="param">
+                <label for="rtsp_account_name">rtsp服务器账号名：</label>
+                <input name="rtsp_account_name" id="rtsp_account_name" onchange="text_change(this)"/>
+            </div>
+
+            <div class="param">
+                <label for="rtsp_account_password"> rtsp服务器密码：</label>
+                <input name="rtsp_account_password" id="rtsp_account_password" onchange="text_change(this)"/>
+            </div>
+            <div class="param">
+                <label for="rtsp_proxy_port">转发服务内网端口：</label>
+                <input name="rtsp_proxy_port" id="rtsp_proxy_port" onchange="text_change(this)"/>
+            </div>
+            <div class="param">
+                <label for="router_ip"> 路由器ip：</label>
+                <input name="router_ip" id="router_ip" onchange="text_change(this)"/>
+            </div>
+            <div class="param">
+                <label for="rtsp_server_external_port">rtsp服务器外网端口：</label>
+                <input name="rtsp_server_external_port" id="rtsp_server_external_port" onchange="text_change(this)"/>
+            </div>
+
+            <div class="param">
+                <label for="rtsp_proxy_external_port"> 转发服务外网端口：</label>
+                <input name="rtsp_proxy_external_port" id="rtsp_proxy_external_port" onchange="text_change(this)"/>
+            </div>
+        </div>
+        <div class="log_conf conf_info">
+            <div class="param">
+                <label for="log_open">是否打开log输出：</label>
+                <div class="ui-switch">
+                    <input type="checkbox" name="log_open" id="log_open" onchange="text_change(this)">
+                </div>
+            </div>
+        </div>
+        <div class="url_list conf_info">
+            <ul>
+                <li><a>rtsp://192.168.2.111:8554/test</a></li>
+                <li><a>rtsp://192.168.2.111:8554/test</a></li>
+                <li><a>rtsp://192.168.2.111:8554/test</a></li>
+                <li><a>rtsp://192.168.2.111:8554/test</a></li>
+                <li><a>rtsp://192.168.2.111:8554/test</a></li>
+                <li><a>rtsp://192.168.2.111:8554/test</a></li>
+                <li><a>rtsp://192.168.2.111:8554/test</a></li>
+                <li><a>rtsp://192.168.2.111:8554/test</a></li>
+                <li><a>rtsp://192.168.2.111:8554/test</a></li>
+                <li><a>rtsp://192.168.2.111:8554/test</a></li>
+                <li><a>rtsp://192.168.2.111:8554/test</a></li>
+                <li><a>rtsp://192.168.2.111:8554/test</a></li>
+            </ul>
+        </div>
+
+    </div>
+    <div class="button_box">
+        <div class="conf_button button_list">
+            <button class="btn_info" onclick="set_config()">重置</button>
+            <br>
+            <button class="btn_info" onclick="update_config()">确认</button>
+            <br>
+            <button class="btn_info" onclick="save_config()">保存</button>
+            <br>
+            <button class="btn_info" onclick="reload_mode()">立即生效</button>
+        </div>
+        <div class="url_button button_list">
+            <button class="btn_info" onclick="get_url_info()">刷新</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    window.onload = function () {
+        set_config();
+        $(".box-list1").addClass('menu_selected');
+        $(".dns_conf").show();
+        $(".conf_button").show();
+    }
+</script>
+</body>
+</html>
