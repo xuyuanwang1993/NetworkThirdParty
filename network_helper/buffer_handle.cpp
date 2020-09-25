@@ -71,9 +71,9 @@ int buffer_handle::send_fd(SOCKET fd,sockaddr_in *addr,int timeout)
         Network_Util::Instance().make_noblocking(fd);
     return ret;
 }
-bool buffer_handle::append(const char *buf ,uint32_t buf_len)
+bool buffer_handle::append(const void *buf , uint32_t buf_len)
 {
-    return insert_packet(buf,buf_len);
+    return insert_packet(static_cast<const char *>(buf),buf_len);
 }
 uint32_t buffer_handle::get_packet_nums()const
 {
@@ -87,12 +87,12 @@ uint32_t buffer_handle::get_first_packet_size()const
     if(begin_iter==end(m_packet_list)||!begin_iter->finished())return 0;
     return begin_iter->filled_size();
 }
-uint32_t buffer_handle::read_packet(char *save_buf,uint32_t buf_len)
+uint32_t buffer_handle::read_packet(void *save_buf, uint32_t buf_len)
 {
     lock_guard<mutex>locker(m_mutex);
     auto read_iter=begin(m_packet_list);
     if(read_iter==end(m_packet_list)||!read_iter->finished())return 0;
-    auto read_len=read_iter->read_packet(save_buf,buf_len);
+    auto read_len=read_iter->read_packet(static_cast<char *>(save_buf),buf_len);
     if(read_iter->filled_size()==0)m_packet_list.pop_front();
     return read_len;
 }

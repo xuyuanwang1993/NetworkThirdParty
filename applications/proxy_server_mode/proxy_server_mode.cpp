@@ -17,133 +17,7 @@ void proxy_server_mode::init(const string &json_config_path,const string&pro_nam
         }
         m_config_path=daemon_instance::get_pwd_path()+m_config_path;
         m_json_config.reset(CJsonObject::CreateInstance(json_config_path));
-        //event_loop
-        if(!m_json_config->Get("event_thread_pool_size",m_event_thread_pool_size)){
-            MICAGENT_ERROR("no event_thread_pool_size entry!");
-            break;
-        }
-        if(!m_json_config->Get("event_trigger_threads",m_event_trigger_threads)){
-            MICAGENT_ERROR("no event_trigger_threads entry!");
-            break;
-        }
-        if(!m_json_config->Get("event_trigger_queue_size",m_event_trigger_queue_size)){
-            MICAGENT_ERROR("no event_trigger_queue_size entry!");
-            break;
-        }
-        if(!m_json_config->Get("event_network_io_threads",m_event_network_io_threads)){
-            MICAGENT_ERROR("no event_network_io_threads entry!");
-            break;
-        }
-        //dns client
-        if(!m_json_config->Get("dns_upload_interval_ms",m_dns_upload_interval_ms)){
-            MICAGENT_ERROR("no dns_upload_interval_ms entry!");
-            break;
-        }
-        if(!m_json_config->Get("dns_server_domain",m_dns_server_domain)){
-            MICAGENT_ERROR("no dns_server_domain entry!");
-            break;
-        }
-        uint32_t dns_server_port;
-        if(!m_json_config->Get("dns_server_port",dns_server_port)){
-            MICAGENT_ERROR("no dns_server_port entry!");
-            break;
-        }
-        m_dns_server_port=dns_server_port&0xffff;
-        if(!m_json_config->Get("dns_domain_name",m_dns_domain_name)){
-            MICAGENT_ERROR("no dns_domain_name entry!");
-            break;
-        }
-        if(!m_json_config->Get("dns_account_name",m_dns_account_name)){
-            MICAGENT_ERROR("no dns_account_name entry!");
-            break;
-        }
-        if(!m_json_config->Get("dns_pass_word",m_dns_pass_word)){
-            MICAGENT_ERROR("no dns_pass_word entry!");
-            break;
-        }
-        if(!m_json_config->Get("dns_description",m_dns_description)){
-            MICAGENT_ERROR("no dns_description entry!");
-            break;
-        }
-        //balance
-        if(!m_json_config->Get("balance_upload_interval_ms",m_balance_upload_interval_ms)){
-            MICAGENT_ERROR("no balance_upload_interval_ms entry!");
-            break;
-        }
-        if(!m_json_config->Get("balance_server_domain",m_balance_server_domain)){
-            MICAGENT_ERROR("no balance_server_domain entry!");
-            break;
-        }
-        uint32_t balance_server_port;
-        if(!m_json_config->Get("balance_server_port",balance_server_port)){
-            MICAGENT_ERROR("no balance_server_port entry!");
-            break;
-        }
-        m_balance_server_port=balance_server_port&0xffff;
-        if(!m_json_config->Get("balance_max_payload_size",m_balance_max_payload_size)){
-            MICAGENT_ERROR("no balance_max_payload_size entry!");
-            break;
-        }
-        if(!m_json_config->Get("balance_server_weight",m_balance_server_weight)){
-            MICAGENT_ERROR("no balance_server_weight entry!");
-            break;
-        }
-        //rtsp_server
-        uint32_t rtsp_server_port;
-        if(!m_json_config->Get("rtsp_server_port",rtsp_server_port)){
-            MICAGENT_ERROR("no rtsp_server_port entry!");
-            break;
-        }
-        if(!m_json_config->Get("rtsp_server_port",rtsp_server_port)){
-            MICAGENT_ERROR("no rtsp_server_port entry!");
-            break;
-        }
-        m_rtsp_server_port=rtsp_server_port&0xffff;
-        if(!m_json_config->Get("rtsp_account_name",m_rtsp_account_name)){
-            MICAGENT_ERROR("no rtsp_account_name entry!");
-            break;
-        }
-        if(!m_json_config->Get("rtsp_account_password",m_rtsp_account_password)){
-            MICAGENT_ERROR("no rtsp_account_password entry!");
-            break;
-        }
-        //rtsp_proxy
-        uint32_t rtsp_proxy_port;
-        if(!m_json_config->Get("rtsp_proxy_port",rtsp_proxy_port)){
-            MICAGENT_ERROR("no rtsp_proxy_port entry!");
-            break;
-        }
-        m_rtsp_proxy_port=rtsp_proxy_port&0xffff;
-        //upnp
-        if(!m_json_config->Get("set_external_ip",m_set_external_ip)){
-            MICAGENT_ERROR("no set_external_ip entry!");
-            break;
-        }
-        if(!m_json_config->Get("router_ip",m_router_ip)){
-            MICAGENT_ERROR("no router_ip entry!");
-            break;
-        }
-        uint32_t rtsp_server_external_port;
-        if(!m_json_config->Get("rtsp_server_external_port",rtsp_server_external_port)){
-            MICAGENT_ERROR("no rtsp_server_external_port entry!");
-            break;
-        }
-        m_rtsp_server_external_port=rtsp_server_external_port&0xffff;
-        uint32_t rtsp_proxy_external_port;
-        if(!m_json_config->Get("rtsp_proxy_external_port",rtsp_proxy_external_port)){
-            MICAGENT_ERROR("no rtsp_proxy_external_port entry!");
-            break;
-        }
-        m_rtsp_proxy_external_port=rtsp_proxy_external_port&0xffff;
-        //itself
-        if(!m_json_config->Get("log_open",m_log_open)){
-            MICAGENT_ERROR("no log_open entry!");
-            break;
-        }
-        if(!m_json_config->Get("log_path",m_log_path)){
-            MICAGENT_ERROR("no log_path entry!");
-            break;
-        }
+        if(!parse_config())break;
         MICAGENT_INFO("init success!");
         return ;
     }while(0);
@@ -281,6 +155,7 @@ void proxy_server_mode::start()
     {
         MICAGENT_INFO("mode reload!");
         m_reload_flag.exchange(false);
+        parse_config();
         start();
     }
 }
@@ -343,6 +218,140 @@ void proxy_server_mode::loop()
         m_exit_conn.wait(locker);
     }
     MICAGENT_INFO("loop exit!");
+}
+bool proxy_server_mode::parse_config()
+{
+    do{
+        //event_loop
+        if(!m_json_config->Get("event_thread_pool_size",m_event_thread_pool_size)){
+            MICAGENT_ERROR("no event_thread_pool_size entry!");
+            break;
+        }
+        if(!m_json_config->Get("event_trigger_threads",m_event_trigger_threads)){
+            MICAGENT_ERROR("no event_trigger_threads entry!");
+            break;
+        }
+        if(!m_json_config->Get("event_trigger_queue_size",m_event_trigger_queue_size)){
+            MICAGENT_ERROR("no event_trigger_queue_size entry!");
+            break;
+        }
+        if(!m_json_config->Get("event_network_io_threads",m_event_network_io_threads)){
+            MICAGENT_ERROR("no event_network_io_threads entry!");
+            break;
+        }
+        //dns client
+        if(!m_json_config->Get("dns_upload_interval_ms",m_dns_upload_interval_ms)){
+            MICAGENT_ERROR("no dns_upload_interval_ms entry!");
+            break;
+        }
+        if(!m_json_config->Get("dns_server_domain",m_dns_server_domain)){
+            MICAGENT_ERROR("no dns_server_domain entry!");
+            break;
+        }
+        uint32_t dns_server_port;
+        if(!m_json_config->Get("dns_server_port",dns_server_port)){
+            MICAGENT_ERROR("no dns_server_port entry!");
+            break;
+        }
+        m_dns_server_port=dns_server_port&0xffff;
+        if(!m_json_config->Get("dns_domain_name",m_dns_domain_name)){
+            MICAGENT_ERROR("no dns_domain_name entry!");
+            break;
+        }
+        if(!m_json_config->Get("dns_account_name",m_dns_account_name)){
+            MICAGENT_ERROR("no dns_account_name entry!");
+            break;
+        }
+        if(!m_json_config->Get("dns_pass_word",m_dns_pass_word)){
+            MICAGENT_ERROR("no dns_pass_word entry!");
+            break;
+        }
+        if(!m_json_config->Get("dns_description",m_dns_description)){
+            MICAGENT_ERROR("no dns_description entry!");
+            break;
+        }
+        //balance
+        if(!m_json_config->Get("balance_upload_interval_ms",m_balance_upload_interval_ms)){
+            MICAGENT_ERROR("no balance_upload_interval_ms entry!");
+            break;
+        }
+        if(!m_json_config->Get("balance_server_domain",m_balance_server_domain)){
+            MICAGENT_ERROR("no balance_server_domain entry!");
+            break;
+        }
+        uint32_t balance_server_port;
+        if(!m_json_config->Get("balance_server_port",balance_server_port)){
+            MICAGENT_ERROR("no balance_server_port entry!");
+            break;
+        }
+        m_balance_server_port=balance_server_port&0xffff;
+        if(!m_json_config->Get("balance_max_payload_size",m_balance_max_payload_size)){
+            MICAGENT_ERROR("no balance_max_payload_size entry!");
+            break;
+        }
+        if(!m_json_config->Get("balance_server_weight",m_balance_server_weight)){
+            MICAGENT_ERROR("no balance_server_weight entry!");
+            break;
+        }
+        //rtsp_server
+        uint32_t rtsp_server_port;
+        if(!m_json_config->Get("rtsp_server_port",rtsp_server_port)){
+            MICAGENT_ERROR("no rtsp_server_port entry!");
+            break;
+        }
+        if(!m_json_config->Get("rtsp_server_port",rtsp_server_port)){
+            MICAGENT_ERROR("no rtsp_server_port entry!");
+            break;
+        }
+        m_rtsp_server_port=rtsp_server_port&0xffff;
+        if(!m_json_config->Get("rtsp_account_name",m_rtsp_account_name)){
+            MICAGENT_ERROR("no rtsp_account_name entry!");
+            break;
+        }
+        if(!m_json_config->Get("rtsp_account_password",m_rtsp_account_password)){
+            MICAGENT_ERROR("no rtsp_account_password entry!");
+            break;
+        }
+        //rtsp_proxy
+        uint32_t rtsp_proxy_port;
+        if(!m_json_config->Get("rtsp_proxy_port",rtsp_proxy_port)){
+            MICAGENT_ERROR("no rtsp_proxy_port entry!");
+            break;
+        }
+        m_rtsp_proxy_port=rtsp_proxy_port&0xffff;
+        //upnp
+        if(!m_json_config->Get("set_external_ip",m_set_external_ip)){
+            MICAGENT_ERROR("no set_external_ip entry!");
+            break;
+        }
+        if(!m_json_config->Get("router_ip",m_router_ip)){
+            MICAGENT_ERROR("no router_ip entry!");
+            break;
+        }
+        uint32_t rtsp_server_external_port;
+        if(!m_json_config->Get("rtsp_server_external_port",rtsp_server_external_port)){
+            MICAGENT_ERROR("no rtsp_server_external_port entry!");
+            break;
+        }
+        m_rtsp_server_external_port=rtsp_server_external_port&0xffff;
+        uint32_t rtsp_proxy_external_port;
+        if(!m_json_config->Get("rtsp_proxy_external_port",rtsp_proxy_external_port)){
+            MICAGENT_ERROR("no rtsp_proxy_external_port entry!");
+            break;
+        }
+        m_rtsp_proxy_external_port=rtsp_proxy_external_port&0xffff;
+        //itself
+        if(!m_json_config->Get("log_open",m_log_open)){
+            MICAGENT_ERROR("no log_open entry!");
+            break;
+        }
+        if(!m_json_config->Get("log_path",m_log_path)){
+            MICAGENT_ERROR("no log_path entry!");
+            break;
+        }
+        return true;
+    }while(0);
+    return false;
 }
 void proxy_server_mode::load_default_config(const string &json_config_path)
 {
@@ -440,6 +449,9 @@ void proxy_server_mode::message_handle()
             }
             else if (cmd=="reload_mode"){
                 handle_reload_mode(from);
+            }
+            else if (cmd=="save_config"){
+                handle_save_config(from);
             }
             else {
                 handle_cmd_unsupported(cmd,from);

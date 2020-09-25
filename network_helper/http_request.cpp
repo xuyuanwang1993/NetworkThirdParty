@@ -2,12 +2,12 @@
 #include "algorithm"
 namespace micagent {
 http_request::http_request(const string &api):m_api(api),m_body_len(-1),m_body(string())\
-,m_buf_cache(string()),m_error_string("success"),m_error_status(0)
+  ,m_buf_cache(string()),m_error_string("success"),m_error_status(0)
 {
     m_head_map.emplace(make_pair(http_request::CONTENT_KEY,http_request::DEFAULT_CONTENT_TYPE));
 }
 http_request::http_request(const http_request&src):m_head_map(src.m_head_map),m_api(src.m_api),m_body_len(src.m_body_len),m_body(src.m_body)\
-,m_buf_cache(string()),m_error_string("success"),m_error_status(0)
+  ,m_buf_cache(string()),m_error_string("success"),m_error_status(0)
 {
 
 }
@@ -28,15 +28,18 @@ void http_request::update(const char *buf,uint32_t buf_len)
             return;
         }
         MICAGENT_MARK("Head info: %s   \r\n%s %s %s!",local_buf,command,api,http_version);
-        m_api=api;
+        if(api[0]=='/')m_api=api+1;
+        else {
+            m_api=api;
+        }
         const char *tmp2=local_buf;
         while((tmp2=get_next_line(tmp2))!=nullptr&&tmp2<tmp){
             char key[KEY_MAX_LEN]={0};
             char value[VALUE_MAX_LEN]={0};
-            if(sscanf(tmp2,"%s : %[^\r\n]",key,value)!=2){
+            if(sscanf(tmp2,"%[^:]: %[^\r\n]",key,value)!=2){
                 if(tmp2[0]!='\r'||tmp2[0]!='\n'){
                     m_error_status=1;
-                m_error_string="false http head input!";
+                    m_error_string="false http head input!";
                 }
                 break;
             }
@@ -106,23 +109,36 @@ string http_request::get_api()const
     lock_guard<mutex>locker(m_mutex);
     return  m_api;
 }
-string http_request::build_http_packet(bool reset)
+string http_request::build_http_packet(HTTP_REQUEST_TYPE type, bool reset)
 {
     lock_guard<mutex>locker(m_mutex);
-    if(m_api.empty())m_api="/";
-    if(m_body.length()==static_cast<string::size_type>(m_body_len)){
-        m_head_map.emplace(make_pair(http_request::CONTENT_LENGTH_KEY,to_string(m_body_len)));
+
+    string http_packet;
+    string head_extra("");
+    if(type==HTTP_POST){
+        http_packet+="POST";
+        if(m_body.length()==static_cast<string::size_type>(m_body_len)){
+            m_head_map.emplace(make_pair(http_request::CONTENT_LENGTH_KEY,to_string(m_body_len)));
+        }
     }
-    string http_packet="POST ";
-    http_packet+=m_api+" " +HTTP_VERSION;
+    else if (type==HTTP_GET) {
+        http_packet+="GET";
+        if(m_body.length()==static_cast<string::size_type>(m_body_len)){
+            if(m_body.length()!=0){
+                head_extra+="?";
+                head_extra+=m_body;
+            }
+        }
+    }
+    http_packet+=+" /"+m_api+head_extra+" " +HTTP_VERSION;
     http_packet+=LINE_END;
     for(auto i: m_head_map){
-        http_packet+=i.first+" : ";
+        http_packet+=i.first+": ";
         http_packet+=i.second;
         http_packet+=LINE_END;
     }
     http_packet+=LINE_END;
-    http_packet+=m_body;
+    if(type==HTTP_POST)http_packet+=m_body;
     if(reset){
         m_head_map.clear();
         m_head_map.emplace(make_pair(CONTENT_KEY,DEFAULT_CONTENT_TYPE));
@@ -142,7 +158,7 @@ const char * http_request::get_next_line(const char *input)
     if(!input)return  nullptr;
     while(*input!='\0'){
         if(*input=='\r'||*input=='\n'){
-        //find the end
+            //find the end
             input++;
             if(*input=='\n') ++input;
             return input;

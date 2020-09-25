@@ -14,11 +14,14 @@ PREFIX ?= /usr/local
 #########################################change############################################
 OUT_PATH ?= ../out
 ###########################################################################################
-
 #C编译选项
 CFLAGS ?=
+LOCAL_CFLAGS = -O2 -Wl,--gc-sections -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_1 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_2 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8 -fPIC
+LOCAL_CFLAGS += $(CFLAGS)
 #C++编译选项
 CXXFLAGS ?=
+LOCAL_CXXFLAGS = $(LOCAL_CFLAGS) -std=c++11 -ffunction-sections -fdata-sections
+LOCAL_CXXFLAGS += $(CXXFLAGS)
 
 sqlite_vesion := sqlite-autoconf-3320300
 
@@ -39,7 +42,7 @@ lib:
 	 pushd $(OUT_PATH)/objs/sqlite >>/dev/null; \
 	 autoreconf -ivf >>/dev/null; \
 	 CC="$(CROSS_COMPILE)gcc" CXX="$(CROSS_COMPILE)g++" \
-	 CFLAGS="$(CFLAGS) -O2" CXXFLAGS="$(CXXFLAGS) -O2" \
+	 LOCAL_CFLAGS="$(LOCAL_CFLAGS) -O2" LOCAL_CXXFLAGS="$(LOCAL_CXXFLAGS) -O2" \
 	 ./configure --host=$(CROSS_COMPILE) --prefix=$(install_temp_dir) >>/dev/null; \
 	 popd >>/dev/null; \
 	else \

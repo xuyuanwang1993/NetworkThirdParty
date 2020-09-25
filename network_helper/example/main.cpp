@@ -9,6 +9,11 @@
 #include"http_response.h"
 #include "unix_socket_helper.h"
 #include "tcp_client_example.h"
+#include "http_client.h"
+#include"http_helper.h"
+#include "websocket_common.h"
+#include "websocket_buffer_cache.h"
+#include "websocket_client.h"
 #include <signal.h>
 using namespace std;
 using namespace micagent;
@@ -25,9 +30,23 @@ DECLARE_TEST(http_request);
 DECLARE_TEST(http_response);
 void unix_socket_test(int argc,char *argv[]);
 void tcp_client_test(int argc,char *argv[]);
+void http_client_test(int argc,char *argv[]);
+void http_helper_test(int argc,char *argv[]);
+void websocket_test(int argc,char *argv[]);
+static bool exit_flag=true;
 int main(int argc,char *argv[])
 {
-    tcp_client_test(argc,argv);
+    Logger::Instance().register_handle();
+    Logger::Instance().set_log_to_std(true);
+    Logger::register_exit_signal_func([](){
+        printf("---------------\r\n");
+        exit_flag=false;
+    });
+    websocket_test(argc,argv);
+    //http_helper_test(argc,argv);
+    //http_client_test(argc,argv);
+    //tcp_client_test(argc,argv);
+
     //unix_socket_test(argc,argv);
     //    SOCKET fd=NETWORK.build_socket(UDP);
     //    sockaddr_in addr;
@@ -36,7 +55,7 @@ int main(int argc,char *argv[])
     //    addr.sin_port=htons(51234);
     //    const int buf_size=20000;
     //    char buf[buf_size]={0};
-    //    while(1)
+    //    while(exit_flag)
     //    {
     //        auto ret=NETWORK.time_out_sendto(fd,buf,buf_size,0,(const struct sockaddr *)&addr,sizeof (addr),1);
     //        printf("ret %d \r\n",ret);
@@ -174,7 +193,7 @@ void unix_socket_test(int argc,char *argv[])
         unix_dgram_socket socket(server_domain);
         socket.build();
         char buf[4096]={0};
-        while(1)
+        while(exit_flag)
         {
             auto len=socket.recv(buf,4096);
             if(len<=path_len)continue;
@@ -191,7 +210,7 @@ void unix_socket_test(int argc,char *argv[])
         socket.set_peer_path(server_domain);
         char buf[4096]={0};
         strncpy(buf,udp_client_domain.c_str(),path_len);
-        while(1)
+        while(exit_flag)
         {
             printf("input the message you want to send:");
             cin.getline(buf+path_len,4096-path_len);
@@ -207,7 +226,7 @@ void unix_socket_test(int argc,char *argv[])
             char buf[4096];
             unix_stream_socket socket;
             socket.reset(fd);
-            while(1)
+            while(exit_flag)
             {
                 auto len=socket.recv(buf,4096);
                 if(len<=0)break;
@@ -220,7 +239,7 @@ void unix_socket_test(int argc,char *argv[])
         unix_stream_socket server_socket(server_domain);
         server_socket.build();
         server_socket.listen();
-        while(1)
+        while(exit_flag)
         {
             auto fd=server_socket.aacept();
             auto pid=fork();
@@ -244,7 +263,7 @@ void unix_socket_test(int argc,char *argv[])
             exit(EXIT_FAILURE);
         }
         char buf[4096]={0};
-        while(1)
+        while(exit_flag)
         {
             printf("input the message you want to send:");
             cin.getline(buf,4096);
@@ -281,7 +300,7 @@ void tcp_client_test(int argc,char *argv[])
             MICAGENT_BACKTRACE("connect success!");
         });
         client->open_connection();
-        while(1){
+        while(exit_flag){
             char buf[1024];
             memset(buf,0,1024);
             cin.getline(buf,1024);
@@ -294,4 +313,88 @@ void tcp_client_test(int argc,char *argv[])
     }
 
     Logger::Instance().unregister_handle();
+}
+void http_client_test(int argc,char *argv[])
+{
+    Logger::Instance().set_log_to_std(true);
+    Logger::Instance().register_handle();
+    {
+        char const *const url1="www.test.com";
+        char const *const url2="https://www.test.com";
+        char const *const url3="http://www.test.com";
+        char const *const url4="http://www.test.com:8554";
+        char const *const url5="http://www.test.com:8554/test";
+        char const *const url6="www.test.com:8554";
+        char const *const url7="114.114.114.114:8554";
+        string url8(4097,'*');
+        char const *const url9="ws://192.168.2.5/test";
+        http_client::parse_url_info(url1);
+        http_client::parse_url_info(url2);
+        http_client::parse_url_info(url3);
+        http_client::parse_url_info(url4);
+        http_client::parse_url_info(url5);
+        http_client::parse_url_info(url6);
+        http_client::parse_url_info(url7);
+        http_client::parse_url_info(url8);
+        http_client::parse_url_info(url9,"ws",443);
+    }
+    auto info=http_client::parse_url_info(argv[1]);
+    shared_ptr<EventLoop>loop(new EventLoop());
+    shared_ptr<tcp_connection_helper>helper(tcp_connection_helper::CreateNew(loop));
+    shared_ptr<http_client> client (new http_client(helper,info.ip,info.port,info.api));
+    HTTP_PACKET_RECV_CALLBACK cb=[] (pair<shared_ptr<uint8_t>,uint32_t>body){
+        MICAGENT_DEBUG("body_len %u,content:%s",body.second,string(reinterpret_cast<const char *>(body.first.get()),body.second).c_str());
+    };
+    client->set_http_recv_callback(cb);
+    client->set_http_connect_callback([&client,&info](){
+        map<string,string>head_map;
+        head_map["Host"]=info.host;
+        client->send_http_packet(head_map,nullptr,0,nullptr,0,HTTP_GET_REQUEST);
+    });
+    client->open_connection();
+    sleep(10);
+    map<string,string>head_map;
+    head_map["Host"]=info.host;
+    client->send_http_packet(head_map,nullptr,0,nullptr,0,HTTP_GET_REQUEST);
+    sleep(10);
+    client->send_http_packet();
+    while(exit_flag)sleep(1);
+    client->close_connection();
+    loop->stop();
+    Logger::Instance().unregister_handle();
+}
+void http_helper_test(int argc,char *argv[])
+{
+    http_helper::util_test();
+    auto url_info=http_client::parse_url_info(argv[1]);
+    auto socket=NETWORK.build_socket(TCP);
+    http_helper helper;
+    helper.set_api(url_info.api);
+    helper.set_packet_type(HTTP_GET_REQUEST);
+    helper.set_head("Host",url_info.host);
+    NETWORK.connect(socket,url_info.ip,url_info.port);
+    auto packet=helper.build_packet();
+    send(socket,packet.c_str(),packet.length(),0);
+    char buf[4096]={0};
+    HTTP_PACKET_RECV_CALLBACK cb=[] (pair<shared_ptr<uint8_t>,uint32_t>body){
+        MICAGENT_DEBUG("body_len %u,content:%s",body.second,string(reinterpret_cast<const char *>(body.first.get()),body.second).c_str());
+    };
+    helper.set_packet_finished_callback(cb);
+    while(1){
+        memset(buf,0,4096);
+        auto len=NETWORK.time_out_recv(socket,buf,4096,0,1000);
+        if(len>0)
+        {
+            helper.update(buf,len);
+        }
+        else {
+            break;
+        }
+    }
+}
+void websocket_test(int argc,char *argv[])
+{
+    //web_socket_helper::WS_util_test();
+    //web_socket_buffer_cache::util_test();
+    websocket_client::util_test();
 }

@@ -40,6 +40,7 @@ public:
     ~proxy_server_mode();
 private:
     void loop();
+    bool parse_config();
     void load_default_config(const string &json_config_path);
     void message_handle();
     void handle_get_config(const string&from);

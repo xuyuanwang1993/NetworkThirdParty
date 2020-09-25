@@ -7,6 +7,11 @@
 #include <map>
 namespace micagent {
 using namespace std;
+enum HTTP_REQUEST_TYPE{
+    HTTP_POST,
+    HTTP_GET,
+};
+
 class http_request{
     static constexpr const char *const HTTP_VERSION="HTTP/1.1";
     static constexpr const char *const CONTENT_KEY="Content-Type";
@@ -24,7 +29,7 @@ public:
      * @brief http_request init an empty http request
      * @param api set the http request access path
      */
-    http_request(const string &api="/");
+    http_request(const string &api="");
     /**
      * @brief http_request init a http request that copy header from src
      * @param src
@@ -73,10 +78,11 @@ public:
     string get_api()const;
     /**
      * @brief build_http_packet get complete http packet
+     * @param type HTTP_POST or HTTP_GET
      * @param reset if it is set true,it will reset all info except the api
      * @return
      */
-    string build_http_packet(bool reset);
+    string build_http_packet(HTTP_REQUEST_TYPE type,bool reset);
     ~http_request();
     /**
      * @brief get_next_line search a http head line

@@ -31,7 +31,7 @@
 #else
 #define DEBUG_LOCK
 #endif
-
+extern void signal_exit_func(int signal_num);
 namespace micagent {
 using namespace std;
 enum LOG_LEVEL{
@@ -50,7 +50,7 @@ class Logger{
 #elif defined(WIN32) || defined(_WIN32)
     const char LINE_END[3]={'\r','\n','\0'};
 #endif
-    const uint64_t MAX_LOG_MESSAGE_SIZE=4*1024;//4k
+    const uint64_t MAX_LOG_MESSAGE_SIZE=64*1024;//64k
     const int  MAX_TRACE_SIZE=256;
     const int  MIN_TRACE_SIZE=64;
     const LOG_LEVEL MIN_LOG_LEVEL=LOG_DEBUG;
@@ -67,6 +67,11 @@ public:
     Logger(const Logger &) = delete;
     /*单例*/
     static Logger & Instance(){static Logger logger;return logger;}
+    /**
+     * @brief register_exit_signal_func 注册进程信号捕获退出回调函数,此调用非线程安全
+     * @param exit_func 退出回调函数
+     */
+    static void register_exit_signal_func(function<void()>exit_func);
     /*log接口*/
     void log(int level,const char *file,const char *func,int line,const char *fmt,...);
     /*设置log目录，当clear_flag 为true时 会清空原有log,目录无权限时会返回false*/
@@ -161,6 +166,12 @@ private:
 #ifdef DEBUG
     mutable mutex m_debug_mutex;
 #endif
+    //信号退出函数
+    static function<void()>m_exit_func;
+    //信号捕获次数，用于强制退出
+    static atomic_bool m_signal_catch_flag;
+    //将exit_func声明为友元函数
+    friend void ::signal_exit_func(int signal_num);
 };
 }
 //define log macro

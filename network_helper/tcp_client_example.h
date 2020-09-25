@@ -23,7 +23,7 @@ public:
             if(!helper)return;
             auto event_loop=helper->get_loop().lock();
             if(!event_loop)return;
-            auto weak_this=weak_from_this();
+            weak_ptr<tcp_client> weak_this=shared_from_this();
             m_timer_id=event_loop->addTimer([weak_this](){
                 auto *instance=dynamic_cast<tcp_client_example *>(weak_this.lock().get());
                 if(!instance)return false;

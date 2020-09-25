@@ -62,7 +62,7 @@ public:
      * @param buf_len
      * @return
      */
-    bool append(const char *buf ,uint32_t buf_len);
+    bool append(const void *buf ,uint32_t buf_len);
     /**
      * @brief get_packet_nums 获取可读帧的最大数目
      * @return
@@ -79,7 +79,7 @@ public:
      * @param buf_len 缓冲区长度
      * @return 实际读取到的长度
      */
-    uint32_t read_packet(char *save_buf,uint32_t buf_len);
+    uint32_t read_packet(void *save_buf,uint32_t buf_len);
 protected:
     /**
      * @brief insert_packet 向链表中插入数据
@@ -134,8 +134,8 @@ protected:
        bool finished()const{return is_finished;}
        /*追加数据*/
        bool append(const char *input_buf,uint32_t input_len){
-           if(input_len<availiable_size()){
-               memcpy(read_ptr(),input_buf,input_len);
+           if(input_len<=availiable_size()){
+               memcpy(write_ptr(),input_buf,input_len);
                write_index+=input_len;
            }
            else if (filled_size()+input_len>MAX_PACKET_SIZE) return false;

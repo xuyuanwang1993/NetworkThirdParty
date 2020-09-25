@@ -16,10 +16,8 @@ DLL_LIB_SUFIX ?= so
 LINK_OPTS ?= -rdynamic 
 #C编译选项
 CFLAGS ?= -DDEBUG
-CFLAGS += -O2 -Wl,--gc-sections -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_1 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_2 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8 -fPIC
 #C++编译选项
-CXXFLAGS ?=
-CXXFLAGS +=$(CFLAGS) -std=c++11 -ffunction-sections -fdata-sections
+CXXFLAGS ?= -DUTIL_TEST=1
 #覆盖下层配置
 export
 #工作子目录

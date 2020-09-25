@@ -4,6 +4,7 @@
 #include "buffer_handle.h"
 namespace micagent {
 using CONNECTION_SUCCESS_CALLBACK=function<void()>;
+using CONNECTION_INIT_CALLBACK=function<void()>;
 /**
  * @brief The tcp_client class a lasting tcp client
  */
@@ -13,14 +14,17 @@ protected:
     static constexpr uint32_t MAX_WAIT_TIME=30*1000;//30s
     //min connect wait time
     static constexpr uint32_t MIN_WAIT_TIME=5000;//5s
+    //default broken connection's reconnection waiting time
+    static constexpr uint32_t DEFAULT_CONNECTION_INTERVAL_MS=1000;//1S
 public:
     virtual ~tcp_client();
     tcp_client(shared_ptr<tcp_connection_helper>helper,const string &ip,uint16_t port);
     /**
      * @brief open_connection start a connection to the ip and port
+     * @param init_cb be called before open a connection
      * @return when it's closed by the user,it will return false.please rebuild the class!
      */
-    bool open_connection();
+    bool open_connection(const CONNECTION_INIT_CALLBACK&init_cb=nullptr);
     /**
      * @brief reset_addr_info change destination
      * @param ip
@@ -54,6 +58,10 @@ public:
         lock_guard<mutex>locker(m_mutex);
         m_connection_callback=callback;
     }
+    void set_connection_wait_time(uint32_t wait_time_ms){
+        lock_guard<mutex>locker(m_mutex);
+        m_connection_wait_time_ms=wait_time_ms;
+    }
 protected:
     /**
      * @brief handle_read callback for the network io input
@@ -83,6 +91,10 @@ protected:
      */
     void rebuild_connection();
     /**
+     * @brief reconnect_task do reconnect task
+     */
+    void reconnect_task();
+    /**
      * @brief clear_connection_info disconnect from peer
      */
     void clear_connection_info();
@@ -92,6 +104,19 @@ protected:
      * @param fd
      */
     void handle_connect(CONNECTION_STATUS status,SOCKET fd);
+    /**
+     * @brief get_connection_wait_time get the broken conection's reconnection time
+     * @return
+     */
+    uint32_t get_connection_wait_time()const{
+        if(m_is_closed)return 0;
+        uint32_t time_now=static_cast<uint32_t>(Timer::getTimeNow());
+        auto next_connection_time=m_last_connect_success_time_ms+m_connection_wait_time_ms;
+        if(time_now>=next_connection_time)return  0;
+        else {
+            return next_connection_time-time_now;
+        }
+    }
 protected:
     mutable mutex m_mutex;
     /**
@@ -134,6 +159,14 @@ protected:
      * @brief m_connection_callback new connection callback
      */
     CONNECTION_SUCCESS_CALLBACK m_connection_callback;
+    /**
+     * @brief m_last_connect_success_time_ms record the last successfully connect time
+     */
+    uint32_t m_last_connect_success_time_ms;
+    /**
+     * @brief m_connection_wait_time_ms broken connection's reconnection waiting time
+     */
+    uint32_t m_connection_wait_time_ms;
 };
 }
 #endif // TCP_CLIENT_H

@@ -36,7 +36,7 @@ void http_response::update(const char *buf,uint32_t buf_len)
         while((tmp2=get_next_line(tmp2))!=nullptr&&tmp2<tmp){
             char key[KEY_MAX_LEN]={0};
             char value[VALUE_MAX_LEN]={0};
-            if(sscanf(tmp2,"%s : %[^\r\n]",key,value)!=2){
+            if(sscanf(tmp2,"%[^:]: %[^\r\n]",key,value)!=2){
                 if(tmp2[0]!='\r'||tmp2[0]!='\n'){
                     m_error_status=1;
                 m_error_string="false http head input!";
@@ -70,6 +70,12 @@ void http_response::update(const char *buf,uint32_t buf_len)
     if(m_body_len==static_cast<int>(m_body.length())||m_error_status!=0){
         m_con.notify_all();
     }
+}
+void http_response::set_status(const string &status,const string &info)
+{
+    lock_guard<mutex>locker(m_mutex);
+    m_status=status;
+    m_info=info;
 }
 void http_response::set_head(const string &key,const string &value)
 {
@@ -119,7 +125,7 @@ string http_response::build_http_packet(bool reset)
     http_packet+=m_status+" " +m_info;
     http_packet+=LINE_END;
     for(auto i: m_head_map){
-        http_packet+=i.first+" : ";
+        http_packet+=i.first+": ";
         http_packet+=i.second;
         http_packet+=LINE_END;
     }

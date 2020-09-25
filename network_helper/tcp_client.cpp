@@ -6,12 +6,14 @@ tcp_client::~tcp_client()
     clear_connection_info();
     MICAGENT_WARNNING("tcp_client %s %hu release!",m_des_ip.c_str(),m_des_port);
 }
-tcp_client::tcp_client(shared_ptr<tcp_connection_helper> helper, const string &ip, uint16_t port):m_connection_helper(helper),m_des_ip(ip),m_des_port(port),m_is_connecting(false),m_is_closed(false),m_last_time_out(MIN_WAIT_TIME),m_connection_callback(nullptr)
+tcp_client::tcp_client(shared_ptr<tcp_connection_helper> helper, const string &ip, uint16_t port):m_connection_helper(helper),m_des_ip(ip),m_des_port(port),m_is_connecting(false),m_is_closed(false),m_last_time_out(MIN_WAIT_TIME),m_connection_callback(nullptr)\
+  ,m_last_connect_success_time_ms(0),m_connection_wait_time_ms(DEFAULT_CONNECTION_INTERVAL_MS)
 {
     MICAGENT_INFO("tcp_client %s %hu build!",ip.c_str(),port);
 }
-bool tcp_client::open_connection()
+bool tcp_client::open_connection(const CONNECTION_INIT_CALLBACK&init_cb)
 {
+    if(init_cb)init_cb();
     lock_guard<mutex>locker(m_mutex);
     if(m_is_closed)return false;
     if(!m_is_connecting){
@@ -87,6 +89,30 @@ void tcp_client::rebuild_connection()
     m_is_connecting=true;
     clear_connection_info();
     clear_usr_status();
+    auto wait_time=get_connection_wait_time();
+    if(0==wait_time)reconnect_task();
+    else {
+        auto helper=m_connection_helper.lock();
+    if(helper)
+    {
+        auto loop=helper->get_loop().lock();
+        if(loop){
+            weak_ptr<tcp_client>weak_this(shared_from_this());
+            loop->addTimer([weak_this](){
+                auto strong=weak_this.lock();
+                if(strong){
+                    lock_guard<mutex>locker(strong->m_mutex);
+                    strong->reconnect_task();
+                }
+                return false;
+            },wait_time);
+        }
+    }
+    }
+
+}
+void tcp_client::reconnect_task()
+{
     weak_ptr<tcp_client>weak_this(shared_from_this());
     auto connection_helper=m_connection_helper.lock();
     if(connection_helper){
@@ -129,6 +155,7 @@ void tcp_client:: handle_connect(CONNECTION_STATUS status,SOCKET fd)
             NETWORK.close_socket(fd);
             return ;
         }
+        m_last_connect_success_time_ms=static_cast<uint32_t>(Timer::getTimeNow());
         Network_Util::Instance().set_ignore_sigpipe(fd);
         Network_Util::Instance().set_tcp_keepalive(fd,true);
         m_last_time_out=MIN_WAIT_TIME;

@@ -578,6 +578,11 @@ bool Network_Util::get_peer_addr(SOCKET sockfd,struct sockaddr_in *addr)
 }
 string Network_Util::parase_domain(const string &domain_info)
 {
+    struct sockaddr_in addr;
+    if(inet_pton(AF_INET,domain_info.c_str(),&addr)!=0)
+    {
+        return domain_info;
+    }
     string ret=string();
     struct addrinfo hints;
     struct addrinfo *result;

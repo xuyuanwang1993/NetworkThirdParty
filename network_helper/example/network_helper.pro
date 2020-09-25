@@ -1,7 +1,7 @@
-LIBS+= -lpthread
+LIBS+= -lpthread -rdynamic
 QMAKE_CXXFLAGS += -g
 CONFIG-=qt
-QMAKE_CXXFLAGS+= '-DDEBUG'
+QMAKE_CXXFLAGS+= '-DDEBUG' -rdynamic '-DUTIL_TEST=1'
 
 HEADERS += \
     ../../LOG/c_log.h \
@@ -21,7 +21,15 @@ HEADERS += \
     ../tcp_connection_helper.h \
     ../unix_socket_helper.h \
     ../tcp_client.h \
-    ../tcp_client_example.h
+    ../tcp_client_example.h \
+    ../http_client.h \
+    ../http_helper.h \
+    ../http_send_buf.h \
+    ../websocket_common.h \
+    ../../OtherTools/Base64/Base64.h \
+    ../websocket_client.h \
+    ../websocket_buffer_cache.h \
+    ../../OtherTools/MD5/MD5.h
 
 SOURCES += \
     ../../LOG/c_log.cpp \
@@ -41,9 +49,18 @@ SOURCES += \
     ../tcp_connection_helper.cpp \
     ../unix_socket_helper.cpp \
     ../tcp_client.cpp \
-    ../tcp_client_example.cpp
+    ../tcp_client_example.cpp \
+    ../http_client.cpp \
+    ../http_helper.cpp \
+    ../http_send_buf.cpp \
+    ../websocket_common.cpp \
+    ../../OtherTools/Base64/Base64.cpp \
+    ../websocket_client.cpp \
+    ../websocket_buffer_cache.cpp \
+    ../../OtherTools/MD5/MD5.cpp
 INCLUDEPATH += \
 ../../LOG \
 ../../events_handler \
 ../ \
-
+../../OtherTools/Base64 \
+../../OtherTools/MD5/ \

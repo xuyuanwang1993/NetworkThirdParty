@@ -78,13 +78,14 @@ EXTERN_LIBS_LINK += $(LOCAL_SHARDE_LIBS_PATH) $(LOCAL_SHARDE_LIBS_DEPS) -lpthrea
 #########################################change############################################
 EXTERN_INCLUDE_PATH +=
 ###########################################################################################
-
 #C编译选项
 CFLAGS ?=
-CFLAGS += -O2 -Wl,--gc-sections -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_1 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_2 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8 -fPIC
+LOCAL_CFLAGS = -O2 -Wl,--gc-sections -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_1 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_2 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4 -D__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8 -fPIC
+LOCAL_CFLAGS += $(CFLAGS)
 #C++编译选项
 CXXFLAGS ?=
-CXXFLAGS +=$(CFLAGS) -std=c++11 -ffunction-sections -fdata-sections
+LOCAL_CXXFLAGS = $(LOCAL_CFLAGS) -std=c++11 -ffunction-sections -fdata-sections
+LOCAL_CXXFLAGS += $(CXXFLAGS)
 #########################################change############################################
 WORK_DIR = example \
 API \
@@ -163,15 +164,15 @@ uninstall :
 #代码编译部分
 #########################################change############################################
 $(OBJS_OUT_PATH)/%.o : ./%.cpp
-	$(CXX) -c  $< -o  $@  $(CXXFLAGS) $(LOCAL_INCLUDE)
+	$(CXX) -c  $< -o  $@  $(LOCAL_CXXFLAGS) $(LOCAL_INCLUDE)
 $(OBJS_OUT_PATH)/%.o : ./%.c
-	$(CC) -c  $< -o  $@  $(CFLAGS) $(LOCAL_INCLUDE)
+	$(CC) -c  $< -o  $@  $(LOCAL_CFLAGS) $(LOCAL_INCLUDE)
 $(OBJS_OUT_PATH)/%.o : example/%.cpp
-	$(CXX) -c  $< -o  $@  $(CXXFLAGS) $(LOCAL_INCLUDE)
+	$(CXX) -c  $< -o  $@  $(LOCAL_CXXFLAGS) $(LOCAL_INCLUDE)
 $(OBJS_OUT_PATH)/%.o : example/%.c
-	$(CC) -c  $< -o  $@  $(CFLAGS) $(LOCAL_INCLUDE)
+	$(CC) -c  $< -o  $@  $(LOCAL_CFLAGS) $(LOCAL_INCLUDE)
 $(OBJS_OUT_PATH)/%.o : API/%.cpp
-	$(CXX) -c  $< -o  $@  $(CXXFLAGS) $(LOCAL_INCLUDE)
+	$(CXX) -c  $< -o  $@  $(LOCAL_CXXFLAGS) $(LOCAL_INCLUDE)
 $(OBJS_OUT_PATH)/%.o : rtsp/%.cpp
-	$(CXX) -c  $< -o  $@  $(CXXFLAGS) $(LOCAL_INCLUDE)
+	$(CXX) -c  $< -o  $@  $(LOCAL_CXXFLAGS) $(LOCAL_INCLUDE)
 ###########################################################################################

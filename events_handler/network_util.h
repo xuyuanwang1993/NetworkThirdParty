@@ -185,6 +185,87 @@ public:
     bool get_peer_addr(SOCKET sockfd,struct sockaddr_in *addr);
     /*域名解析*/
     string parase_domain(const string &domain_info);
+    /*超时发送*/
+    inline ssize_t time_out_send(SOCKET sockfd,const void *buf,size_t buf_len,int flags,uint32_t time_out_ms=0)
+    {
+
+        if (time_out_ms > 0)
+        {
+            make_noblocking(sockfd);
+            fd_set fdWrite;
+            FD_ZERO(&fdWrite);
+            FD_SET(sockfd, &fdWrite);
+            struct timeval tv = { static_cast<__time_t>(time_out_ms / 1000), static_cast<__suseconds_t>(time_out_ms % 1000 * 1000 )};
+            select(sockfd + 1, nullptr, &fdWrite, nullptr, &tv);
+            if (FD_ISSET(sockfd, &fdWrite))
+            {
+                auto ret= send(sockfd,buf,buf_len,flags);
+                make_blocking(sockfd,time_out_ms);
+                return ret;
+            }
+            else {
+                make_blocking(sockfd,time_out_ms);
+                return -1;
+            }
+        }
+        else {
+            return send(sockfd,buf,buf_len,flags);
+        }
+    }
+    /*超时读取*/
+    inline ssize_t time_out_recv(SOCKET sockfd, void *buf,size_t buf_len,int flags,uint32_t time_out_ms=0)
+    {
+
+        if (time_out_ms > 0)
+        {
+            make_noblocking(sockfd);
+            fd_set fdRead;
+            FD_ZERO(&fdRead);
+            FD_SET(sockfd, &fdRead);
+            struct timeval tv = { static_cast<__time_t>(time_out_ms / 1000), static_cast<__suseconds_t>(time_out_ms % 1000 * 1000 )};
+            select(sockfd + 1, &fdRead, nullptr, nullptr, &tv);
+            if (FD_ISSET(sockfd, &fdRead))
+            {
+                auto ret= recv(sockfd,buf,buf_len,flags);
+                make_blocking(sockfd,time_out_ms);
+                return ret;
+            }
+            else {
+                make_blocking(sockfd,time_out_ms);
+                return -1;
+            }
+        }
+        else {
+            return recv(sockfd,buf,buf_len,flags);
+        }
+    }
+    /*超时读取*/
+    inline ssize_t time_out_recvfrom(SOCKET sockfd,void *buf,size_t buf_len,int flags, struct sockaddr * addr,socklen_t &len,uint32_t time_out_ms=0)
+    {
+
+        if (time_out_ms > 0)
+        {
+            make_noblocking(sockfd);
+            fd_set fdRead;
+            FD_ZERO(&fdRead);
+            FD_SET(sockfd, &fdRead);
+            struct timeval tv = { static_cast<__time_t>(time_out_ms / 1000), static_cast<__suseconds_t>(time_out_ms % 1000 * 1000 )};
+            select(sockfd + 1, &fdRead, nullptr, nullptr, &tv);
+            if (FD_ISSET(sockfd, &fdRead))
+            {
+                auto ret= recvfrom(sockfd,buf,buf_len,flags,addr,&len);
+                make_blocking(sockfd,time_out_ms);
+                return ret;
+            }
+            else {
+                make_blocking(sockfd,time_out_ms);
+                return -1;
+            }
+        }
+        else {
+            return recvfrom(sockfd,buf,buf_len,flags,addr,&len);
+        }
+    }
 private:
     Network_Util();
     ~Network_Util();

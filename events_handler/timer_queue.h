@@ -60,6 +60,14 @@ public:
         auto timePoint = std::chrono::steady_clock::now();
         return std::chrono::duration_cast<std::chrono::microseconds>(timePoint.time_since_epoch()).count();
     }
+     /**
+     * @brief getNanoTimeNow 获取从1970年到当前时间的纳秒数
+     * @return
+     */
+    static int64_t getNanoTimeNow(){
+        auto timePoint = std::chrono::steady_clock::now();
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(timePoint.time_since_epoch()).count();
+    }
     /**
      * @brief setEventCallback 设置定时器的回调函数
      * @param event

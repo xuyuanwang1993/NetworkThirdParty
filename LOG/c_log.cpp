@@ -8,6 +8,7 @@
 #include<cstdio>
 #include<cstdlib>
 #include<features.h>
+#include<signal.h>
 //check UCLIBC
 #ifndef __UCLIBC__
 #ifndef BACKTRACE
@@ -38,6 +39,7 @@
 #include <Windows.h>
 #include<io.h>
 #endif
+
 using namespace micagent;
 constexpr static char log_strings[][20]={
     "DEBUG",
@@ -85,6 +87,51 @@ constexpr static int log_color[] = {
     FOREGROUND_BLUE,
 };
 #endif
+void signal_exit_func(int signal_num){
+    //输出退出时调用栈
+    micagent::Logger::Instance().print_backtrace();
+    if(micagent::Logger::m_signal_catch_flag)
+    {
+        //输出退出时调用栈
+        MICAGENT_LOG(LOG_FATALERROR,"program exit failured!");
+        _Exit(EXIT_FAILURE);
+    }
+    MICAGENT_LOG(LOG_BACKTRACE,"recv signal %d",signal_num);
+    switch (signal_num) {
+    case SIGILL:
+        std::cout<<"recv signal SIGILL\r\n";
+        break;
+    case SIGINT:
+        std::cout<<"recv signal SIGINT\r\n";
+        break;
+    case SIGABRT:
+        std::cout<<"recv signal SIGABRT\r\n";
+        break;
+    case SIGQUIT:
+        std::cout<<"recv signal SIGQUIT\r\n";
+        break;
+    case SIGTERM:
+        std::cout<<"recv signal SIGTERM\r\n";
+        break;
+    case SIGSTOP:
+        std::cout<<"recv signal SIGSTOP\r\n";
+        break;
+    case SIGTSTP:
+        std::cout<<"recv signal SIGTSTP\r\n";
+        break;
+    case SIGSEGV:
+        std::cout<<"recv signal SIGSEGV\r\n";
+        break;
+    case SIGHUP:
+        std::cout<<"recv signal SIGHUP\r\n";
+        break;
+    default:
+        std::cout<<"recv signal "<<signal_num<<"\r\n";
+        break;
+    }
+    if(micagent::Logger::m_exit_func)micagent::Logger::m_exit_func();
+    micagent::Logger::m_signal_catch_flag.exchange(true);
+}
 string Logger::get_local_time(){
     static mutex time_mutex;
     lock_guard<mutex>locker(time_mutex);
@@ -103,6 +150,21 @@ string Logger::get_local_time(){
     stream << buffer;
 #endif
     return stream.str();
+}
+function<void()>Logger::m_exit_func(nullptr);
+atomic_bool Logger::m_signal_catch_flag(false);
+void Logger::register_exit_signal_func(function<void()>exit_func)
+{
+    m_exit_func=exit_func;
+    signal(SIGILL,signal_exit_func);
+    signal(SIGINT,signal_exit_func);
+    signal(SIGABRT,signal_exit_func);
+    signal(SIGQUIT,signal_exit_func);
+    signal(SIGTERM,signal_exit_func);
+    signal(SIGSTOP,signal_exit_func);
+    signal(SIGTSTP,signal_exit_func);
+    signal(SIGSEGV,signal_exit_func);
+    signal(SIGHUP,signal_exit_func);
 }
 void Logger::log(int level,const char *file,const char *func,int line,const char *fmt,...){
     if(!get_register_status())return;
