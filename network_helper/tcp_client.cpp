@@ -93,21 +93,21 @@ void tcp_client::rebuild_connection()
     if(0==wait_time)reconnect_task();
     else {
         auto helper=m_connection_helper.lock();
-    if(helper)
-    {
-        auto loop=helper->get_loop().lock();
-        if(loop){
-            weak_ptr<tcp_client>weak_this(shared_from_this());
-            loop->addTimer([weak_this](){
-                auto strong=weak_this.lock();
-                if(strong){
-                    lock_guard<mutex>locker(strong->m_mutex);
-                    strong->reconnect_task();
-                }
-                return false;
-            },wait_time);
+        if(helper)
+        {
+            auto loop=helper->get_loop().lock();
+            if(loop){
+                weak_ptr<tcp_client>weak_this(shared_from_this());
+                loop->addTimer([weak_this](){
+                    auto strong=weak_this.lock();
+                    if(strong){
+                        lock_guard<mutex>locker(strong->m_mutex);
+                        strong->reconnect_task();
+                    }
+                    return false;
+                },wait_time);
+            }
         }
-    }
     }
 
 }

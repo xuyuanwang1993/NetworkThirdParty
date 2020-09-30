@@ -16,7 +16,6 @@ bool trigger_queue::add_trigger_event( TriggerEvent event){
         unique_lock<mutex> lock(m_trigger_handle[m_next_index]->m_mutex);
         ret=m_trigger_handle[m_next_index]->m_buf.push(std::move(event));
         m_trigger_handle[m_next_index]->m_conn.notify_one();
-        MICAGENT_LOG(LOG_ERROR,"test!");
     }
     //更新handler下标
     move_index();

@@ -13,10 +13,9 @@ websocket_client::~websocket_client(){
 }
 bool websocket_client::send_websocket_data(const void *buf,uint32_t buf_len,WS_Frame_Header::WS_FrameType type)
 {
-    if(!ws_connection_is_setup())return false;
+    if(!check_is_send_cache_anyway()||!ws_connection_is_setup())return false;
     lock_guard<mutex>locker(m_mutex);
     WS_Frame frame(buf,buf_len,type);
-    frame.use_mask=false;
     auto data=web_socket_helper::WS_EncodeData(frame);
     if(!m_send_cache->append(data.first.get(),data.second))return false;
     if(!m_tcp_channel->isWriting()){
@@ -156,6 +155,8 @@ void websocket_client::util_test()
         });
     };
     client->open_connection(cb);
+    sleep(10);
+    client->close_connection();
     while(getchar()!='8')continue;
 #endif
 }

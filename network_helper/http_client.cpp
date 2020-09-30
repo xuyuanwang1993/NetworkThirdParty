@@ -50,9 +50,7 @@ http_client::url_info http_client::parse_url_info(const string &url, const strin
     info.host=info.ip;
     info.ip=NETWORK.parase_domain(info.ip);
     if(info.port==0)info.port=info.default_protocal_port;
-    printf("----111\r\n");
     MICAGENT_DEBUG("expect_protocal:%s default_protocal_port:%hu  ip:%s  port:%hu api:%s",info.expect_protocal.c_str(),info.default_protocal_port,info.ip.c_str(),info.port,info.api.c_str());
-    printf("----1221\r\n");
     return info;
 }
 http_client::http_client(shared_ptr<tcp_connection_helper>helper, const string &ip, uint16_t port, const string &api):tcp_client (helper,ip,port),m_recv_callback(nullptr)\
@@ -84,7 +82,7 @@ bool  http_client::handle_read()
 }
 void  http_client::tear_down()
 {
-
+    clear_connection_info();
 }
 bool http_client::send_http_packet(map<string, string> head_map, const void *buf, uint32_t buf_len, const void *param, uint32_t param_len, HTTP_PACKET_TYPE type, const string &payload_type,bool reset)
 {

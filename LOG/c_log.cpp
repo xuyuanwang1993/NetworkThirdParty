@@ -375,6 +375,7 @@ void Logger::run(){
         while(!m_log_buf.empty()){
             string log_info="[";
             log_info=log_info+time_str+"]"+*m_log_buf.front()+LINE_END;
+            string notice_cache("");
             {/*添加cache*/
                 lock_guard<mutex> cache_locker(m_cache_mutex);
                 if(m_max_log_cnt>0){
@@ -382,10 +383,15 @@ void Logger::run(){
                     m_log_cnt++;
                 }
                 if(m_log_cnt>=m_max_log_cnt){
-                    if(m_cache_callback)m_cache_callback(m_log_cache);
+                    notice_cache=m_log_cache;
                     m_log_cache.clear();
                     m_log_cnt=0;
                 }
+            }
+            if(!notice_cache.empty()&&m_cache_callback){
+                if(locker.owns_lock())locker.unlock();
+                m_cache_callback(notice_cache);
+                if(!locker.owns_lock())locker.lock();
             }
             {/*存至文件*/
                 if(!open_file()||!append_to_file(log_info))m_write_error_cnt++;

@@ -102,6 +102,15 @@ protected:
      * @param frame
      */
     virtual void usr_handle_websocket_frame(const WS_Frame &frame);
+    /**
+     * @brief check_is_send_cache_anyway if this function return true,websocket client won't check the connection status,it will add
+     * the send message to send queue no matter the connection is connected or not
+     * you can override it to customized your send rule
+     * @return
+     */
+    virtual bool check_is_send_cache_anyway()const{
+        return false;
+    }
 protected:
     /**
      * @brief m_extern_ws_recv_frame_callback when a new websocket frame is received,this function will be called

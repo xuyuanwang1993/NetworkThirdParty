@@ -174,7 +174,11 @@ class trigger_queue{
                 //处理当前容器内的所有事件
                 do{
                     TriggerEvent event;
-                    if(m_buf.pop(event))event();
+                    if(m_buf.pop(event)){
+                        if(locker.owns_lock())locker.unlock();
+                        event();
+                        if(!locker.owns_lock())locker.lock();
+                    }
                 }while(!m_buf.empty());
             }
             MICAGENT_MARK("trigger handle  exit!");
@@ -203,7 +207,7 @@ public:
     void stop();
     bool get_run_status()const{
         DEBUG_LOCK
-        return m_is_running;
+                return m_is_running;
     }
 private:
     /**
