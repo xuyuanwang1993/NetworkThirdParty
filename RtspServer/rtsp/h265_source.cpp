@@ -251,15 +251,15 @@ bool h265_source::handleFrame(MediaChannelId channelId, AVFrame frame)
 }
 bool h265_source::handleGopCache(MediaChannelId channelid,shared_ptr<rtp_connection>connection)
 {
-    if(m_frame_vps&&m_frame_sps&&m_frame_pps&&m_last_iframe)
+    if(m_frame_vps)
     {
         connection->set_got_gop();
         queue<shared_ptr<AVFrame>>m_frame_queue;
-        m_frame_queue.push(m_frame_vps);
-        m_frame_queue.push(m_frame_sps);
-        m_frame_queue.push(m_frame_pps);
+        if(m_frame_vps)m_frame_queue.push(m_frame_vps);
+        if(m_frame_pps)m_frame_queue.push(m_frame_sps);
+        if(m_frame_pps)m_frame_queue.push(m_frame_pps);
         if(m_last_sei)m_frame_queue.push(m_last_sei);
-        m_frame_queue.push(m_last_iframe);
+        if(m_last_iframe)m_frame_queue.push(m_last_iframe);
         auto timestamp=getTimeStamp(m_last_mill_recv_time);
 
         while(!m_frame_queue.empty())

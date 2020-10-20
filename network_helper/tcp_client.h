@@ -39,7 +39,7 @@ public:
      * @brief send_message cache send a raw message
      * @param buf
      * @param buf_len
-     * @return by default,when conenction is not availiable ,it will return false
+     * @return by default,when conenction is not available ,it will return false
      */
     virtual bool send_message(const void *buf,uint32_t buf_len);
     /**

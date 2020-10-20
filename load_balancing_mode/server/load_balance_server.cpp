@@ -152,7 +152,7 @@ void load_balance_server::handle_find(neb::CJsonObject &object)
     }
 
     if(priority_cache.empty()){
-        res.Add("info","no availiable resource");
+        res.Add("info","no available resource");
     }
     else {
         res.Add("info","success");

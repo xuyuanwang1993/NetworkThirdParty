@@ -43,6 +43,7 @@ class thread_pool{
                     if(m_task){
                         if(m_task())continue;
                         m_task=nullptr;
+                        if(!m_pool->m_is_running)break;
                     }
                     unique_lock<mutex> locker(m_pool->m_mutex);
                     if(m_pool->m_task_queue.empty()){

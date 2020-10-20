@@ -23,7 +23,7 @@ void media_session::setMediaSource(MediaChannelId id,shared_ptr<media_source>sou
                 m_rtp_connections.erase(i++);
             }
             else {
-                if(pkt.type==FRAME_I&&ptr->is_Playing(channelId))ptr->set_see_idr();
+                if((pkt.type==FRAME_I||pkt.type==FRAME_SPS||pkt.type==FRAME_VPS)&&ptr->is_Playing(channelId))ptr->set_see_idr();
                 if(ptr->get_see_idr()||pkt.type!=FRAME_P)
                 {
                     if(ptr->sendRtpPacket(channelId,pkt))

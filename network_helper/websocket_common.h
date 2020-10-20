@@ -56,7 +56,7 @@ struct WS_Frame_Header{
         WS_RESERVER_CONTROL_E_FRAME=0X0E,
         WS_RESERVER_CONTROL_F_FRAME=0X0F,
     };
-    //if is the last_frame set this bit to 1
+    //if it is the last frame fragment,set this bit to 1
     uint8_t FIN:1;
     //always be 0
     uint8_t RSV:3;

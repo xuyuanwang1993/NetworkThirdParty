@@ -25,7 +25,6 @@ bool thread_pool::add_thread_task(const ThreadTask &task){
     do{
         //当有可用工作线程时，将其插入缓存队列，唤醒一个工作线程
         if(m_word_threads==0)break;
-        m_word_threads--;
         m_task_queue.push(move(task));
         m_conn.notify_one();
         ret=true;

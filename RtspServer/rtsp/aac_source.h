@@ -2,7 +2,8 @@
 #define AAC_SOURCE_H
 #include "media_source.h"
 #include "rtp.h"
-
+#define INVALID_AAC_INDEX 15
+#define INVALID_AAC_SAMPRATE 0
 namespace micagent
 {
 using namespace std;
@@ -34,6 +35,8 @@ public:
 
      uint32_t getTimeStamp(int64_t mill_second=0);
      aac_source(uint32_t sampleRate=44100, uint32_t channels=2, bool hasADTS=true);
+     static uint8_t get_aac_index(uint32_t samprate);
+     static uint32_t get_aac_samprate(uint8_t index);
 private:
     uint32_t m_sampleRate = 44100;   // 采样频率
     uint32_t m_channels = 2;         // 通道数

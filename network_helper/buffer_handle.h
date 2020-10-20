@@ -102,7 +102,7 @@ protected:
        bool is_finished;
        BufferPacket(uint32_t len):buf(new char[len],std::default_delete<char[]>()),buf_len(len),write_index(0),read_index(0),is_finished(false){}
        /*可用长度*/
-       uint32_t availiable_size()const{return buf_len-write_index;}
+       uint32_t available_size()const{return buf_len-write_index;}
        /*可读长度*/
        uint32_t filled_size()const{return write_index-read_index;}
        /*读指针起始地址*/
@@ -134,7 +134,7 @@ protected:
        bool finished()const{return is_finished;}
        /*追加数据*/
        bool append(const char *input_buf,uint32_t input_len){
-           if(input_len<=availiable_size()){
+           if(input_len<=available_size()){
                memcpy(write_ptr(),input_buf,input_len);
                write_index+=input_len;
            }

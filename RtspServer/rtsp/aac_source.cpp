@@ -49,7 +49,18 @@ static uint32_t AACSampleRate[16] =
     16000, 12000, 11025, 8000,
     7350, 0, 0, 0 /*reserved */
 };
-
+uint8_t aac_source::get_aac_index(uint32_t samprate)
+{
+    for(uint8_t index=0;index<16;index++){
+        if(samprate==AACSampleRate[index])return index;
+    }
+    return INVALID_AAC_INDEX;
+}
+uint32_t aac_source::get_aac_samprate(uint8_t index)
+{
+    if(index>15)return INVALID_AAC_SAMPRATE;
+    return  AACSampleRate[index];
+}
 string aac_source::getAttribute()  // RFC 3640
 {
     char buf[500] = { 0 };

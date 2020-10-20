@@ -19,7 +19,7 @@ int main(int argc,char *argv[])
     printf("encrypt out \r\n");
     for(int i=0;i<size+8;i++)
     {
-        printf("%02x ",out_string[i]);
+        printf("%02x ",(uint8_t)out_string[i]);
     }
     printf("\r\n\r\n\r\n");
     rc4_interface test3([]()->int64_t{return 0;});
