@@ -8,6 +8,9 @@ then
 	exit 0
 fi
 sources_name=proxy_server
+web_base_dir=web_dir
+web_work_dir=${PWD}/$web_base_dir
+web_src_dir=../web
 out_path=$1
 echo "out_path=$out_path"
 #check_port_owner.sh
@@ -22,9 +25,12 @@ sources="${sources} exit.sh"
 sources="${sources} ${out_path}/bin/${sources_name}/*"
 #daemon
 sources="${sources} ${out_path}/bin/Idaemon/*"
+#coyp web
+make -C ${web_src_dir} -f ${web_src_dir}/Makefile.cross OUT_PATH=${out_path} PREFIX=${web_work_dir} install
 echo $sources
 mkdir -p $sources_name
 cp -ruf  $sources $sources_name
 sed -i "s/core_server/${sources_name}/g" $sources_name/run.sh
-tar -cvf ${sources_name}.tar $sources_name
-rm $sources_name -rf
+#tar 
+tar -cvf ${sources_name}.tar $sources_name $web_base_dir installProxyserver.sh
+rm $sources_name $web_work_dir -rf

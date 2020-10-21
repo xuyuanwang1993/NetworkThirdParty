@@ -160,5 +160,5 @@ $(OBJS_OUT_PATH)/%.o : ./dns/%.c
 $(OBJS_OUT_PATH)/%.o : ./MD5/%.cpp
 	$(CXX) -c  $< -o  $@  $(LOCAL_CXXFLAGS) $(LOCAL_INCLUDE)
 $(OBJS_OUT_PATH)/%.o : ./rc4_interface/example/%.cpp
-	$(CC) -c  $< -o  $@  $(LOCAL_CFLAGS) $(LOCAL_INCLUDE)
+	$(CXX) -c  $< -o  $@  $(LOCAL_CXXFLAGS) $(LOCAL_INCLUDE)
 ###########################################################################################
