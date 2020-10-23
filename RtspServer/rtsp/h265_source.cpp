@@ -340,13 +340,13 @@ uint32_t h265_source::getTimeStamp(int64_t mill_second)
     if(m_last_mill_recv_time==0||mill_second==0)
     {
         auto timePoint = chrono::time_point_cast<chrono::milliseconds>(chrono::steady_clock::now());
-        m_last_micro_send_time=timePoint.time_since_epoch().count();
+        m_last_mill_send_time=timePoint.time_since_epoch().count();
         m_last_mill_recv_time=mill_second;
-        return (uint32_t)((m_last_micro_send_time)  * 90);
+        return (uint32_t)((m_last_mill_send_time)  * 90);
     }
     else {
-        m_last_micro_send_time+=(mill_second-m_last_mill_recv_time);
+        m_last_mill_send_time+=(mill_second-m_last_mill_recv_time);
         m_last_mill_recv_time=mill_second;
-        return (uint32_t)((m_last_micro_send_time ) * 90);
+        return (uint32_t)((m_last_mill_send_time ) * 90);
     }
 }

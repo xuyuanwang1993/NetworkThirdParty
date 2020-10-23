@@ -64,6 +64,10 @@ public:
      * @brief util_test test the member functions
      */
     static void util_test();
+    void clear_ws_send_cache(){
+        lock_guard<mutex>locker(m_mutex);
+        m_send_cache->clear();
+    }
 protected:
     /**
      * @brief handle_read websocket_client's handle network data read

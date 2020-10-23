@@ -13,7 +13,7 @@ websocket_client::~websocket_client(){
 }
 bool websocket_client::send_websocket_data(const void *buf,uint32_t buf_len,WS_Frame_Header::WS_FrameType type)
 {
-    if(!check_is_send_cache_anyway()||!ws_connection_is_setup())return false;
+    if(!check_is_send_cache_anyway()&&!ws_connection_is_setup())return false;
     lock_guard<mutex>locker(m_mutex);
     WS_Frame frame(buf,buf_len,type);
     auto data=web_socket_helper::WS_EncodeData(frame);
@@ -82,7 +82,17 @@ bool websocket_client::handle_read()
             auto read_len=m_ws_recv_cache->read_packet(packet_buf.get(),packet_len);
             auto frame=web_socket_helper::WS_DecodeData(packet_buf.get(),read_len,false);
             usr_handle_websocket_frame(frame);
-            if(m_extern_ws_recv_frame_callback)m_extern_ws_recv_frame_callback(frame);
+            do{
+                if(!m_extern_ws_recv_frame_callback)break;
+                auto helper=m_connection_helper.lock();
+                if(!helper)break;
+                auto loop=helper->get_loop().lock();
+                if(!loop)break;
+                auto callback=m_extern_ws_recv_frame_callback;
+                loop->add_trigger_event([callback,frame](){
+                    callback(frame);
+                });
+            }while(0);
         }
         return true;
     }
@@ -118,7 +128,17 @@ bool websocket_client::handle_setup_packet()
         return false;
     }
     m_connection_status=WS_CONNECTION_CONNECTED;
-    if(m_ws_connection_success_callback)m_ws_connection_success_callback();
+    do{
+        if(!m_ws_connection_success_callback)break;
+        auto helper=m_connection_helper.lock();
+        if(!helper)break;
+        auto loop=helper->get_loop().lock();
+        if(!loop)break;
+        auto callback=m_ws_connection_success_callback;
+        loop->add_trigger_event([callback](){
+            callback();
+        });
+    }while(0);
     return true;
 }
 void websocket_client::send_setup_packet()

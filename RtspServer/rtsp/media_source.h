@@ -32,7 +32,7 @@ public:
 
     media_source():m_sendFrameCallback(nullptr),m_last_mill_recv_time(0){
         auto timePoint = chrono::time_point_cast<chrono::milliseconds>(chrono::steady_clock::now());
-        m_last_micro_send_time=timePoint.time_since_epoch().count();
+        m_last_mill_send_time=timePoint.time_since_epoch().count();
     }
     virtual ~media_source();
 
@@ -65,7 +65,7 @@ public:
     virtual uint32_t getClockRate() const
     { return m_clockRate; }
     virtual void setFrameRate(uint32_t frameRate){(void)frameRate;}
-    int64_t getLastSendTime()const{return m_last_micro_send_time;}
+    int64_t getLastSendTime()const{return m_last_mill_send_time;}
 
     static uint32_t removeH264or5EmulationBytes(shared_ptr<uint8_t>to_ptr, uint32_t toMaxSize,
                                                 const shared_ptr<uint8_t>from_ptr, uint32_t fromSize) {
@@ -91,7 +91,7 @@ protected:
     uint32_t m_payload = 0;
     uint32_t m_clockRate = 0;
     SendFrameCallback m_sendFrameCallback;
-    int64_t m_last_micro_send_time;
+    int64_t m_last_mill_send_time;
     int64_t m_last_mill_recv_time;
 };
 }

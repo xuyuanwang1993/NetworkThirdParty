@@ -40,8 +40,9 @@ int buffer_handle::send_fd(SOCKET fd,sockaddr_in *addr,int timeout)
         success =false;
         auto packet_iter=begin(m_packet_list);
         if(!addr){
-            //if(packet_iter->read_index==0&&packet_iter->read_ptr()[0]!='$')MICAGENT_LOG(LOG_ERROR,"send %s",string(packet_iter->read_ptr(),packet_iter->filled_size()).c_str());
+
             ret=::send(fd,packet_iter->read_ptr(),packet_iter->filled_size(),0);
+            //MICAGENT_LOG(LOG_ERROR,"send %s  size %d %s:%hu   ret:%d",string(packet_iter->read_ptr(),packet_iter->filled_size()).c_str(),packet_iter->filled_size(),NETWORK.get_peer_ip(fd).c_str(),NETWORK.get_peer_port(fd),ret);
         }
         else {
             ret=NETWORK.time_out_sendto(fd,packet_iter->read_ptr(),packet_iter->filled_size(),0,(struct sockaddr *)addr,sizeof (sockaddr_in),1);

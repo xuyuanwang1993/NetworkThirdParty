@@ -80,6 +80,10 @@ public:
      * @return 实际读取到的长度
      */
     uint32_t read_packet(void *save_buf,uint32_t buf_len);
+    void clear(){
+        lock_guard<mutex>locker(m_mutex);
+        m_packet_list.clear();
+    }
 protected:
     /**
      * @brief insert_packet 向链表中插入数据
