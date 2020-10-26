@@ -166,13 +166,18 @@ public:
     struct net_interface_info{
         string dev_name;
         string ip;
+        string netmask;
         string mac;
-        net_interface_info(const string &_dev_name="default",const string & _ip="0.0.0.0",const string &_mac="ff:ff:ff:ff:ff:ff"):dev_name(_dev_name),ip(_ip),mac(_mac){
+        string gateway_ip;
+        net_interface_info(const string &_dev_name="eth0",const string & _ip="192.168.1.1",const string &_mac="",const string &_netmask="255.255.255.0",const string&_gateway_ip=""):dev_name(_dev_name),ip(_ip)\
+        ,netmask(_netmask),mac(_mac),gateway_ip(_gateway_ip){
 
         }
     };
     /*获取网卡配置信息*/
     const vector<Network_Util::net_interface_info> & get_net_interface_info(bool update=true);
+    //修改网卡配置信息
+    bool modify_net_interface_info(const net_interface_info&net_info);
     /*获取本地绑定的端口*/
     uint16_t get_local_port(SOCKET sockfd);
     /*获取本地绑定的IP*/

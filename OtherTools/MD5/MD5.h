@@ -50,13 +50,13 @@ documentation and/or software.
 */
 /* MD5 context. */
 //the return buf must be delete by free()
-char *Get_MD5_String(const char *buf,int buf_size);
-extern char* MY_our_MD5Data(unsigned char const* data, unsigned dataSize, char* outputDigest);
+char *Get_MD5_String(const void *buf,int buf_size);
+extern char* MY_our_MD5Data(void const* data, unsigned dataSize, char* outputDigest);
     // "outputDigest" must be either NULL (in which case this function returns a heap-allocated
     // buffer, which should be later delete[]d by the caller), or else it must point to
     // a (>=)33-byte buffer (which this function will also return).
 
-extern unsigned char* MY_our_MD5DataRaw(unsigned char const* data, unsigned dataSize,
+extern unsigned char* MY_our_MD5DataRaw(void const* data, unsigned dataSize,
                      unsigned char* outputDigest);
     // Like "ourMD5Data()", except that it returns the digest in 'raw' binary form, rather than
     // as an ASCII hex string.

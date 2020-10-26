@@ -59,7 +59,7 @@ Rotation is separate from addition to prevent recomputation.
 	(a) = ROTATE_LEFT ((a), (s)); \
 	(a) += (b); \
 	}
-char *Get_MD5_String(const char *buf,int buf_size)
+char *Get_MD5_String(const void *buf,int buf_size)
 {
     char *md5_string=(char *)calloc(1,33);
     MY_our_MD5Data((unsigned char *)buf,buf_size,md5_string);
@@ -95,10 +95,10 @@ private:
   unsigned char fWorkingBuffer[64];
 };
 
-char* MY_our_MD5Data(unsigned char const* data, unsigned dataSize, char* outputDigest) {
+char* MY_our_MD5Data(void const* data, unsigned dataSize, char* outputDigest) {
   MY_MD5Context ctx;
 
-  ctx.addData(data, dataSize);
+  ctx.addData((const unsigned char *)data, dataSize);
 
   if (outputDigest == NULL) outputDigest = new char[DIGEST_SIZE_AS_STRING];
   ctx.end(outputDigest);
@@ -106,11 +106,11 @@ char* MY_our_MD5Data(unsigned char const* data, unsigned dataSize, char* outputD
   return outputDigest;
 }
 
-unsigned char* MY_our_MD5DataRaw(unsigned char const* data, unsigned dataSize,
+unsigned char* MY_our_MD5DataRaw(void const* data, unsigned dataSize,
                   unsigned char* outputDigest) {
   MY_MD5Context ctx;
 
-  ctx.addData(data, dataSize);
+  ctx.addData((const unsigned char *)data, dataSize);
 
   if (outputDigest == NULL) outputDigest = new unsigned char[DIGEST_SIZE_IN_BYTES];
   ctx.finalize(outputDigest);

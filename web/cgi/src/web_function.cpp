@@ -57,8 +57,8 @@ void Post_Mode_Handle()
     shared_ptr<char>word(new char[unix_socket_base::PATH_MAX_SIZE+ByteLength+1],default_delete<char[]>());
 
 
-    fread(word.get()+unix_socket_base::PATH_MAX_SIZE,ByteLength+1,ByteLength+1,stdin);
-    word.get()[ByteLength]=0;
+    fread(word.get()+unix_socket_base::PATH_MAX_SIZE,1,ByteLength,stdin);
+    word.get()[unix_socket_base::PATH_MAX_SIZE+ByteLength]='\0';
     string socke_name="/tmp/cgi_";
     socke_name+=to_string(getpid());
     unix_dgram_socket io_socket(socke_name);

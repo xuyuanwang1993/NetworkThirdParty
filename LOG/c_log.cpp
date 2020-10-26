@@ -186,8 +186,8 @@ void Logger::log(int level,const char *file,const char *func,int line,const char
         if(m_log_to_std){
             /*输出到标准输出*/
 #if defined(__linux) || defined(__linux__)
-            if(level<LOG_ERROR)fprintf(stdout,"%s%s%s%s",log_color[level],buf.get(),LINE_END,log_color[0]);
-            else fprintf(stderr,"%s%s%s%s",log_color[level],buf.get(),LINE_END,log_color[0]);
+            if(level<LOG_ERROR)fprintf(stdout,"%s%s%s%s",log_color[level],buf.get(),log_color[0],LINE_END);
+            else fprintf(stderr,"%s%s%s%s",log_color[level],buf.get(),log_color[0],LINE_END);
 #elif defined(WIN32) || defined(_WIN32)
             if (level < LOG_ERROR) {
                 HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);

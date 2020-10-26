@@ -1,4 +1,6 @@
 #include "network_util.h"
+#include <map>
+#include<memory>
 #define UNUSED(x) (void)x
 #if defined(WIN32) || defined(_WIN32)
 #pragma comment(lib, "Ws2_32.lib")
@@ -358,6 +360,7 @@ bool Network_Util::join_asm_multicast(SOCKET sockfd,const string &multicast_ip,u
     }while(0);
     return ret;
 }
+
 bool Network_Util::leave_asm_multicast(SOCKET sockfd,const string &multicast_ip,uint32_t index)
 {
     bool ret=false;
@@ -439,7 +442,29 @@ const vector<Network_Util::net_interface_info> & Network_Util::get_net_interface
     if(update){
         do{
 #if defined(__linux) || defined(__linux__)
-            SOCKET sockfd = 0;
+            //获取所有网卡默认网关信息
+            FILE *fp=popen("ip route show","r");
+            char gw_buf[1024]={0};
+            map<string,string>gw_ip_map;
+            while(fgets(gw_buf, sizeof(gw_buf), fp) != nullptr)
+            {
+
+                if(strstr(gw_buf,"default")!=nullptr)
+                {
+                    char ip_str[32]={0};
+                    char dev_name[256]={0};
+                    if(sscanf(gw_buf,"default via %s dev %s",ip_str,dev_name)==2)
+                    {
+                        gw_ip_map.emplace(dev_name,ip_str);
+                    }
+                }
+                else {
+                    break;
+                }
+                memset(gw_buf,0,1024);
+            }
+            pclose(fp);
+            SOCKET sockfd = INVALID_SOCKET;
             char buf[512] = { 0 };
             struct ifconf ifconf;
             struct ifreq  *ifreq;
@@ -470,11 +495,19 @@ const vector<Network_Util::net_interface_info> & Network_Util::get_net_interface
                         uint8_t mac[6]={0};
                         char mac1[128]={0};
                         if((ioctl(sockfd,SIOCGIFHWADDR,&ifr2) )== 0)
-                        {
+                        {//获取mac ,前6个字节
                             memcpy(mac,ifr2.ifr_hwaddr.sa_data,6);
                             sprintf(mac1,"%02x:%02x:%02x:%02x:%02x:%02x",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
                         }
-                        m_net_interface_info_cache.push_back(net_interface_info(ifreq->ifr_name,inet_ntoa(((struct sockaddr_in*)&(ifreq->ifr_addr))->sin_addr),mac1));
+                        string netmask;
+                        if((ioctl(sockfd,SIOCGIFNETMASK,&ifr2) )== 0)
+                        {//获取netmask ,前6个字节
+                            netmask=inet_ntoa(((struct sockaddr_in*)&(ifr2.ifr_netmask))->sin_addr);
+                        }
+                        string gw_ip="";
+                        auto iter=gw_ip_map.find(ifreq->ifr_name);
+                        if(iter!=gw_ip_map.end())gw_ip=iter->second;
+                        m_net_interface_info_cache.push_back(net_interface_info(ifreq->ifr_name,inet_ntoa(((struct sockaddr_in*)&(ifreq->ifr_addr))->sin_addr),mac1,netmask,gw_ip));
                     }
                     ifreq++;
                 }
@@ -526,6 +559,165 @@ const vector<Network_Util::net_interface_info> & Network_Util::get_net_interface
 
     }
     return m_net_interface_info_cache;
+}
+bool Network_Util::modify_net_interface_info(const net_interface_info&net_info)
+{
+    SOCKET sockfd = INVALID_SOCKET;
+    do{
+        if(net_info.dev_name.empty())break;
+        auto local_net_info=get_net_interface_info(true);
+        map<string,Network_Util::net_interface_info>net_info_map;
+        Network_Util::net_interface_info old_config;
+        bool find=false;
+        for(auto i:local_net_info){
+            if(i.dev_name==net_info.dev_name){
+                old_config=i;
+                find=true;
+                break;
+            }
+        }
+        if(!find){
+            fprintf(stderr,"dev %s  not found!\r\n",net_info.dev_name.c_str());
+            break;
+        }
+        //校验ip信息
+        if(!net_info.gateway_ip.empty()){
+            printf("%s %s %s\r\n",net_info.ip.c_str(),net_info.netmask.c_str(),net_info.gateway_ip.c_str());
+            auto u32ip = inet_addr(net_info.ip.c_str());
+            auto u32netmask = inet_addr(net_info.netmask.c_str());
+            //check mask
+            bool invalid=false;
+            auto den=u32netmask;
+            while(den!=0){
+                auto num=den%2;
+                if(num!=1){
+                    invalid=true;
+                    break;
+                }
+                den=den/2;
+            }
+            if(invalid){
+                fprintf(stderr,"netmask %s is invalid!\r\n",net_info.netmask.c_str());
+                break;
+            }
+            auto u32gateway = inet_addr(net_info.gateway_ip.c_str());
+            if((u32ip & u32netmask) != (u32netmask & u32gateway)){
+                fprintf(stderr,"ip:%s mask:%s gateway:%s not matched!\r\n",net_info.ip.c_str(),net_info.netmask.c_str(),net_info.gateway_ip.c_str());
+                break;
+            }
+        }
+        sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+        if (sockfd == INVALID_SOCKET)
+        {
+            close(sockfd);
+            break;
+        }
+        struct ifreq ifr;
+        struct sockaddr_in sin;
+        //修改ip
+        if(net_info.ip!=old_config.ip)
+        {
+            strncpy(ifr.ifr_name,   net_info.dev_name.c_str(),   IFNAMSIZ);
+            ifr.ifr_name[IFNAMSIZ   -   1]   =   0;
+            memset(&sin,   0,   sizeof(sin));
+            sin.sin_family   =   AF_INET;
+            sin.sin_addr.s_addr   =   inet_addr(net_info.ip.c_str());
+            memcpy(&ifr.ifr_addr,   &sin,   sizeof(sin));
+
+            if(ioctl(sockfd, SIOCSIFADDR, &ifr) < 0)
+            {
+                perror( "Not setup interface! ");
+                break;
+            }
+        }
+        //修改netmask
+        if(old_config.netmask!=net_info.netmask)
+        {
+            bzero(&ifr,   sizeof(struct   ifreq));
+            strncpy(ifr.ifr_name,   net_info.dev_name.c_str(),   IFNAMSIZ);
+            ifr.ifr_name[IFNAMSIZ   -   1]   =   0;
+            memset(&sin,   0,   sizeof(sin));
+            sin.sin_family   =   AF_INET;
+            sin.sin_addr.s_addr   =   inet_addr(net_info.netmask.c_str());
+            memcpy(&ifr.ifr_addr,   &sin,   sizeof(sin));
+
+            if(ioctl(sockfd, SIOCSIFNETMASK, &ifr ) < 0)
+            {
+                perror("net mask ioctl error!");
+                break;
+            }
+        }
+        //修改mac
+        if(old_config.mac!=net_info.mac&&!net_info.mac.empty())
+        {
+            bzero(&ifr,   sizeof(struct   ifreq));
+            if(sscanf(net_info.mac.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
+                      &ifr.ifr_hwaddr.sa_data[0],
+                      &ifr.ifr_hwaddr.sa_data[1],
+                      &ifr.ifr_hwaddr.sa_data[2],
+                      &ifr.ifr_hwaddr.sa_data[3],
+                      &ifr.ifr_hwaddr.sa_data[4],
+                      &ifr.ifr_hwaddr.sa_data[5])!=6)break;
+            strncpy(ifr.ifr_name,   net_info.dev_name.c_str(),   IFNAMSIZ);
+            ifr.ifr_name[IFNAMSIZ   -   1]   =   0;
+            memset(&sin,   0,   sizeof(sin));
+            ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
+            if(0 > ioctl(sockfd, SIOCSIFHWADDR, &ifr))
+            {
+                perror("mac ioctl error!");
+                break;
+            }
+        }
+        //更改出口路由
+        if(old_config.gateway_ip!=net_info.gateway_ip)
+        {
+            struct rtentry rm;
+            bzero(&rm,   sizeof(struct rtentry));
+            rm.rt_dst.sa_family = AF_INET;
+            rm.rt_gateway.sa_family = AF_INET;
+            rm.rt_genmask.sa_family = AF_INET;
+            memset(&sin,   0,   sizeof(sin));
+            sin.sin_family   =   AF_INET;
+            shared_ptr<char>name(new char[IFNAMSIZ],default_delete<char[]>());
+            strncpy(name.get(),net_info.dev_name.c_str(),IFNAMSIZ);
+            rm.rt_dev = name.get();
+            rm.rt_flags = RTF_UP | RTF_GATEWAY ;
+            //delete old
+            if(!old_config.gateway_ip.empty()){
+                sin.sin_addr.s_addr   =   inet_addr(old_config.gateway_ip.c_str());
+                memcpy(&rm.rt_gateway, &sin,   sizeof(sin));
+                if(ioctl(sockfd, SIOCDELRT, &rm ) < 0)
+                {
+                    perror("gateway delete ioctl error!");
+                }
+            }
+            //add new
+            if(!net_info.gateway_ip.empty())
+            {
+                sin.sin_addr.s_addr   =   inet_addr(net_info.gateway_ip.c_str());
+                memcpy(&rm.rt_gateway, &sin,   sizeof(sin));
+                if(ioctl(sockfd, SIOCADDRT, &rm ) < 0)
+                {
+                    perror("gateway add  ioctl   error!");
+                    break;
+                }
+            }
+        }
+        //重新启动网卡
+        {
+            ifr.ifr_flags   |=   IFF_UP   |   IFF_RUNNING;
+            if(ioctl(sockfd,   SIOCSIFFLAGS,   &ifr)   <   0)
+            {//如果未更改任何配置会进入当前判断内
+                perror( "SIOCSIFFLAGS ");
+            }
+        }
+        close(sockfd);
+        //更新网卡配置信息
+        get_net_interface_info(true);
+        return true;
+    }while(0);
+    if(sockfd!=INVALID_SOCKET)close(sockfd);
+    return false;
 }
 uint16_t Network_Util::get_local_port(SOCKET sockfd)
 {
