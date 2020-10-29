@@ -4,7 +4,7 @@ using namespace micagent;
 using namespace std;
 int main()
 {
-    string test_domain="www.test.com";
+    string test_domain="www.test_205.com";
     shared_ptr<EventLoop> loop(new EventLoop());
     dns_client client("139.159.137.87",10000);
 #if 0

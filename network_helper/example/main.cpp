@@ -42,7 +42,8 @@ int main(int argc,char *argv[])
         printf("---------------\r\n");
         exit_flag=false;
     });
-    websocket_test(argc,argv);
+    http_client::parse_url_info("http://www.meanning.com:8084");
+    //websocket_test(argc,argv);
     //http_helper_test(argc,argv);
     //http_client_test(argc,argv);
     //tcp_client_test(argc,argv);

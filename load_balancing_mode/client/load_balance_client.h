@@ -24,9 +24,15 @@ public:
         if(event_loop&&m_is_running)event_loop->removeTimer(m_timer_id);
         if(m_send_fd!=INVALID_SOCKET)Network_Util::Instance().close_socket(m_send_fd);
     }
+    /**
+     * @brief reset_server_info
+     * @param server_ip new balance_server ip
+     * @param server_port new balance server port
+     */
+    void reset_server_info(string server_ip,uint16_t server_port);
 private:
     void update();
-    void rc4_send(SOCKET fd,const string &buf);
+    void rc4_send(SOCKET fd,const string &buf,const sockaddr_in*addr=nullptr);
     ssize_t read_packet(SOCKET fd,void *buf,int buf_len,int64_t time_out=TIME_OUT_TIME)
     {
         bool can_read=true;

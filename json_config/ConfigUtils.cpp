@@ -11,10 +11,15 @@ bool Config_Manager::Update_Mode_Config(const string &mode_name,const CJsonObjec
     lock_guard<mutex>locker(m_mutex);
     if(!m_json_object)return false;
     CJsonObject tmp;
+    bool ret=false;
     if(m_json_object.get()->Get(mode_name,tmp)){
-        return m_json_object->Replace(mode_name,config_object);
+        ret=m_json_object->Replace(mode_name,config_object);
     }
-    else return m_json_object->Add(mode_name,config_object);
+    else ret=m_json_object->Add(mode_name,config_object);
+#if CONFIG_AUTO_SAVE
+    m_json_object->SaveToFile();
+#endif
+    return ret;
 }
 void Config_Manager::Delete_Mode_Config(const string &mode_name)
 {

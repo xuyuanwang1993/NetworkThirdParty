@@ -195,7 +195,7 @@ bool rtsp_connection::handleCmdSetup(map<string ,string>&handle_map)
             }
             else {
                 string local_ip="0.0.0.0";
-                auto interface=NETWORK.get_net_interface_info(false);
+                auto interface=NETWORK.get_net_interface_info(true);
                 if(!interface.empty())local_ip=interface[0].ip;
                 response=rtsp_helper::buildSetupMulticastRes(local_ip,multicast_ip.c_str(),multicast_port,m_rtpConnPtr->get_session_id(),cseq->second);
                 break;

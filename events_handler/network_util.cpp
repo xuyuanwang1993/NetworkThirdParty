@@ -582,7 +582,6 @@ bool Network_Util::modify_net_interface_info(const net_interface_info&net_info)
         }
         //校验ip信息
         if(!net_info.gateway_ip.empty()){
-            printf("%s %s %s\r\n",net_info.ip.c_str(),net_info.netmask.c_str(),net_info.gateway_ip.c_str());
             auto u32ip = inet_addr(net_info.ip.c_str());
             auto u32netmask = inet_addr(net_info.netmask.c_str());
             //check mask
@@ -627,7 +626,6 @@ bool Network_Util::modify_net_interface_info(const net_interface_info&net_info)
             if(ioctl(sockfd, SIOCSIFADDR, &ifr) < 0)
             {
                 perror( "Not setup interface! ");
-                break;
             }
         }
         //修改netmask
@@ -644,7 +642,6 @@ bool Network_Util::modify_net_interface_info(const net_interface_info&net_info)
             if(ioctl(sockfd, SIOCSIFNETMASK, &ifr ) < 0)
             {
                 perror("net mask ioctl error!");
-                break;
             }
         }
         //修改mac
@@ -665,11 +662,10 @@ bool Network_Util::modify_net_interface_info(const net_interface_info&net_info)
             if(0 > ioctl(sockfd, SIOCSIFHWADDR, &ifr))
             {
                 perror("mac ioctl error!");
-                break;
             }
         }
         //更改出口路由
-        if(old_config.gateway_ip!=net_info.gateway_ip)
+        if(!net_info.gateway_ip.empty())
         {
             struct rtentry rm;
             bzero(&rm,   sizeof(struct rtentry));
@@ -699,7 +695,6 @@ bool Network_Util::modify_net_interface_info(const net_interface_info&net_info)
                 if(ioctl(sockfd, SIOCADDRT, &rm ) < 0)
                 {
                     perror("gateway add  ioctl   error!");
-                    break;
                 }
             }
         }

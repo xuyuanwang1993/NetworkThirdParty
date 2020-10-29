@@ -119,7 +119,7 @@ public:
     }
 private:
     void update();
-    void rc4_send(SOCKET fd,const string &buf);
+    void rc4_send(SOCKET fd,const string &buf,const sockaddr_in *addr=nullptr);
     /**
      * @brief read_packet timeout to read a udp packet
      * @param fd io descriptor

@@ -10,7 +10,7 @@ dns_client::dns_client(string server_ip,uint16_t dns_port):\
     if(m_send_fd==INVALID_SOCKET)throw runtime_error("can't build udp socket!");
     m_server_addr.sin_addr.s_addr=inet_addr(m_server_ip.c_str());
     m_server_addr.sin_port=htons(m_server_port);
-    Network_Util::Instance().connect(m_send_fd,m_server_addr);
+    //Network_Util::Instance().connect(m_send_fd,m_server_addr);
 }
 void dns_client::config(weak_ptr<EventLoop> loop, string domain_name, string account, string password, int64_t upload_interval)
 {
@@ -35,8 +35,7 @@ void dns_client::reset_server_info(string server_ip,uint16_t dns_port)
     m_server_addr.sin_family=AF_INET;
     m_server_addr.sin_addr.s_addr=inet_addr(m_server_ip.c_str());
     m_server_addr.sin_port=htons(m_server_port);
-    Network_Util::Instance().connect(m_send_fd,m_server_addr);
-    perror("");
+    //Network_Util::Instance().connect(m_send_fd,m_server_addr);
 }
 void dns_client::start_work()
 {
@@ -92,11 +91,11 @@ pair<bool,neb::CJsonObject> dns_client::register_to_server(string domain_name,st
     free(tmp);
     SOCKET sock=Network_Util::Instance().build_socket(UDP);
     if(sock==INVALID_SOCKET)return  {false,neb::CJsonObject()};
-    {
-        lock_guard<mutex>locker(m_mutex);
-        Network_Util::Instance().connect(sock,m_server_addr);
-    }
-    rc4_send(sock,object.ToString());
+//    {
+//        lock_guard<mutex>locker(m_mutex);
+//        Network_Util::Instance().connect(sock,m_server_addr);
+//    }
+    rc4_send(sock,object.ToString(),&m_server_addr);
     shared_ptr<char>recv_buf(new char[1500],std::default_delete<char[]>());
     auto read_len=read_packet(sock,recv_buf.get(),1500,time_out);
     Network_Util::Instance().close_socket(sock);
@@ -124,11 +123,11 @@ pair<bool,neb::CJsonObject>  dns_client::unregister_to_server(string domain_name
     free(tmp);
     SOCKET sock=Network_Util::Instance().build_socket(UDP);
     if(sock==INVALID_SOCKET)return  {false,neb::CJsonObject()};
-    {
-        lock_guard<mutex>locker(m_mutex);
-        Network_Util::Instance().connect(sock,m_server_addr);
-    }
-    rc4_send(sock,object.ToString());
+//    {
+//        lock_guard<mutex>locker(m_mutex);
+//        Network_Util::Instance().connect(sock,m_server_addr);
+//    }
+    rc4_send(sock,object.ToString(),&m_server_addr);
     shared_ptr<char>recv_buf(new char[1500],std::default_delete<char[]>());
     auto read_len=read_packet(sock,recv_buf.get(),1500,time_out);
     Network_Util::Instance().close_socket(sock);
@@ -148,11 +147,11 @@ pair<bool,neb::CJsonObject>  dns_client::account_find(string domain_name,int64_t
     object.Add(TO_STRING(domain_name),domain_name);
     SOCKET sock=Network_Util::Instance().build_socket(UDP);
     if(sock==INVALID_SOCKET)return  {false,neb::CJsonObject()};
-    {
-        lock_guard<mutex>locker(m_mutex);
-        Network_Util::Instance().connect(sock,m_server_addr);
-    }
-    rc4_send(sock,object.ToString());
+//    {
+//        lock_guard<mutex>locker(m_mutex);
+//        Network_Util::Instance().connect(sock,m_server_addr);
+//    }
+    rc4_send(sock,object.ToString(),&m_server_addr);
     shared_ptr<char>recv_buf(new char[1500],std::default_delete<char[]>());
     auto read_len=read_packet(sock,recv_buf.get(),1500,time_out);
     Network_Util::Instance().close_socket(sock);
@@ -181,11 +180,11 @@ pair<bool,neb::CJsonObject>  dns_client::dns_find(string domain_name,string acco
     free(tmp);
     SOCKET sock=Network_Util::Instance().build_socket(UDP);
     if(sock==INVALID_SOCKET)return  {false,neb::CJsonObject()};
-    {
-        lock_guard<mutex>locker(m_mutex);
-        Network_Util::Instance().connect(sock,m_server_addr);
-    }
-    rc4_send(sock,object.ToString());
+//    {
+//        lock_guard<mutex>locker(m_mutex);
+//        Network_Util::Instance().connect(sock,m_server_addr);
+//    }
+    rc4_send(sock,object.ToString(),&m_server_addr);
     shared_ptr<char>recv_buf(new char[1500],std::default_delete<char[]>());
     auto read_len=read_packet(sock,recv_buf.get(),1500,time_out);
     Network_Util::Instance().close_socket(sock);
@@ -204,11 +203,11 @@ pair<bool,neb::CJsonObject> dns_client::port_check(int64_t time_out)
     object.Add("cmd","port_check");
     SOCKET sock=Network_Util::Instance().build_socket(UDP);
     if(sock==INVALID_SOCKET)return  {false,neb::CJsonObject()};
-    {
-        lock_guard<mutex>locker(m_mutex);
-        Network_Util::Instance().connect(sock,m_server_addr);
-    }
-    rc4_send(sock,object.ToString());
+//    {
+//        lock_guard<mutex>locker(m_mutex);
+//        Network_Util::Instance().connect(sock,m_server_addr);
+//    }
+    rc4_send(sock,object.ToString(),&m_server_addr);
     shared_ptr<char>recv_buf(new char[1500],std::default_delete<char[]>());
     auto read_len=read_packet(sock,recv_buf.get(),1500,time_out);
     Network_Util::Instance().close_socket(sock);
@@ -251,14 +250,19 @@ void dns_client::update()
         port_info.Add("external_port",i.second.external_port);
         object["port_map"].Add(port_info);
     }
-    rc4_send(m_send_fd,object.ToString());
+    rc4_send(m_send_fd,object.ToString(),&m_server_addr);
 }
-void dns_client::rc4_send(SOCKET fd,const string &buf)
+void dns_client::rc4_send(SOCKET fd, const string &buf, const sockaddr_in *addr)
 {
     uint32_t out_size=buf.size()+8;
     shared_ptr<char>output(new char[out_size],std::default_delete<char[]>());
     memset(output.get(),0,out_size);
     rc4_interface interface(Timer::getTimeNow);
     auto ret=interface.encrypt(buf.c_str(),output.get(),buf.size(),out_size);
-    send(fd,output.get(),ret,0);
+    if(addr){
+        ::sendto(fd,output.get(),ret,0,(const sockaddr*)addr,sizeof (sockaddr_in));
+    }
+    else {
+        send(fd,output.get(),ret,0);
+    }
 }
