@@ -42,6 +42,7 @@ if [ -z $program_name ];then
 	exit 0
 fi
 #endi for match program_name
+program_name=`echo $program_name | awk -F "/" '{print $NF}'`
 if [ ${pro_name} != ${program_name} ];then
 	echo "$pro_port $pro_name $socket_mode not matched and kill it!"
 	kill -9 $pid
@@ -64,6 +65,7 @@ if [ -z $program_name ];then
 	echo "can't find $pro_name $pro_port $socket_mode!"
 	exit 0
 fi
+program_name=`echo $program_name | awk -F "/" '{print $NF}'`
 if [ ${pro_name} != ${program_name} ];then
 	echo "$pro_name $pro_port $socket_mode not matched $program_name and kill it!"
 	kill -9 $pid

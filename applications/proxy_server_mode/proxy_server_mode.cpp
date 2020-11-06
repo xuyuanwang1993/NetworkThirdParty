@@ -1,5 +1,6 @@
 #include "proxy_server_mode.h"
 #include "daemon_instance.h"
+#define MICAGENT_CROSS 0
 using namespace micagent;
 proxy_server_mode::proxy_server_mode():m_log_open(false),m_log_path(""),m_is_running(false),m_reload_flag(false)
 {
@@ -11,11 +12,9 @@ void proxy_server_mode::init(const string &json_config_path,const string&pro_nam
     do{
         m_pro_name=pro_name;
         m_config_path=json_config_path;
-        auto pos=m_config_path.find_last_of('/');
-        if(pos!=string::npos){
-            m_config_path.substr(pos+1);
-        }
-        m_config_path=daemon_instance::get_pwd_path()+m_config_path;
+        char read_path[4096]={0};
+        realpath(json_config_path.c_str(),read_path);
+        m_config_path=read_path;
         m_json_config.reset(CJsonObject::CreateInstance(json_config_path));
         if(!parse_config())break;
         MICAGENT_INFO("init success!");
@@ -453,6 +452,15 @@ void proxy_server_mode::message_handle()
             else if (cmd=="save_config"){
                 handle_save_config(from);
             }
+            else  if (cmd=="get_net_config"){
+                handle_get_net_config(from);
+            }
+            else  if (cmd=="update_net_info"){
+                handle_update_net_info(object,from);
+            }
+            else  if (cmd=="restart"){
+                handle_restart(from);
+            }
             else {
                 handle_cmd_unsupported(cmd,from);
             }
@@ -551,6 +559,90 @@ void proxy_server_mode::handle_reload_mode(const string&from)
     m_reload_flag.exchange(true);
     stop();
 }
+void proxy_server_mode::handle_get_net_config(const string&from)
+{
+    CJsonObject response;
+    CJsonObject json_response;
+    response.Add("cmd","get_net_config_response");
+    lock_guard<mutex>locker(m_mutex);
+    auto net_info_vec=NETWORK.get_net_interface_info();
+    CJsonObject net_info_list;
+    for(auto i:net_info_vec)
+    {
+        CJsonObject tmp;
+        tmp.Add("dev_name",i.dev_name);
+        tmp.Add("ip",i.ip);
+        tmp.Add("mac",i.mac);
+        tmp.Add("netmask",i.netmask);
+        tmp.Add("gateway_ip",i.gateway_ip);
+        net_info_list.Add(tmp);
+    }
+    if(net_info_list.IsEmpty()){
+        json_response.AddEmptySubArray("net_info_list");
+    }
+    else{
+        json_response.Add("net_info_list",net_info_list);
+    }
+    response.Add("response",json_response);
+    MICAGENT_DEBUG("send %s\r\n",response.ToFormattedString().c_str());
+    auto str_response=response.ToString();
+    m_message_fd->send(str_response.c_str(),str_response.length(),from);
+}
+void proxy_server_mode::handle_update_net_info(const CJsonObject&object,const string&from)
+{
+    CJsonObject response;
+    CJsonObject json_response;
+    response.Add("cmd","update_net_info_response");
+    lock_guard<mutex>locker(m_mutex);
+    bool is_success=false;
+    do{
+        CJsonObject net_config;
+        if(!object.Get("net_config",net_config)){
+            json_response.Add("error","no net_config entry!");
+            break;
+        }
+        string dev_name;
+        if(!net_config.Get("dev_name",dev_name)){
+            break;
+        }
+        string ip;
+        if(!net_config.Get("ip",ip)){
+            break;
+        }
+        string mac;
+        if(!net_config.Get("mac",mac)){
+            break;
+        }
+        string netmask;
+        if(!net_config.Get("netmask",netmask)){
+            break;
+        }
+        string gateway_ip;
+        if(!net_config.Get("gateway_ip",gateway_ip)){
+            break;
+        }
+        Network_Util::net_interface_info new_net_info(dev_name,ip,mac,netmask,gateway_ip);
+        is_success=NETWORK.modify_net_interface_info(new_net_info);
+        if(is_success){
+            local_ip_change(dev_name,ip,netmask,gateway_ip,mac);
+        }
+    }while(0);
+    json_response.Add("net_set_state",is_success,is_success);
+    response.Add("response",json_response);
+    auto str_response=response.ToString();
+    m_message_fd->send(str_response.c_str(),str_response.length(),from);
+}
+void proxy_server_mode::handle_restart(const string&from)
+{
+    CJsonObject response;
+    response.Add("cmd","restart_response");
+    auto str_response=response.ToString();
+    m_message_fd->send(str_response.c_str(),str_response.length(),from);
+    m_event_loop->addTimer([this](){
+        system_reboot();
+        return false;
+    },20);
+}
 void proxy_server_mode::handle_cmd_unsupported(const string&cmd,const string&from)
 {
     CJsonObject response;
@@ -561,4 +653,40 @@ void proxy_server_mode::handle_cmd_unsupported(const string&cmd,const string&fro
     auto str_response=response.ToString();
     lock_guard<mutex>locker(m_mutex);
     m_message_fd->send(str_response.c_str(),str_response.length(),from);
+}
+void proxy_server_mode::system_reboot()
+{
+#if MICAGENT_CROSS
+    system("killall -9 system_dog");
+#endif
+    system("reboot");
+}
+void proxy_server_mode::local_ip_change(const string&dev,const string&ip,const string&mask,const string&gateway_ip,const string&mac)const
+{
+#if MICAGENT_CROSS
+    if(dev=="eth0")
+    {
+        string cmd_base="fw_setenv ";
+        if(!ip.empty())
+        {//set ip
+            auto cmd=cmd_base+" ipaddr "+ip;
+            system(cmd.c_str());
+        }
+        if(!mask.empty())
+        {
+            auto cmd=cmd_base+" netmask "+mask;
+            system(cmd.c_str());
+        }
+        if(!gateway_ip.empty())
+        {
+            auto cmd=cmd_base+" gatewayip "+gateway_ip;
+            system(cmd.c_str());
+        }
+        if(!mac.empty())
+        {
+            auto cmd=cmd_base+" ethaddr "+mac;
+            system(cmd.c_str());
+        }
+    }
+#endif
 }

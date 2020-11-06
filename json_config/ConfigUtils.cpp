@@ -1,5 +1,5 @@
 #include "ConfigUtils.h"
-#define CONFIG_AUTO_SAVE 1
+#define CONFIG_AUTO_SAVE 0
 using namespace micagent;
 void Config_Manager::Load_Path(const string &path)
 {
@@ -16,9 +16,7 @@ bool Config_Manager::Update_Mode_Config(const string &mode_name,const CJsonObjec
         ret=m_json_object->Replace(mode_name,config_object);
     }
     else ret=m_json_object->Add(mode_name,config_object);
-#if CONFIG_AUTO_SAVE
     m_json_object->SaveToFile();
-#endif
     return ret;
 }
 void Config_Manager::Delete_Mode_Config(const string &mode_name)

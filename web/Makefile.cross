@@ -44,6 +44,7 @@ app:
 	make -j4 app CROSS_COMPILE="$(CROSS_COMPILE)" CROSS_CFLAGS="$(LOCAL_CXXFLAGS)" -C $(obj_dir)/cgi
 
 lib:
+	rm -rf $(obj_dir)
 	mkdir -p $(obj_dir)
 	cp -rf $(src_dir)/* $(obj_dir)
 	pushd $(obj_dir)/boa/src >/dev/null; \

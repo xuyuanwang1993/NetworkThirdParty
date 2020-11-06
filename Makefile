@@ -1,6 +1,8 @@
 SHELL = /bin/bash
 #交叉编译工具前缀
-CROSS_COMPILE ?=
+APP_CROSS_COMPILE ?=
+export PATH := $(PATH):$(shell dirname $(APP_CROSS_COMPILE))
+CROSS_COMPILE := $(shell basename $(APP_CROSS_COMPILE))
 #安装目录前缀
 PREFIX ?= /usr/local
 #编译输出目录

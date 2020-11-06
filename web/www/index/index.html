@@ -28,6 +28,9 @@
         <div class="box-list box-list5">
             <div class="box-text">url</div>
         </div>
+        <div class="box-list box-list6">
+            <div class="box-text">network</div>
+        </div>
     </div>
 
     <div class="conf_box">
@@ -46,11 +49,15 @@
             </div>
             <div class="param">
                 <label for="dns_domain_name">本地服务器域名：</label>
-                <input name="dns_domain_name" id="dns_domain_name" readonly/>
+                <input name="dns_domain_name" id="dns_domain_name" onchange="text_change(this)"/>
             </div>
             <div class="param">
                 <label for="dns_account_name">本地服务器所属账号：</label>
-                <input name="dns_account_name" id="dns_account_name" readonly/>
+                <input name="dns_account_name" id="dns_account_name" onchange="text_change(this)"/>
+            </div>
+            <div class="param">
+                <label for="dns_pass_word">本地服务器所属密码：</label>
+                <input name="dns_pass_word" id="dns_pass_word" type="password" onchange="text_change(this)"/>
             </div>
         </div>
         <div class="balance_conf conf_info">
@@ -131,7 +138,35 @@
                 <li><a>rtsp://192.168.2.111:8554/test</a></li>
             </ul>
         </div>
-
+        <div class="network_conf conf_info">
+            <div class="param">
+                <label for="dev_name">网卡名称：</label>
+                <input name="dev_name" id="dev_name" onchange="text_change2(this)" readonly/>
+            </div>
+            <div class="param">
+                <label for="ip">IP地址：</label>
+                <input name="ip" id="ip" onchange="text_change2(this)"/>
+            </div>
+            <div class="param">
+                <label for="mac">MAC地址：</label>
+                <input name="mac" id="mac" onchange="text_change2(this)" readonly/>
+            </div>
+            <div class="param">
+                <label for="netmask">子网掩码：</label>
+                <input name="netmask" id="netmask" onchange="text_change2(this)"/>
+            </div>
+            <div class="param">
+                <label for="gateway_ip">默认网关：</label>
+                <input name="gateway_ip" id="gateway_ip" onchange="text_change2(this)"/>
+            </div>
+            <br>
+            <div style="float: left; margin: 20px 0 0 48px;color: white;">
+                <label>第 <span class="net_index"></span> 个</label>&nbsp;&nbsp;
+                <label>共 <span class="net_count"></span> 个网卡</label>
+            </div>
+            <button class="btn_info net_next" style="float: right; margin-right: 48px;" onclick="next_config(this)">下个网卡</button>
+            <button class="btn_info" style="float: right; margin-right: 48px;" onclick="primary_config(this)" disabled>上个网卡</button>
+        </div>
     </div>
     <div class="button_box">
         <div class="conf_button button_list">
@@ -146,13 +181,21 @@
         <div class="url_button button_list">
             <button class="btn_info" onclick="get_url_info()">刷新</button>
         </div>
+        <div class="net_button button_list">
+            <button class="btn_info" onclick="update_net_info()">保存配置</button>
+            <br>
+            <button class="btn_info" onclick="restart()">重启设备</button>
+        </div>
     </div>
 
 </div>
 
 <script>
     window.onload = function () {
-        set_config();
+        //配置服务器
+        get_config();
+        //配置设备网络
+        get_net_config();
         $(".box-list1").addClass('menu_selected');
         $(".dns_conf").show();
         $(".conf_button").show();

@@ -5,7 +5,7 @@ CROSS_COMPILE ?=
 CROSS_CFLAGS ?=
 ####################
 
-CC:=$(CROSS_COMPILE)gcc
+CC:=$(CROSS_COMPILE)g++
 CXX:=$(CROSS_COMPILE)g++
 AR:=$(CROSS_COMPILE)ar
 STRIP:=$(CROSS_COMPILE)strip

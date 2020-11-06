@@ -8,6 +8,7 @@ using namespace  neb;
 void Get_Mode_Handle(void);
 void Post_Mode_Handle(void);
 int main(int argc,char **argv)
+//int cgiMain()
 {
     printf("Content-type:application/json;charset=utf-8\n\n");	//response header
 

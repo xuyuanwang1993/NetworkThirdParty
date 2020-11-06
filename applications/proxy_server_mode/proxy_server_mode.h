@@ -49,6 +49,12 @@ private:
     void handle_get_url_info(const string&from);
     void handle_reload_mode(const string&from);
     void handle_cmd_unsupported(const string&cmd,const string&from);
+    void handle_get_net_config(const string&from);
+    void handle_update_net_info(const CJsonObject&object,const string&from);
+    void handle_restart(const string&from);
+private:
+    void system_reboot();
+    void local_ip_change(const string&dev,const string&ip,const string&mask,const string&gateway_ip,const string&mac)const;
 private:
 //event_loop
     int32_t m_event_thread_pool_size;

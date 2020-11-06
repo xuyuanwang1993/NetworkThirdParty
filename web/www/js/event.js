@@ -39,4 +39,12 @@ $(function () {
         $('.button_list').hide();
         $('.url_button').show();
     });
+    $(".box-list6").click(function () {
+        $(".box-list").removeClass("menu_selected");
+        $(".box-list6").addClass('menu_selected');
+        $('.conf_info').hide();
+        $('.network_conf').show();
+        $('.button_list').hide();
+        $('.net_button').show();
+    });
 })

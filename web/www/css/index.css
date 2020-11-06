@@ -4,7 +4,7 @@
     position: absolute;
     background-color: black;
     opacity: 0.9;
-    overflow: hidden;
+    overflow: auto;
 }
 
 .menu_box{

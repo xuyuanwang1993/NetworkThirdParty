@@ -32,7 +32,9 @@ function get_config() {
     $.ajax({
         type:'post',
         url:'../cgi-bin/web_function.cgi',
-        data: {"cmd":"get_config"},
+        data: transferString({"cmd":"get_config"}),
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
         async:true,
         success:function (data) {
             try{
@@ -44,6 +46,11 @@ function get_config() {
             }
         },
     });
+}
+
+// 转json对象为字符串
+function transferString(json_obj) {
+    return JSON.stringify(json_obj)
 }
 
 // 输入框赋值
@@ -69,14 +76,15 @@ function reload_mode() {
     $.ajax({
         type:'post',
         url:'../cgi-bin/web_function.cgi',
-        data: {"cmd":"reload_mode"},
+        data: transferString({"cmd":"reload_mode"}),
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
         async:true,
         success:function (data) {
             try {
                 console.log(data.response.info);
             }
             catch (e) {
-
             }
         },
     });
@@ -88,7 +96,9 @@ function save_config() {
     $.ajax({
         type:'post',
         url:'../cgi-bin/web_function.cgi',
-        data: {"cmd":"save_config"},
+        data: transferString({"cmd":"save_config"}),
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
         async:true,
         success:function (data) {
             try {
@@ -112,7 +122,9 @@ function update_config() {
         $.ajax({
             type: 'post',
             url: '../cgi-bin/web_function.cgi',
-            data: {"cmd": "update_config", "config": difference},
+            data: transferString({"cmd": "update_config", "config": difference}),
+            contentType: 'application/json; charset=utf-8',
+            dataType: 'json',
             async: true,
             success: function (data) {
                 try{
@@ -124,7 +136,7 @@ function update_config() {
                     config_info_current={};
                 }
                 catch (e) {
-                    
+
                 }
             },
         });
@@ -136,7 +148,9 @@ function get_url_info() {
     $.ajax({
         type:'post',
         url:'../cgi-bin/web_function.cgi',
-        data: {"cmd":"get_url_info"},
+        data: transferString({"cmd": "get_url_info"}),
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
         async:true,
         success:function (data) {
             let html="";
@@ -159,6 +173,123 @@ function get_difference() {
     }
 }
 
+//设备网络配置
+var net_config = {
+    index: 0,
+    list: [],
+    net_temp: {}
+}
+function get_net_config() {
+    $.ajax({
+        type:'post',
+        url:'../cgi-bin/web_function.cgi',
+        data: transferString({"cmd": "get_net_config"}),
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
+        async:true,
+        success:function (data) {
+            if ('net_info_list' in data.response) {
+                net_config.list = data.response.net_info_list
+                if (net_config.list.length < 2) {
+                    $('.net_next').attr("disabled", true)
+                }
+                set_net_config()
+            } else {
+                console.log('未获取到设备的网络配置信息！')
+            }
+        },
+    });
+}
+
+// 输入框赋值
+function set_net_config() {
+    for(let key  in net_config.list[net_config.index]){
+        $("#" + key).val(net_config.list[net_config.index][key]);
+    }
+    net_config.net_temp = net_config.list[net_config.index]
+    net_config.list.length === 0
+        ? $(".net_index").text(net_config.index)
+        : $(".net_index").text(net_config.index + 1)
+    $(".net_count").text(net_config.list.length)
+}
+
+//切换上台设备
+function primary_config(dom) {
+    net_config.index --
+    if(net_config.index === 0) {
+        $(dom).attr("disabled", true)
+    } else  if (net_config.index === net_config.list.length - 2) {
+        $(dom).prev().attr("disabled", false)
+    }
+    set_net_config()
+}
+
+//切换下台设备
+function next_config(dom) {
+    net_config.index ++
+    if (net_config.index === net_config.list.length - 1) {
+        $(dom).attr("disabled", true)
+    } else if (net_config.index === 1) {
+        $(dom).next().attr("disabled", false)
+    }
+    set_net_config()
+}
+
+//获取网络配置
+function update_net_info() {
+    $.ajax({
+        type:'post',
+        url:'../cgi-bin/web_function.cgi',
+        data: transferString({"cmd": "update_net_info", "net_config": net_config.net_temp}),
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
+        async:true,
+        success:function (data) {
+            try {
+                if (data.response.net_set_state) {
+                    console.log('网络设置成功！')
+                } else {
+                    console.log('网络设置失败！')
+                }
+            }
+            catch (e) {
+                console.log('请求失败！')
+            }
+        },
+    });
+}
+
+//设备重启
+function restart() {
+    $.ajax({
+        type:'post',
+        url:'../cgi-bin/web_function.cgi',
+        data: transferString({"cmd":"restart"}),
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
+        async:true,
+        success:function (data) {
+            try {
+                if (data.response.net_set_state) {
+                    console.log('设备重启成功！')
+                } else {
+                    console.log('设备重启失败！')
+                }
+            }
+            catch (e) {
+                console.log('请求失败！')
+            }
+        },
+    });
+}
+
+// 捕捉输入框变化2
+function text_change2(obj) {
+    let key=obj.getAttribute("name");
+    let value=obj.value;
+    net_config.net_temp[key]=value
+}
+
 // 捕捉输入框变化
 function text_change(obj) {
     let key=obj.getAttribute("name");
@@ -168,3 +299,4 @@ function text_change(obj) {
     }
     config_info_current[key]=value;
 }
+
