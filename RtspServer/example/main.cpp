@@ -22,13 +22,13 @@ int main(int argc,char *argv[]){
         return 0;
     }
     uint16_t port=8554;
-    if(argc==3)port=stoul(argv[2]);
+    if(argc>=3)port=stoul(argv[2]);
     Logger::Instance().set_log_to_std(true);
     Logger::Instance().register_handle();
-#if 0
-    EventLoop loop;
-    shared_ptr<rtsp_server>server(new rtsp_server(554));
-    server->register_handle(&loop);
+#if 1
+    shared_ptr<EventLoop> loop(new EventLoop());
+    shared_ptr<rtsp_server>server(new rtsp_server(port));
+    server->register_handle(loop);
     server->addAuthorizationInfo("admin","micagent");
     server->addAuthorizationInfo("admin1","micagent1");
     auto session=media_session::CreateNew("test");
@@ -40,15 +40,21 @@ int main(int argc,char *argv[]){
     }
     auto session_id=server->addMediaSession(session);
     micagent::file_reader_base file(argv[1]);
+    bool need_change=false;
+    shared_ptr<file_reader_base>file2;
+    if(argc==4){
+        file2.reset(new file_reader_base(argv[3]));
+        need_change=true;
+    }
     std::thread t([&](){
         int bufSize = 500000;
         uint8_t *frameBuf = new uint8_t[bufSize];
         AVFrame frame;
+        uint32_t send_count=0;
         while(1)
         {
             auto timePoint = std::chrono::steady_clock::now();
             auto time_now=std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch()).count();
-            bool bEndOfFrame;
             int frameSize = file.readFrame(frameBuf, bufSize);
             if(frameSize > 0)
             {
@@ -56,7 +62,40 @@ int main(int argc,char *argv[]){
                 frame.buffer.reset(new uint8_t[frame.size]);
                 memcpy(frame.buffer.get(),frameBuf+4,frameSize-4);
                 if(!server->updateFrame(session_id,channel_0,frame));
-                    //break;
+                send_count++;
+                if(need_change&&send_count>1000)
+                {
+                    break;
+                }
+                //break;
+            }
+            else
+            {
+                break;
+            }
+            auto timePoint2 = std::chrono::steady_clock::now();
+            auto time_now2=std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch()).count();
+            int sleep_time=40-time_now2+time_now;
+            if(sleep_time>0)Timer::sleep(sleep_time);
+        }
+        if(strstr(argv[3],"h264")!=nullptr){
+            server->changeRtspStreamSource("test",channel_0,h264_source::createNew());
+        }
+        else {
+            server->changeRtspStreamSource("test",channel_0,h265_source::createNew());
+        }
+        while(1)
+        {
+            auto timePoint = std::chrono::steady_clock::now();
+            auto time_now=std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch()).count();
+            int frameSize = file2->readFrame(frameBuf, bufSize);
+            if(frameSize > 0)
+            {
+                frame.size=frameSize-4;
+                frame.buffer.reset(new uint8_t[frame.size]);
+                memcpy(frame.buffer.get(),frameBuf+4,frameSize-4);
+                if(!server->updateFrame(session_id,channel_0,frame));
+                //break;
             }
             else
             {
@@ -69,7 +108,7 @@ int main(int argc,char *argv[]){
         }
         std::cout<<"exit send_thread"<<std::endl;
     }
-        );
+    );
     t.join();
     server->removeMediaSession(session_id);
 #else

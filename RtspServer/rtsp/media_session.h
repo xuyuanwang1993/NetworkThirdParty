@@ -106,8 +106,9 @@ public:
     }
     ~media_session();
     media_session(string rtsp_suffix);
-private:
     vector<media_source_info>get_media_source_info()const ;
+private:
+
     void initMulticast();
     static MediaSessionId generate_session_id(){
         if(s_session_id==INVALID_MediaSessionId)s_session_id++;

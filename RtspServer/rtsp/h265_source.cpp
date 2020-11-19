@@ -70,6 +70,7 @@ bool h265_source::check_frames(media_frame_type type, AVFrame &frame)
             m_frame_vps.reset(new AVFrame(frame.size));
             m_frame_vps->type=frame.type;
             memcpy(m_frame_vps.get()->buffer.get(),frame.buffer.get(),frame.size);
+            m_send_counts=m_frameRate*2+2;
         }
         else if (type==FRAME_PPS) {
                 m_frame_pps.reset(new AVFrame(frame.size));

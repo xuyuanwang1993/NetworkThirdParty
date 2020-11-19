@@ -201,6 +201,9 @@ bool proxy_connection::handle_proxy_request(const shared_ptr<ProxyFrame>&frame)
     {
         handle_set_up_stream(object);
     }
+    else if (cmd=="modify_stream") {
+        handle_modify_stream(object);
+    }
     else if (cmd=="tear_down_stream") {
         handle_tear_down_stream(object);
     }
@@ -447,6 +450,110 @@ void proxy_connection::handle_set_up_stream(CJsonObject &object)
         m_is_setup=true;
         build_json_response("set_up_stream_ack",seq,P_OK,"OK",response);
         response.Add("stream_token",m_stream_token);
+        response.Add("stream_name",stream_name);
+    }while(0);
+    auto res=response.ToString();
+    m_proxy_interface->send_control_command(res.c_str(),res.length());
+}
+void proxy_connection::handle_modify_stream(CJsonObject &object)
+{
+    string cmd_ack="modify_stream_ack";
+    CJsonObject response;
+    do{
+        if(!m_is_authorized){
+            build_json_response(cmd_ack,0,P_AUTHORIZATION_FAILED,"Authorization Failed",response);
+            break;
+        }
+        if(!m_is_setup){
+            build_json_response(cmd_ack,0,P_STREAM_IS_NOT_SET_UP,"Stream Is Not Set Up",response);
+            response.Add("stream_token",m_stream_token);
+            break;
+        }
+        auto rtsp_server=m_proxy_server->m_w_rtsp_server.lock();
+        if(!rtsp_server)
+        {
+            build_json_response(cmd_ack,0,P_INTERNAL_ERROR,"Internal Error",response);
+            break;
+        }
+        uint32_t seq;
+        string stream_name;
+        CJsonObject stream_info;
+        if(!object.Get("seq",seq)||!object.Get("stream_name",stream_name)||!object.Get("stream_info",stream_info))
+        {
+            build_json_response(cmd_ack,seq,P_BAD_REQUEST,"Bad Request",response);
+            break;
+        }
+        auto media_size=stream_info.GetArraySize();
+        if(media_size>MAX_MEDIA_CHANNEL)
+        {
+            build_json_response(cmd_ack,seq,P_UNKNOWN_MEDIA_TYPE,"Unknown Media Type",response);
+            break;
+        }
+        for(int i=0;i<media_size;i++)
+        {
+            CJsonObject media_object;
+            string media_name;
+            uint32_t media_channel=0;
+            if(!stream_info.Get(i,media_object)||!media_object.Get("media_name",media_name)||!media_object.Get("media_channel",media_channel)\
+                    ||media_channel>MAX_MEDIA_CHANNEL)
+            {
+                build_json_response(cmd_ack,seq,P_BAD_REQUEST,"Bad Request",response);
+                break;
+            }
+            MediaChannelId channel_id=static_cast<MediaChannelId>(media_channel);
+            shared_ptr<media_source>source;
+            if(media_name=="h264_source")
+            {
+                uint32_t frame_rate=25;
+                if(media_object.Get("frame_rate",frame_rate))
+                {
+                    source.reset(new h264_source(frame_rate));
+                }
+                else {
+                    source.reset(new h264_source());
+                }
+            }
+            else if(media_name=="h265_source")
+            {
+                uint32_t frame_rate=25;
+                if(media_object.Get("frame_rate",frame_rate))
+                {
+                    source.reset(new h265_source(frame_rate));
+                }
+                else {
+                    source.reset(new h265_source());
+                }
+            }
+            else if(media_name=="aac_source")
+            {
+                string proxy_param;
+                if(media_object.Get("proxy_param",proxy_param))
+                {
+                    uint32_t samprate;
+                    uint32_t channels;
+                    int has_adts;
+                    if(sscanf(proxy_param.c_str(),"%u:%u:%d",&samprate,&channels,&has_adts)!=3)
+                    {
+                        source.reset(new aac_source());
+                    }
+                    else {
+                        source.reset(new aac_source(samprate,channels,has_adts));
+                    }
+                }
+                else {
+                    source.reset(new aac_source());
+                }
+            }
+            else if(media_name=="g711a_source")
+            {
+                source.reset(new g711a_source());
+            }
+            else {
+                MICAGENT_LOG(LOG_INFO,"Unknown media type %s",media_name.c_str());
+            }
+            rtsp_server->changeRtspStreamSource(stream_name,channel_id,source);
+        }
+        build_json_response(cmd_ack,seq,P_OK,"OK",response);
         response.Add("stream_name",stream_name);
     }while(0);
     auto res=response.ToString();

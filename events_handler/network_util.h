@@ -97,7 +97,13 @@ public:
             select(sockfd + 1, nullptr, &fdWrite, nullptr, &tv);
             if (FD_ISSET(sockfd, &fdWrite))
             {
-                auto ret= sendto(sockfd,buf,buf_len,flags,addr,len);
+                ssize_t ret=-1;
+                if(addr){
+                    ret= sendto(sockfd,buf,buf_len,flags,addr,len);
+                }
+                else {
+                    ret= send(sockfd,buf,buf_len,flags);
+                }
                 make_blocking(sockfd,time_out_ms);
                 return ret;
             }
@@ -107,7 +113,50 @@ public:
             }
         }
         else {
-            return sendto(sockfd,buf,buf_len,flags,addr,len);
+            if(addr){
+                return sendto(sockfd,buf,buf_len,flags,addr,len);
+            }
+            else {
+                return send(sockfd,buf,buf_len,flags);
+            }
+        }
+    }
+    /*超时读*/
+    inline ssize_t time_out_recvfrom(SOCKET sockfd,void *buf,size_t buf_len,int flags, struct sockaddr * addr,socklen_t * len,uint32_t time_out_ms=0)
+    {
+
+        if (time_out_ms > 0)
+        {
+            make_noblocking(sockfd);
+            fd_set fdRead;
+            FD_ZERO(&fdRead);
+            FD_SET(sockfd, &fdRead);
+            struct timeval tv = { static_cast<__time_t>(time_out_ms / 1000), static_cast<__suseconds_t>(time_out_ms % 1000 * 1000 )};
+            select(sockfd + 1, &fdRead, nullptr, nullptr, &tv);
+            if (FD_ISSET(sockfd, &fdRead))
+            {
+                ssize_t ret=-1;
+                if(addr){
+                    ret= recvfrom(sockfd,buf,buf_len,flags,addr,len);
+                }
+                else {
+                    ret= recv(sockfd,buf,buf_len,flags);
+                }
+                make_blocking(sockfd,time_out_ms);
+                return ret;
+            }
+            else {
+                make_blocking(sockfd,time_out_ms);
+                return -1;
+            }
+        }
+        else {
+            if(addr){
+                return recvfrom(sockfd,buf,buf_len,flags,addr,len);
+            }
+            else {
+                return recv(sockfd,buf,buf_len,flags);
+            }
         }
     }
     /*监听*/
@@ -169,13 +218,20 @@ public:
         string netmask;
         string mac;
         string gateway_ip;
-        net_interface_info(const string &_dev_name="eth0",const string & _ip="192.168.1.1",const string &_mac="",const string &_netmask="255.255.255.0",const string&_gateway_ip=""):dev_name(_dev_name),ip(_ip)\
-        ,netmask(_netmask),mac(_mac),gateway_ip(_gateway_ip){
+        bool is_default;
+        net_interface_info(const string &_dev_name="eth0",const string & _ip="192.168.1.1",const string &_mac="",const string &_netmask="255.255.255.0",const string&_gateway_ip="",bool _is_default=false):dev_name(_dev_name),ip(_ip)\
+          ,netmask(_netmask),mac(_mac),gateway_ip(_gateway_ip),is_default(_is_default){
+            if(!NETWORK.ip_check_with_mask(ip,gateway_ip,netmask))is_default=false;
+        }
+        void dump_info(){
+            if(is_default)printf("default ");
 
+            printf("dev:%s ip:%s netmask:%s mac:%s gateway_ip:%s\r\n",dev_name.c_str(),ip.c_str(),netmask.c_str(),mac.c_str(),gateway_ip.c_str());
         }
     };
     /*获取网卡配置信息*/
     const vector<Network_Util::net_interface_info> & get_net_interface_info(bool update=true);
+    Network_Util::net_interface_info get_default_net_interface_info();
     //修改网卡配置信息
     bool modify_net_interface_info(const net_interface_info&net_info);
     /*获取本地绑定的端口*/
@@ -271,6 +327,8 @@ public:
             return recvfrom(sockfd,buf,buf_len,flags,addr,&len);
         }
     }
+    //检查ip是否处于同一局域网
+    bool ip_check_with_mask(string ip1,string ip2,string netmask);
 private:
     Network_Util();
     ~Network_Util();

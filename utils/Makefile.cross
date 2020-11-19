@@ -79,7 +79,7 @@ CXXFLAGS ?=
 LOCAL_CXXFLAGS = $(LOCAL_CFLAGS) -std=c++11 -ffunction-sections -fdata-sections
 LOCAL_CXXFLAGS += $(CXXFLAGS)
 #########################################change############################################
-WORK_DIR = util_test bits_helper io_output observer
+WORK_DIR = util_test bits_helper io_output observer PS_Stream_Demux
 ###########################################################################################
 SRC_FILE += $(wildcard *.c)
 SRC_FILE += $(wildcard *.cpp)
@@ -164,5 +164,7 @@ $(OBJS_OUT_PATH)/%.o : io_output/%.cpp
 $(OBJS_OUT_PATH)/%.o : bits_helper/%.cpp
 	$(CXX) -c  $< -o  $@  $(LOCAL_CXXFLAGS) $(LOCAL_INCLUDE)
 $(OBJS_OUT_PATH)/%.o : observer/%.cpp
+	$(CXX) -c  $< -o  $@  $(LOCAL_CXXFLAGS) $(LOCAL_INCLUDE)
+$(OBJS_OUT_PATH)/%.o : PS_Stream_Demux/%.cpp
 	$(CXX) -c  $< -o  $@  $(LOCAL_CXXFLAGS) $(LOCAL_INCLUDE)
 ###########################################################################################

@@ -90,7 +90,7 @@ time_out_session_cache::time_out_session_cache():m_exit_flag(false)
 }
 time_out_session_cache::~time_out_session_cache()
 {
-    MICAGENT_MARK("");
+
     stop();
     if(m_work_thread&&m_work_thread->joinable())m_work_thread->join();
 }

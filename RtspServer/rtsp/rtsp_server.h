@@ -77,6 +77,7 @@ public:
         m_new_media_session_callback=new_session_cb;
         m_delete_media_session_callback=delete_session_cb;
     }
+    void changeRtspStreamSource(const string &url_sufix,MediaChannelId channel_id,shared_ptr<media_source>source);
 protected:
     void remove_invalid_connection();
     TimerId m_remove_timer_id;

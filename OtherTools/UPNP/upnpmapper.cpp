@@ -280,7 +280,7 @@ void Upnp_Connection::handle_get_specific_port_mapping_entry()
 #endif
             break;
         }
-        auto interface_info=Network_Util::Instance().get_net_interface_info(false);
+        auto interface_info=Network_Util::Instance().get_net_interface_info(true);
         bool find=false;
         for(auto i:interface_info){
             if(i.ip==internalIP){

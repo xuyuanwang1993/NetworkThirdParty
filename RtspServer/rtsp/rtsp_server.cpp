@@ -102,6 +102,16 @@ bool rtsp_server::addProxySession(const string &url_sufix,shared_ptr<proxy_sessi
         return true;
     }
 }
+void rtsp_server::changeRtspStreamSource(const string &url_sufix, MediaChannelId channel_id, shared_ptr<media_source>source)
+{
+    MICAGENT_LOG(LOG_ERROR,"change stream %s!",url_sufix.c_str());
+    auto session_ptr=lookMediaSession(url_sufix);
+    if(!session_ptr||!source)return ;
+    else {
+        lock_guard<mutex>locker(m_session_mutex);
+        session_ptr->setMediaSource(channel_id,source);
+    }
+}
 void rtsp_server::remove_invalid_connection()
 {
     lock_guard<mutex>locker(m_mutex);

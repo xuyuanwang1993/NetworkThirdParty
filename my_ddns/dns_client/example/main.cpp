@@ -4,6 +4,12 @@ using namespace micagent;
 using namespace std;
 int main()
 {
+    auto net_info=NETWORK.get_net_interface_info();
+    for(auto i:net_info)
+    {
+        i.dump_info();
+    }
+    return 0;
     string test_domain="www.test_205.com";
     shared_ptr<EventLoop> loop(new EventLoop());
     dns_client client("139.159.137.87",10000);

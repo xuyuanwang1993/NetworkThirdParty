@@ -29,8 +29,8 @@ int main(int argc,char *argv[]){
     //Logger::Instance().set_minimum_log_level(LOG_WARNNING);
     shared_ptr<EventLoop> loop(new EventLoop());
     uint16_t server_port=8555;
-    uint16_t rtsp_server_port=58554;
-    if(argc==6)
+    uint16_t rtsp_server_port=8554;
+    if(argc>=6)
     {//client
         Logger::Instance().register_handle();
         string ip=argv[1];
@@ -38,6 +38,8 @@ int main(int argc,char *argv[]){
         string stream_name=argv[3];
         string  file_name=argv[4];
         string mode=argv[5];
+        string file_name2("");
+        if(argc==7)file_name2=argv[6];
         shared_ptr<tcp_connection_helper>tcp_helper(tcp_connection_helper::CreateNew(loop));
         shared_ptr<rtsp_pusher> pusher;
         pusher.reset(rtsp_pusher::CreateNew(tcp_helper,(PTransMode)stoi(mode),stream_name,ip,stoul(port),"admin","micagent"));
@@ -53,13 +55,21 @@ int main(int argc,char *argv[]){
         }
         session->addProxySession(pusher);
         micagent::file_reader_base file(file_name);
+        shared_ptr<micagent::file_reader_base> replace;
+        if(!file_name2.empty())replace.reset(new micagent::file_reader_base(file_name2));
         std::thread t([&](){
             uint32_t bufSize = 500000;
             uint8_t *frameBuf = new uint8_t[bufSize];
             AVFrame frame;
+            uint32_t frame_count=0;
+            bool change=false;
+            size_t frameSize=0;
             while(1)
             {
-                auto frameSize = file.readFrame(frameBuf, bufSize);
+                if(!change)frameSize = file.readFrame(frameBuf, bufSize);
+                else {
+                    frameSize=replace->readFrame(frameBuf,bufSize);
+                }
                 if(frameSize > 0)
                 {
                     frame.size=static_cast<uint32_t>(frameSize)-4;
@@ -67,6 +77,21 @@ int main(int argc,char *argv[]){
                     memcpy(frame.buffer.get(),frameBuf+4,frameSize-4);
                     frame.timestamp=delay->block_wait_next_due(frameBuf+4)/1000;
                     pusher->proxy_frame(channel_0,frame);
+                    frame_count++;
+                    if(!change&&frame_count>1000){
+                        if(replace){
+                            if(strstr(file_name2.c_str(),"h264")!=nullptr){
+                                session->setMediaSource(channel_0,h264_source::createNew(25));
+                                delay.reset(new h264_delay_control());
+                            }
+                            else {
+                                session->setMediaSource(channel_0,h265_source::createNew(25));
+                                delay.reset(new h265_delay_control());
+                            }
+                            pusher->modify_proxy_params(session->get_media_source_info());
+                            change=true;
+                        }
+                    }
                     //break;
                 }
                 else
@@ -104,7 +129,7 @@ int main(int argc,char *argv[]){
             shared_ptr<proxy_server>pro_server(new proxy_server(server_port));
             pro_server->set_rtsp_server(server);
             pro_server->register_handle(loop);
-            Timer::sleep(10000);
+            Timer::sleep(1000000);
         }
 
     }

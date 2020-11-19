@@ -12,8 +12,13 @@ void upnp_helper::config(shared_ptr<EventLoop> loop, bool set_net, string lgd_ip
     auto net_info=NETWORK.get_net_interface_info(true);
     UpnpMapper::Instance().Init(loop,m_lgd_ip);
     if(!net_info.empty()){
-        m_last_internal_ip=net_info[0].ip;
-        m_dev_name=net_info[0].dev_name;
+        for(auto i:net_info){
+            if(i.is_default){
+                m_last_internal_ip=i.ip;
+                m_dev_name=i.dev_name;
+            }
+        }
+
     }
     //start timer check task
     m_check_timer_id=loop->addTimer([this](){
@@ -37,7 +42,7 @@ void upnp_helper::add_port_task(SOCKET_TYPE type,uint16_t internal_port,uint16_t
     auto iter=m_upnp_task_map.find(key);
     if(iter==m_upnp_task_map.end())
     {
-        UpnpMapper::Instance().Api_addportMapper(type,m_last_internal_ip,internal_port,external_port,description);
+        UpnpMapper::Instance().Api_deleteportMapper(type,external_port);
         m_upnp_task_map.emplace(key,upnp_task(type,internal_port,external_port,description));
     }
 
@@ -60,7 +65,7 @@ void upnp_helper::add_external_ip_to_dev(string ip)
     if(!m_set_net||ip.empty())return;
     if(ip!=m_last_external_ip)
     {
-         MICAGENT_LOG(LOG_WARNNING,"external_ip %s is  changed to %s!\r\n",m_last_external_ip.c_str(),ip.c_str());
+        MICAGENT_LOG(LOG_WARNNING,"external_ip %s is  changed to %s!\r\n",m_last_external_ip.c_str(),ip.c_str());
         if(!m_last_external_ip.empty())
         {
             std::string delete_command=" ip addr delete ";
@@ -81,18 +86,24 @@ void upnp_helper::check_internal_ip()
 {
     auto net_info=NETWORK.get_net_interface_info(true);
     if(!net_info.empty()){
-        string internal_ip=net_info[0].ip;
-        string dev_name=net_info[0].dev_name;
-        if(internal_ip!=m_last_internal_ip||m_dev_name!=dev_name)
-        {
-            MICAGENT_LOG(LOG_WARNNING,"external_ip %s is  changed to %s!\r\n",m_last_internal_ip.c_str(),internal_ip.c_str());
-            m_dev_name=dev_name;
-            m_last_internal_ip=internal_ip;
-            if(m_internal_callback)m_internal_callback(internal_ip);
+        for(auto i:net_info){
+            if(i.is_default){
+                string internal_ip=i.ip;
+                string dev_name=i.dev_name;
+                if(internal_ip!=m_last_internal_ip||m_dev_name!=dev_name)
+                {
+                    MICAGENT_LOG(LOG_WARNNING,"internal_ip %s is  changed to %s!\r\n",m_last_internal_ip.c_str(),internal_ip.c_str());
+                    m_dev_name=dev_name;
+                    m_last_internal_ip=internal_ip;
+                    if(m_internal_callback)m_internal_callback(internal_ip);
+                }
+                else {
+                    // MICAGENT_LOG(LOG_INFO,"internal_ip %s is not changed!\r\n",m_last_internal_ip.c_str());
+                }
+                break;
+            }
         }
-        else {
-           // MICAGENT_LOG(LOG_INFO,"internal_ip %s is not changed!\r\n",m_last_internal_ip.c_str());
-        }
+
     }
 }
 void upnp_helper::check_external_ip()

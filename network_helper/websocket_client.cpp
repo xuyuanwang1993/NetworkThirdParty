@@ -161,7 +161,7 @@ void websocket_client::util_test()
     string url="ws://192.168.2.115:8080/ws/vision_device/";
     //string url="ws://192.168.2.105:8001/echo_once/";
     auto url_info=parse_url_info(url,"ws");
-    MICAGENT_MARK("");
+    
     shared_ptr<EventLoop>loop(new EventLoop());
     shared_ptr<tcp_connection_helper>helper( tcp_connection_helper::CreateNew(loop));
     shared_ptr<websocket_client> client(new websocket_client(helper,url_info.ip,url_info.port,url_info.api));

@@ -506,8 +506,13 @@ const vector<Network_Util::net_interface_info> & Network_Util::get_net_interface
                         }
                         string gw_ip="";
                         auto iter=gw_ip_map.find(ifreq->ifr_name);
-                        if(iter!=gw_ip_map.end())gw_ip=iter->second;
-                        m_net_interface_info_cache.push_back(net_interface_info(ifreq->ifr_name,inet_ntoa(((struct sockaddr_in*)&(ifreq->ifr_addr))->sin_addr),mac1,netmask,gw_ip));
+                        if(iter!=gw_ip_map.end()){
+                            gw_ip=iter->second;
+                            m_net_interface_info_cache.push_back(net_interface_info(ifreq->ifr_name,inet_ntoa(((struct sockaddr_in*)&(ifreq->ifr_addr))->sin_addr),mac1,netmask,gw_ip,true));
+                        }
+                        else {
+                            m_net_interface_info_cache.push_back(net_interface_info(ifreq->ifr_name,inet_ntoa(((struct sockaddr_in*)&(ifreq->ifr_addr))->sin_addr),mac1,netmask,gw_ip));
+                        }
                     }
                     ifreq++;
                 }
@@ -559,6 +564,16 @@ const vector<Network_Util::net_interface_info> & Network_Util::get_net_interface
 
     }
     return m_net_interface_info_cache;
+}
+Network_Util::net_interface_info Network_Util::get_default_net_interface_info()
+{
+    auto info=NETWORK.get_net_interface_info();
+    for(auto i:info){
+        if(i.is_default){
+            return i;
+        }
+    }
+    return Network_Util::net_interface_info();
 }
 bool Network_Util::modify_net_interface_info(const net_interface_info&net_info)
 {
@@ -817,5 +832,12 @@ uint32_t Network_Util::get_netinterface(uint32_t index)const{
     lock_guard<mutex> locker(m_mutex);
     if(index>=MAX_INTERFACES)return DEFAULT_INTERFACES;
     else return m_netinterface[index];
+}
+bool Network_Util::ip_check_with_mask(string ip1,string ip2,string netmask)
+{
+    auto val1=inet_addr(ip1.c_str());
+    auto val2=inet_addr(ip2.c_str());
+    auto val3=inet_addr(netmask.c_str());
+    return  (val1&val3)==(val2&val3);
 }
 }

@@ -168,14 +168,14 @@ bool ProxyInterface::protocol_input(const void *buf,uint32_t buf_len)
     const char *tmp=static_cast<const char *>(buf);
     //check
     if(tmp[0]!='$'||buf_len<(sizeof (ProxyHeader))){
-        MICAGENT_MARK("");
+        
         return false;
     }
     ProxyHeader header;
     decode_proxy_header(header,tmp);
     //check
     if(header.data_len+sizeof (ProxyHeader)!=buf_len){
-        MICAGENT_MARK("");
+        
         return false;
     }
     {

@@ -35,9 +35,10 @@ void rtsp_pusher::proxy_frame(MediaChannelId id,const AVFrame &frame)
 }
 void rtsp_pusher::parse_source_info(const vector<media_source_info>&media_source_info)
 {
-
+    m_media_json_info.Clear();
     if(!media_source_info.empty())
     {
+        CJsonObject new_media_info;
         for(auto i: media_source_info)
         {
             PMediaTYpe type=PNONE;
@@ -49,10 +50,11 @@ void rtsp_pusher::parse_source_info(const vector<media_source_info>&media_source
             CJsonObject object;
             object.Add("media_name",i.media_name);
             object.Add("media_channel",i.channel);
-            object.Add("frame_rate",i.frame_rate);
+            object.Add("frame_rate",400);
             object.Add("proxy_param",i.proxy_param);
-            m_media_json_info.Add(object);
+            new_media_info.Add(object);
         }
+        m_media_json_info=new_media_info;
         m_media_info_set=true;
     }
 }
@@ -62,6 +64,13 @@ void rtsp_pusher::open_connection(const vector<media_source_info>&media_source_i
     m_is_closed=false;
     if(!m_media_info_set)parse_source_info(media_source_info);
     reset_connection();
+}
+void rtsp_pusher::modify_proxy_params(const vector<media_source_info>&media_source_info)
+{
+    lock_guard<mutex>locker(m_mutex);
+    if(m_is_closed)return;
+    parse_source_info(media_source_info);
+    send_modify_stream();
 }
 void rtsp_pusher::close_connection()
 {
@@ -276,6 +285,9 @@ bool rtsp_pusher::handle_proxy_request(const shared_ptr<ProxyFrame>&frame)
     {
         handle_set_up_stream_ack(object);
     }
+    else if (cmd=="modify_stream_ack") {
+        handle_modify_stream_ack(object);
+    }
     else if (cmd=="tear_down_stream_ack") {
         handle_tear_down_stream_ack();
     }
@@ -340,6 +352,18 @@ void rtsp_pusher::send_set_up_stream()
     object.Add("stream_info",m_media_json_info);
     object.Add("seq",m_seq++);
     auto request(object.ToString());
+    m_proxy_interface->send_control_command(request.c_str(),request.length());
+}
+void rtsp_pusher::send_modify_stream()
+{
+    if(!m_proxy_interface||!m_is_authorized)return;
+    CJsonObject object;
+    object.Add("cmd","modify_stream");
+    object.Add("stream_name",m_des_name);
+    object.Add("stream_info",m_media_json_info);
+    object.Add("seq",m_seq++);
+    auto request(object.ToString());
+    printf("%s\r\n",object.ToFormattedString().c_str());
     m_proxy_interface->send_control_command(request.c_str(),request.length());
 }
 void rtsp_pusher::send_tear_down_stream()
@@ -433,6 +457,10 @@ void rtsp_pusher::handle_set_up_stream_ack(CJsonObject &object)
     else {
         //错误处理，无,等待服务器超时断开连接
     }
+}
+void rtsp_pusher::handle_modify_stream_ack(CJsonObject &)
+{
+
 }
 void rtsp_pusher::handle_tear_down_stream_ack()
 {

@@ -59,6 +59,7 @@ typedef  enum{
     P_STREAM_IS_SET_UP=402,		//Stream Is Set Up
     P_STREAM_NAME_IS_IN_USE=403,		//Stream Name Is In Use
     P_STREAM_NOT_FOUND=404,		//Stream Not Found
+    P_STREAM_IS_NOT_SET_UP=405,//Stream Not Set Up
     P_NOT_SUPPORTED_COMMAND=500,		//Not Supported Command
     P_INTERNAL_ERROR=505,    //Internal Error
     P_NOT_SUPPORTED_TRANSMISSION_MODE=506,		//Not SupportedTransmission Mode
@@ -305,8 +306,8 @@ private:
     //264帧分析
     static PFrameType inline get_264_type(char first_byte){
         int nalu_type=first_byte&0x1f;
-        if(nalu_type==5)return  FLUSH_FRAME;
-        else if(nalu_type==7||nalu_type==8)return KEY_FRAME;
+        if(nalu_type==5||nalu_type==7)return  FLUSH_FRAME;
+        else if(nalu_type==8)return KEY_FRAME;
         else {
             return NORMAL_FRAME;
         }
@@ -314,8 +315,8 @@ private:
     //265帧分析
     static PFrameType inline get_265_type(char first_byte){
         int nalu_type=(first_byte&0x7E)>>1;
-        if(nalu_type>=16&&nalu_type<=21)return  FLUSH_FRAME;
-        else if(nalu_type==32||nalu_type==33||nalu_type==34)return KEY_FRAME;
+        if((nalu_type>=16&&nalu_type<=21)||nalu_type==32)return  FLUSH_FRAME;
+        else if(nalu_type==33||nalu_type==34)return KEY_FRAME;
         else {
             return NORMAL_FRAME;
         }

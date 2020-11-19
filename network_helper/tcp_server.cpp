@@ -22,7 +22,11 @@ tcp_server::tcp_server(uint16_t listen_port,uint32_t netinterface_index):m_regis
     Network_Util::Instance().make_noblocking(fd);
     auto net=Network_Util::Instance().get_net_interface_info();
     if(!net.empty()){
-        m_net_info=net[0];
+        for(auto i:net){
+            if(i.is_default){
+                m_net_info=i;
+            }
+        }
     }
     Network_Util::Instance().bind(fd,listen_port,netinterface_index);
     m_server_ip=m_net_info.ip;

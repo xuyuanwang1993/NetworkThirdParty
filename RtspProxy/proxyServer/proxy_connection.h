@@ -43,6 +43,7 @@ private:
      void handle_get_authorized_info(CJsonObject &object);
      void handle_authorization(CJsonObject &object);
      void handle_set_up_stream(CJsonObject &object);
+     void handle_modify_stream(CJsonObject &object);
      void handle_tear_down_stream(CJsonObject &object);
      //基础回包信息组包
      inline void build_json_response(const string& cmd,uint32_t seq,uint32_t status,const string &info,CJsonObject &object)

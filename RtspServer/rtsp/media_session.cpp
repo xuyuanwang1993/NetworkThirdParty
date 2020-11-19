@@ -164,8 +164,8 @@ string media_session::get_sdp_info (const string & version)
     if(m_media_source.empty())
         return "";
     std::string ip("0.0.0.0");
-    auto interface= Network_Util::Instance().get_net_interface_info(false);
-    if(!interface.empty())ip=interface[0].ip;
+    auto interface= Network_Util::Instance().get_default_net_interface_info();
+    ip=interface.ip;
     char buf[2048] = {0};
 
     snprintf(buf, sizeof(buf),

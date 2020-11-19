@@ -22,6 +22,8 @@ public:
     void proxy_frame(MediaChannelId id,const AVFrame &frame);
     //开启连接
     void open_connection(const vector<media_source_info>&media_source_info);
+    //修改转发参数
+    void modify_proxy_params(const vector<media_source_info>&media_source_info);
     //关闭连接
     void close_connection();
     //修改目标ip 端口信息
@@ -39,6 +41,10 @@ public:
             }
         }
     }
+    bool stream_is_setup(){
+        lock_guard<mutex>locker(m_mutex);
+        return  m_is_setup;
+    }
 private:
     rtsp_pusher(weak_ptr<tcp_connection_helper>helper,PTransMode mode,const string &des_name,const string &des_ip ,uint16_t des_port,const string &user_name,const string &pass_word);
     //解析媒体源信息
@@ -55,12 +61,14 @@ private:
     void send_get_authorized_info();
     void send_authorization(string nonce);
     void send_set_up_stream();
+    void send_modify_stream();
     void send_tear_down_stream();
 
     //处理返回数据
     void handle_get_authorized_info_ack(CJsonObject &object);
     void handle_authorization_ack(CJsonObject &object);
     void handle_set_up_stream_ack(CJsonObject &object);
+    void handle_modify_stream_ack(CJsonObject &object);
     void handle_tear_down_stream_ack();
 private:
     //初始化参数

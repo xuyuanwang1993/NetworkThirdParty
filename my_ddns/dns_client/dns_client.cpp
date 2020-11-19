@@ -238,7 +238,15 @@ void dns_client::update()
         object.Add(TO_STRING(internal_ip),"0.0.0.0");
     }
     else {
-        object.Add(TO_STRING(internal_ip),net[0].ip);
+        bool find=false;
+        for(auto i:net){
+            if(i.is_default){
+                object.Add(TO_STRING(internal_ip),i.ip);
+                find=true;
+                break;
+            }
+        }
+        if(!find)object.Add(TO_STRING(internal_ip),net[0].ip);
     }
     object.Add(TO_STRING(user_account_name),m_user_account_name);
     object.Add(TO_STRING(user_account_password),m_user_account_password);
