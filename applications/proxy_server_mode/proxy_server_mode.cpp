@@ -103,7 +103,7 @@ void proxy_server_mode::start()
             m_dns_client->set_port_map_item("rtsp_proxy",m_rtsp_proxy_port,m_rtsp_proxy_external_port);
             m_dns_client->set_user_account_info(m_rtsp_account_name,m_rtsp_account_password);
         }
-        m_dns_client->register_to_server(m_dns_domain_name,m_dns_account_name,m_dns_pass_word,m_dns_description);
+        //m_dns_client->register_to_server(m_dns_domain_name,m_dns_account_name,m_dns_pass_word,m_dns_description);
         m_dns_client->start_work();
         if(!m_load_balance_client)
         {
@@ -519,6 +519,7 @@ void proxy_server_mode::handle_update_config(const CJsonObject&object,const stri
         }
         if(!have_error)json_response.Add("info","success");
     }while(0);
+    m_json_config->SaveToFile();
     response.Add("response",json_response);
     auto str_response=response.ToString();
     m_message_fd->send(str_response.c_str(),str_response.length(),from);

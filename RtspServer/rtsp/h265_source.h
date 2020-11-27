@@ -34,7 +34,7 @@ public:
      uint32_t getTimeStamp(int64_t mill_second=0);
      h265_source(uint32_t frameRate=30);
 private:
-     bool check_frames(media_frame_type type,AVFrame &frame);
+     bool check_frames(media_frame_type type,AVFrame &frame, uint32_t offset,uint32_t frame_len);
 
     shared_ptr<AVFrame> m_frame_vps;
     shared_ptr<AVFrame> m_frame_sps;

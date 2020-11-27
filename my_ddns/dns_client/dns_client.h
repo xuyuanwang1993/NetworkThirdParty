@@ -65,12 +65,12 @@ public:
      * @param internal_port internal port on the equipment
      */
     void set_port_map_item(string name,uint16_t external_port,uint16_t internal_port);
-     /**
+    /**
       * @brief set_user_account_info 配置账户及密码
       * @param account_name
       * @param account_password
       */
-     void set_user_account_info(string account_name,string account_password);
+    void set_user_account_info(string account_name,string account_password);
     /**
      * @brief register_to_server call this when it works as a dns info uploader
      * @param domain_name it's own domain_name
@@ -113,12 +113,26 @@ public:
      */
     pair<bool,neb::CJsonObject> port_check(int64_t time_out=TIME_OUT_TIME);
     ~dns_client(){
-    auto event_loop=m_loop.lock();
-    if(m_is_running&&event_loop)event_loop->removeTimer(m_timer_id);
+        auto event_loop=m_loop.lock();
+        if(m_is_running&&event_loop){
+            event_loop->removeTimer(m_timer_id);
+            if(m_send_channel){
+                event_loop->removeChannel(m_send_channel);
+                m_send_channel.reset();
+                m_send_fd=INVALID_SOCKET;
+            }
+        }
         if(m_send_fd!=INVALID_SOCKET)Network_Util::Instance().close_socket(m_send_fd);
     }
 private:
     void update();
+    void read_init(EventLoop *loop);
+    void get_token();
+    void update_domain_info();
+    void handle_read();
+private:
+    void handle_get_token_response(const neb::CJsonObject &object);
+    void handle_update_domain_info_response(const neb::CJsonObject &object);
     void rc4_send(SOCKET fd,const string &buf,const sockaddr_in *addr=nullptr);
     /**
      * @brief read_packet timeout to read a udp packet
@@ -133,10 +147,10 @@ private:
         bool can_read=true;
         if(time_out>0){
             Network_Util::Instance().make_noblocking(fd);
-             fd_set fdRead;
+            fd_set fdRead;
             FD_ZERO(&fdRead);
             FD_SET(fd, &fdRead);
-           struct timeval tv = { static_cast<__time_t>(time_out / 1000), static_cast<__suseconds_t>(time_out % 1000 * 1000 )};
+            struct timeval tv = { static_cast<__time_t>(time_out / 1000), static_cast<__suseconds_t>(time_out % 1000 * 1000 )};
             select(fd + 1,  &fdRead,nullptr, nullptr, &tv);
             if (!FD_ISSET(fd, &fdRead))
             {
@@ -160,9 +174,12 @@ private:
     string m_account;
     string m_password;
     SOCKET m_send_fd;
+    ChannelPtr m_send_channel;
     int64_t m_upload_interval;
     string m_user_account_name;
     string m_user_account_password;
+
+    uint32_t m_domain_token;
 };
 }
 

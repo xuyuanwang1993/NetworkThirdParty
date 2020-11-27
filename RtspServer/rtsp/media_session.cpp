@@ -40,7 +40,7 @@ void media_session::setMediaSource(MediaChannelId id,shared_ptr<media_source>sou
                 }
             }
         }
-        return count>0;});
+        return count>0||m_rtp_connections.empty();});
     lock_guard<mutex>locker(m_mutex);
     m_media_source[id].reset();
     m_media_source[id]=source;

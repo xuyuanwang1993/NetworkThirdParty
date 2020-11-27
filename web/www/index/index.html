@@ -37,88 +37,88 @@
         <div class="dns_conf conf_info">
             <div class="param">
                 <label for="dns_upload_interval_ms">DNS上传间隔(毫秒)：</label>
-                <input name="dns_upload_interval_ms" id="dns_upload_interval_ms" onchange="text_change(this)"/>
+                <input name="dns_upload_interval_ms" id="dns_upload_interval_ms" oninput="if(value<0)value=0;value=value.replace(/\D/g,'')" onchange="text_change(this, false, 'int')"/>
             </div>
             <div class="param">
                 <label for="dns_server_domain">DNS域名：</label>
-                <input name="dns_server_domain" id="dns_server_domain" onchange="text_change(this)"/>
+                <input name="dns_server_domain" id="dns_server_domain" onchange="text_change(this, true)"/>
             </div>
             <div class="param">
                 <label for="dns_server_port">DNS端口：</label>
-                <input name="dns_server_port" id="dns_server_port" onchange="text_change(this)"/>
+                <input name="dns_server_port" id="dns_server_port" oninput="if(value>65535)value=65535;if(value<0)value=0;value=value.replace(/\D/g,'')" onchange="text_change(this, false, 'int')"/>
             </div>
             <div class="param">
                 <label for="dns_domain_name">本地服务器域名：</label>
-                <input name="dns_domain_name" id="dns_domain_name" onchange="text_change(this)"/>
+                <input name="dns_domain_name" id="dns_domain_name" onchange="text_change(this, true)"/>
             </div>
             <div class="param">
                 <label for="dns_account_name">本地服务器所属账号：</label>
-                <input name="dns_account_name" id="dns_account_name" onchange="text_change(this)"/>
+                <input name="dns_account_name" id="dns_account_name" onchange="text_change(this, true)"/>
             </div>
             <div class="param">
                 <label for="dns_pass_word">本地服务器所属密码：</label>
-                <input name="dns_pass_word" id="dns_pass_word" type="password" onchange="text_change(this)"/>
+                <input name="dns_pass_word" id="dns_pass_word" type="password" onchange="text_change(this, true)"/>
             </div>
         </div>
         <div class="balance_conf conf_info">
             <div class="param">
                 <label for="balance_upload_interval_ms">负载均衡服务器上传间隔(毫秒)：</label>
-                <input name="balance_upload_interval_ms" id="balance_upload_interval_ms" onchange="text_change(this)"/>
+                <input name="balance_upload_interval_ms" id="balance_upload_interval_ms" oninput="if(value<0)value=0;value=value.replace(/\D/g,'')" onchange="text_change(this, false, 'int')"/>
             </div>
             <div class="param">
                 <label for="balance_server_domain">负载均衡域名：</label>
-                <input name="balance_server_domain" id="balance_server_domain" onchange="text_change(this)"/>
+                <input name="balance_server_domain" id="balance_server_domain" onchange="text_change(this, true)"/>
             </div>
             <div class="param">
                 <label for="balance_server_port">负载均衡服务器端口：</label>
-                <input name="balance_server_port" id="balance_server_port" onchange="text_change(this)"/>
+                <input name="balance_server_port" id="balance_server_port" oninput="if(value>65535)value=65535;if(value<0)value=0;value=value.replace(/\D/g,'')" onchange="text_change(this, false, 'int')"/>
             </div>
             <div class="param">
                 <label for="balance_max_payload_size">负载均衡服务器最大负载大小：</label>
-                <input name="balance_max_payload_size" id="balance_max_payload_size" onchange="text_change(this)"/>
+                <input name="balance_max_payload_size" id="balance_max_payload_size" oninput="if(value<0)value=0;value=value.replace(/\D/g,'')" onchange="text_change(this, false, 'int')"/>
             </div>
             <div class="param">
                 <label for="balance_server_weight">负载均衡服务器权重(0-1.0)：</label>
-                <input name="balance_server_weight" id="balance_server_weight" onchange="text_change(this)"/>
+                <input name="balance_server_weight" id="balance_server_weight" onchange="text_change(this, false, 'float')"/>
             </div>
         </div>
         <div class="rtsp_conf conf_info">
             <div class="param">
                 <label for="rtsp_server_port"> rtsp服务端口：</label>
-                <input name="rtsp_server_port" id="rtsp_server_port" onchange="text_change(this)"/>
+                <input name="rtsp_server_port" id="rtsp_server_port" oninput="if(value>65535)value=65535;if(value<0)value=0;value=value.replace(/\D/g,'')" onchange="text_change(this, false, 'int')"/>
             </div>
             <div class="param">
                 <label for="rtsp_account_name">rtsp服务器账号名：</label>
-                <input name="rtsp_account_name" id="rtsp_account_name" onchange="text_change(this)"/>
+                <input name="rtsp_account_name" id="rtsp_account_name" onchange="text_change(this, true)"/>
             </div>
 
             <div class="param">
                 <label for="rtsp_account_password"> rtsp服务器密码：</label>
-                <input name="rtsp_account_password" id="rtsp_account_password" onchange="text_change(this)"/>
+                <input name="rtsp_account_password" id="rtsp_account_password" onchange="text_change(this, true)"/>
             </div>
             <div class="param">
                 <label for="rtsp_proxy_port">转发服务内网端口：</label>
-                <input name="rtsp_proxy_port" id="rtsp_proxy_port" onchange="text_change(this)"/>
+                <input name="rtsp_proxy_port" id="rtsp_proxy_port" oninput="if(value>65535)value=65535;if(value<0)value=0;value=value.replace(/\D/g,'')" onchange="text_change(this, false, 'int')"/>
             </div>
             <div class="param">
                 <label for="router_ip"> 路由器ip：</label>
-                <input name="router_ip" id="router_ip" onchange="text_change(this)"/>
+                <input name="router_ip" id="router_ip" onchange="text_change(this, true)"/>
             </div>
             <div class="param">
                 <label for="rtsp_server_external_port">rtsp服务器外网端口：</label>
-                <input name="rtsp_server_external_port" id="rtsp_server_external_port" onchange="text_change(this)"/>
+                <input name="rtsp_server_external_port" id="rtsp_server_external_port" oninput="if(value>65535)value=65535;if(value<0)value=0;value=value.replace(/\D/g,'')" onchange="text_change(this, false, 'int')"/>
             </div>
 
             <div class="param">
                 <label for="rtsp_proxy_external_port"> 转发服务外网端口：</label>
-                <input name="rtsp_proxy_external_port" id="rtsp_proxy_external_port" onchange="text_change(this)"/>
+                <input name="rtsp_proxy_external_port" id="rtsp_proxy_external_port" oninput="if(value>65535)value=65535;if(value<0)value=0;value=value.replace(/\D/g,'')" onchange="text_change(this, false, 'int')"/>
             </div>
         </div>
         <div class="log_conf conf_info">
             <div class="param">
                 <label for="log_open">是否打开log输出：</label>
                 <div class="ui-switch">
-                    <input type="checkbox" name="log_open" id="log_open" onchange="text_change(this)">
+                    <input type="checkbox" name="log_open" id="log_open" onchange="text_change(this, true)">
                 </div>
             </div>
         </div>
@@ -141,23 +141,23 @@
         <div class="network_conf conf_info">
             <div class="param">
                 <label for="dev_name">网卡名称：</label>
-                <input name="dev_name" id="dev_name" onchange="text_change2(this)" readonly/>
+                <input name="dev_name" id="dev_name" onchange="text_change2(this, true)" readonly/>
             </div>
             <div class="param">
                 <label for="ip">IP地址：</label>
-                <input name="ip" id="ip" onchange="text_change2(this)"/>
+                <input name="ip" id="ip" onchange="text_change2(this, true)"/>
             </div>
             <div class="param">
                 <label for="mac">MAC地址：</label>
-                <input name="mac" id="mac" onchange="text_change2(this)" readonly/>
+                <input name="mac" id="mac" onchange="text_change2(this, true)" readonly/>
             </div>
             <div class="param">
                 <label for="netmask">子网掩码：</label>
-                <input name="netmask" id="netmask" onchange="text_change2(this)"/>
+                <input name="netmask" id="netmask" onchange="text_change2(this, true)"/>
             </div>
             <div class="param">
                 <label for="gateway_ip">默认网关：</label>
-                <input name="gateway_ip" id="gateway_ip" onchange="text_change2(this)"/>
+                <input name="gateway_ip" id="gateway_ip" onchange="text_change2(this, true)"/>
             </div>
             <br>
             <div style="float: left; margin: 20px 0 0 48px;color: white;">

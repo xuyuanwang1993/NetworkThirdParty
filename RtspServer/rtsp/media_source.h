@@ -86,6 +86,7 @@ public:
         }
         return toSize;
     }
+    static uint32_t find_next_video_nal_pos(const uint8_t *buf,uint32_t buf_len,uint32_t now_pos);
 protected:
     MediaType m_mediaType = NONE;
     uint32_t m_payload = 0;

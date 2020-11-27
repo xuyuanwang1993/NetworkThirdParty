@@ -4,29 +4,17 @@ using namespace micagent;
 using namespace std;
 int main()
 {
-    auto net_info=NETWORK.get_net_interface_info();
-    for(auto i:net_info)
-    {
-        i.dump_info();
-    }
-    return 0;
-    string test_domain="www.test_205.com";
+    string test_domain="www.test_207.com";
     shared_ptr<EventLoop> loop(new EventLoop());
-    dns_client client("139.159.137.87",10000);
-#if 0
-    auto ret=client.register_to_server(test_domain,"admin","micagent","test");
-    cout<<ret.first<<"  "<<ret.second.ToFormattedString()<<endl;
+    dns_client client("192.168.2.115",10000);
+    Logger::Instance().register_handle();
+    Logger::Instance().set_log_to_std(true);
+#if 1
     client.config(loop,test_domain,"admin","micagent");
     client.start_work();
-    client.reset_server_info("139.159.137.87",10000);
-    ret=client.register_to_server(test_domain,"admin","micagent","test");
-    cout<<ret.first<<"  "<<ret.second.ToFormattedString()<<endl;
     client.set_port_map_item("proxy_port",58554,58554);
     client.set_port_map_item("proxy_control",8555,8555);
-    while(1)
-    {
-        sleep(10);
-    }
+    while(getchar()!='8')continue;
 #else
     while(1){
         auto ret=client.dns_find(test_domain,"admin","micagent");

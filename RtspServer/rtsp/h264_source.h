@@ -34,7 +34,7 @@ public:
      static media_frame_type get_frame_type(uint8_t byte);
      h264_source(uint32_t frameRate=30);
 private:
-     bool check_frames(media_frame_type type, AVFrame frame);
+     bool check_frames(media_frame_type type, AVFrame frame, uint32_t offset,uint32_t frame_len);
 
     shared_ptr<AVFrame> m_frame_sps;
     shared_ptr<AVFrame> m_frame_pps;

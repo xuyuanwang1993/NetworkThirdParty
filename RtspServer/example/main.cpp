@@ -51,17 +51,24 @@ int main(int argc,char *argv[]){
         uint8_t *frameBuf = new uint8_t[bufSize];
         AVFrame frame;
         uint32_t send_count=0;
+        uint32_t offset=0;
         while(1)
         {
             auto timePoint = std::chrono::steady_clock::now();
             auto time_now=std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch()).count();
-            int frameSize = file.readFrame(frameBuf, bufSize);
+            int frameSize = file.readFrame(frameBuf+offset, bufSize);
             if(frameSize > 0)
             {
-                frame.size=frameSize-4;
+                if(frameBuf[offset+4]!=0x26&&frameBuf[offset+4]!=0x02){
+                    offset+=frameSize;
+                    continue;
+                }
+                offset+=frameSize;
+                frame.size=offset-4;
                 frame.buffer.reset(new uint8_t[frame.size]);
-                memcpy(frame.buffer.get(),frameBuf+4,frameSize-4);
+                memcpy(frame.buffer.get(),frameBuf+4,offset-4);
                 if(!server->updateFrame(session_id,channel_0,frame));
+                offset=0;
                 send_count++;
                 if(need_change&&send_count>1000)
                 {

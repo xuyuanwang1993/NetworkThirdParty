@@ -33,7 +33,7 @@ INCLUDEPATH += $$PWD/.\
 DEPENDPATH += $$PWD/.
 
 CONFIG-=qt
-QMAKE_CXXFLAGS +=
+QMAKE_CXXFLAGS += -DDEBUG
 LIBS+= -lpthread
 HEADERS += \
     ../../../events_handler/trigger_event.h \

@@ -49,38 +49,39 @@ media_frame_type h265_source::get_frame_type(uint8_t byte)
     }
     return  ret;
 }
-bool h265_source::check_frames(media_frame_type type, AVFrame &frame)
+bool h265_source::check_frames(media_frame_type type, AVFrame &frame, uint32_t offset,uint32_t frame_len)
 {
     bool ret=false;
     do{
-        if(type==FRAME_UNKNOWN)break;
+        if(type==FRAME_UNKNOWN||frame_len==0)break;
+        auto frame_begin_ptr=frame.buffer.get()+offset;
         if(type==FRAME_I){
             //i
-            m_last_iframe.reset(new AVFrame(frame.size));
-            memcpy(m_last_iframe.get()->buffer.get(),frame.buffer.get(),frame.size);
+            m_last_iframe.reset(new AVFrame(frame_len));
+            memcpy(m_last_iframe.get()->buffer.get(),frame_begin_ptr,frame_len);
             m_last_iframe->type=frame.type;
             m_send_counts=m_frameRate*2+2;
         }
         else if (type==FRAME_SPS) {
-            m_frame_sps.reset(new AVFrame(frame.size));
+            m_frame_sps.reset(new AVFrame(frame_len));
             m_frame_sps->type=frame.type;
-            memcpy(m_frame_sps.get()->buffer.get(),frame.buffer.get(),frame.size);
+            memcpy(m_frame_sps.get()->buffer.get(),frame_begin_ptr,frame_len);
         }
         else if (type==FRAME_VPS) {
-            m_frame_vps.reset(new AVFrame(frame.size));
+            m_frame_vps.reset(new AVFrame(frame_len));
             m_frame_vps->type=frame.type;
-            memcpy(m_frame_vps.get()->buffer.get(),frame.buffer.get(),frame.size);
+            memcpy(m_frame_vps.get()->buffer.get(),frame_begin_ptr,frame_len);
             m_send_counts=m_frameRate*2+2;
         }
         else if (type==FRAME_PPS) {
-                m_frame_pps.reset(new AVFrame(frame.size));
-                m_frame_pps->type=frame.type;
-                memcpy(m_frame_pps.get()->buffer.get(),frame.buffer.get(),frame.size);
+            m_frame_pps.reset(new AVFrame(frame_len));
+            m_frame_pps->type=frame.type;
+            memcpy(m_frame_pps.get()->buffer.get(),frame_begin_ptr,frame_len);
         }
         else if (type==FRAME_SEI) {
-            m_last_sei.reset(new AVFrame(frame.size));
+            m_last_sei.reset(new AVFrame(frame_len));
             m_last_sei->type=frame.type;
-            memcpy(m_last_sei.get()->buffer.get(),frame.buffer.get(),frame.size);
+            memcpy(m_last_sei.get()->buffer.get(),frame_begin_ptr,frame_len);
         }
         else {
             if(m_send_counts!=0)m_send_counts--;
@@ -171,83 +172,96 @@ std::string h265_source::getAttributeFmtp()
 }
 bool h265_source::handleFrame(MediaChannelId channelId, AVFrame frame)
 {
-    auto type=this->get_frame_type(frame.buffer.get()[0]);
-    if(!check_frames(type,frame))return true;
-    frame.type=type;
-    uint8_t *frameBuf  = frame.buffer.get();
-    uint32_t frameSize = frame.size;
-    auto timestamp=getTimeStamp(frame.timestamp);
-    if (frameSize <= MAX_RTP_PAYLOAD_SIZE)
-    {
-        RtpPacket rtpPkt;
-        rtpPkt.type = frame.type;
-        rtpPkt.timestamp = timestamp;
-        rtpPkt.size = frameSize + 4 + RTP_HEADER_SIZE;
-        rtpPkt.last = 1;
+    auto start_pos=find_next_video_nal_pos(frame.buffer.get(),frame.size,0);
+    if(start_pos==frame.size)return  false;
+    int safty_counts=6;
+    while ((safty_counts--)>0) {
+        auto type=this->get_frame_type(frame.buffer.get()[start_pos]);
+        uint32_t next_pos=frame.size;
+        if(type==FRAME_I||type==FRAME_P||type==FRAME_B){
 
-        memcpy(rtpPkt.data.get()+4+RTP_HEADER_SIZE, frameBuf, frameSize); // 预留 4字节TCP Header, 12字节 RTP Header
-
-        if (m_sendFrameCallback)
-        {
-            if(!m_sendFrameCallback(channelId, rtpPkt))return false;
+        }else {
+            next_pos=find_next_video_nal_pos(frame.buffer.get(),frame.size,start_pos+1);
         }
-    }
-    else
-    {
-        // 参考live555
-        char FU[3] = {0};
-        char nalUnitType = (frameBuf[0] & 0x7E) >> 1;
-        FU[0] = (frameBuf[0] & 0x81) | (49<<1);
-        FU[1] = frameBuf[1];
-        FU[2] = (0x80 | nalUnitType);
-
-        frameBuf  += 2;
-        frameSize -= 2;
-
-        while (frameSize + 3 > MAX_RTP_PAYLOAD_SIZE)
+        frame.type=type;
+        uint8_t *frameBuf  = frame.buffer.get()+start_pos;
+        uint32_t frameSize = next_pos-start_pos;
+        if(next_pos!=frame.size&&frameSize>=4)frameSize-=4;
+        if(!check_frames(type,frame,start_pos,frameSize))return true;
+        auto timestamp=getTimeStamp(frame.timestamp);
+        if (frameSize <= MAX_RTP_PAYLOAD_SIZE)
         {
             RtpPacket rtpPkt;
             rtpPkt.type = frame.type;
             rtpPkt.timestamp = timestamp;
-            rtpPkt.size = 4 + RTP_HEADER_SIZE + MAX_RTP_PAYLOAD_SIZE;
-            rtpPkt.last = 0;
-
-            rtpPkt.data.get()[RTP_HEADER_SIZE+4] = FU[0];
-            rtpPkt.data.get()[RTP_HEADER_SIZE+5] = FU[1];
-            rtpPkt.data.get()[RTP_HEADER_SIZE+6] = FU[2];
-            memcpy(rtpPkt.data.get()+4+RTP_HEADER_SIZE+3, frameBuf, MAX_RTP_PAYLOAD_SIZE-3);
-
-            if (m_sendFrameCallback)
-            {
-                if(!m_sendFrameCallback(channelId, rtpPkt))return false;
-            }
-
-            frameBuf  += (MAX_RTP_PAYLOAD_SIZE - 3);
-            frameSize -= (MAX_RTP_PAYLOAD_SIZE - 3);
-
-            FU[2] &= ~0x80;
-        }
-
-        {
-            RtpPacket rtpPkt;
-            rtpPkt.type = frame.type;
-            rtpPkt.timestamp = timestamp;
-            rtpPkt.size = 4 + RTP_HEADER_SIZE + 3 + frameSize;
+            rtpPkt.size = frameSize + 4 + RTP_HEADER_SIZE;
             rtpPkt.last = 1;
 
-            FU[2] |= 0x40;
-            rtpPkt.data.get()[RTP_HEADER_SIZE+4] = FU[0];
-            rtpPkt.data.get()[RTP_HEADER_SIZE+5] = FU[1];
-            rtpPkt.data.get()[RTP_HEADER_SIZE+6] = FU[2];
-            memcpy(rtpPkt.data.get()+4+RTP_HEADER_SIZE+3, frameBuf, frameSize);
+            memcpy(rtpPkt.data.get()+4+RTP_HEADER_SIZE, frameBuf, frameSize); // 预留 4字节TCP Header, 12字节 RTP Header
 
             if (m_sendFrameCallback)
             {
                 if(!m_sendFrameCallback(channelId, rtpPkt))return false;
             }
         }
-    }
+        else
+        {
+            // 参考live555
+            char FU[3] = {0};
+            char nalUnitType = (frameBuf[0] & 0x7E) >> 1;
+            FU[0] = (frameBuf[0] & 0x81) | (49<<1);
+            FU[1] = frameBuf[1];
+            FU[2] = (0x80 | nalUnitType);
 
+            frameBuf  += 2;
+            frameSize -= 2;
+
+            while (frameSize + 3 > MAX_RTP_PAYLOAD_SIZE)
+            {
+                RtpPacket rtpPkt;
+                rtpPkt.type = frame.type;
+                rtpPkt.timestamp = timestamp;
+                rtpPkt.size = 4 + RTP_HEADER_SIZE + MAX_RTP_PAYLOAD_SIZE;
+                rtpPkt.last = 0;
+
+                rtpPkt.data.get()[RTP_HEADER_SIZE+4] = FU[0];
+                rtpPkt.data.get()[RTP_HEADER_SIZE+5] = FU[1];
+                rtpPkt.data.get()[RTP_HEADER_SIZE+6] = FU[2];
+                memcpy(rtpPkt.data.get()+4+RTP_HEADER_SIZE+3, frameBuf, MAX_RTP_PAYLOAD_SIZE-3);
+
+                if (m_sendFrameCallback)
+                {
+                    if(!m_sendFrameCallback(channelId, rtpPkt))return false;
+                }
+
+                frameBuf  += (MAX_RTP_PAYLOAD_SIZE - 3);
+                frameSize -= (MAX_RTP_PAYLOAD_SIZE - 3);
+
+                FU[2] &= ~0x80;
+            }
+
+            {
+                RtpPacket rtpPkt;
+                rtpPkt.type = frame.type;
+                rtpPkt.timestamp = timestamp;
+                rtpPkt.size = 4 + RTP_HEADER_SIZE + 3 + frameSize;
+                rtpPkt.last = 1;
+
+                FU[2] |= 0x40;
+                rtpPkt.data.get()[RTP_HEADER_SIZE+4] = FU[0];
+                rtpPkt.data.get()[RTP_HEADER_SIZE+5] = FU[1];
+                rtpPkt.data.get()[RTP_HEADER_SIZE+6] = FU[2];
+                memcpy(rtpPkt.data.get()+4+RTP_HEADER_SIZE+3, frameBuf, frameSize);
+
+                if (m_sendFrameCallback)
+                {
+                    if(!m_sendFrameCallback(channelId, rtpPkt))return false;
+                }
+            }
+        }
+        if(next_pos>=frame.size)break;
+        start_pos=next_pos;
+    }
     return true;
 }
 bool h265_source::handleGopCache(MediaChannelId channelid,shared_ptr<rtp_connection>connection)

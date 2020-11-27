@@ -1,4 +1,5 @@
-var config_info_origin = {"event_thread_pool_size":	2,          //0
+var config_info_origin = {
+    "event_thread_pool_size":	2,          //0
     "event_trigger_threads":	2,			//0
     "event_trigger_queue_size":	2000, 		//0
     "event_network_io_threads":	4,		//0
@@ -117,8 +118,7 @@ function update_config() {
     get_difference();
     if (JSON.stringify(difference) == "{}") {
 
-    }
-    else {
+    } else {
         $.ajax({
             type: 'post',
             url: '../cgi-bin/web_function.cgi',
@@ -284,16 +284,21 @@ function restart() {
 }
 
 // 捕捉输入框变化2
-function text_change2(obj) {
+function text_change2(obj, state) {
     let key=obj.getAttribute("name");
     let value=obj.value;
     net_config.net_temp[key]=value
 }
 
 // 捕捉输入框变化
-function text_change(obj) {
+function text_change(obj, state, type) {
+    let value = null
     let key=obj.getAttribute("name");
-    let value=obj.value;
+    if (state) {
+        value=obj.value
+    } else {
+        type === 'int' ? value=Number(obj.value) : value=parseFloat(obj.value)
+    }
     if(key=='log_open'){
         value=$(obj).prop('checked');
     }
