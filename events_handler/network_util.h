@@ -329,6 +329,8 @@ public:
     }
     //检查ip是否处于同一局域网
     bool ip_check_with_mask(string ip1,string ip2,string netmask);
+    //检查socket读写异常
+    bool check_socket_io_error_status()const;
 private:
     Network_Util();
     ~Network_Util();

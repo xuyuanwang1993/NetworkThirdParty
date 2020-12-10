@@ -6,8 +6,8 @@ tcp_connection_helper *tcp_connection_helper::CreateNew(weak_ptr<EventLoop> loop
 }
 void tcp_connection_helper::OpenConnection(string ip,uint16_t port,CONNECTION_CALLBACK callback,uint32_t time_out_ms)
 {
+    auto event_loop=m_loop.lock();
     do{
-        auto event_loop=m_loop.lock();
         if(!event_loop)break;
         SOCKET fd=NETWORK.build_socket(TCP);
         if(fd==INVALID_SOCKET)break;
@@ -20,7 +20,11 @@ void tcp_connection_helper::OpenConnection(string ip,uint16_t port,CONNECTION_CA
             //由timer移除的fd都归类为超时
             auto event_loop=m_loop.lock();
             if(event_loop)event_loop->removeChannel(fd);
-            if(callback)callback(CONNECTION_TIME_OUT,INVALID_SOCKET);
+            if(callback&&event_loop){
+                event_loop->add_trigger_event([callback](){
+                    callback(CONNECTION_TIME_OUT,INVALID_SOCKET);
+                });
+            }
             return false;
         },time_out_ms);
         channel->enableWriting();
@@ -38,7 +42,12 @@ void tcp_connection_helper::OpenConnection(string ip,uint16_t port,CONNECTION_CA
             }
             auto event_loop=m_loop.lock();
             if(event_loop)event_loop->removeChannel(chn->fd());
-            if(callback)callback(status,chn->fd());
+            if(callback&&event_loop){
+                auto fd=chn->fd();
+                event_loop->add_trigger_event([callback,status,fd](){
+                    callback(status,fd);
+                });
+            }
             return false;
         });
         channel->enableReading();
@@ -50,11 +59,20 @@ void tcp_connection_helper::OpenConnection(string ip,uint16_t port,CONNECTION_CA
             CONNECTION_STATUS status=CONNECTION_FAILED;
             auto event_loop=m_loop.lock();
             if(event_loop)event_loop->removeChannel(chn->fd());
-            if(callback)callback(status,chn->fd());
+            if(callback&&event_loop){
+                auto fd=chn->fd();
+                event_loop->add_trigger_event([callback,status,fd](){
+                    callback(status,fd);
+                });
+            }
             return false;
         });
         event_loop->updateChannel(channel);
         return;
     }while(0);
-    if(callback)callback(CONNECTION_SYS_ERROR,INVALID_SOCKET);
+    if(callback&&event_loop){
+        event_loop->add_trigger_event([callback](){
+            callback(CONNECTION_SYS_ERROR,INVALID_SOCKET);
+        });
+    }
 }

@@ -32,10 +32,12 @@ int main(int argc,char *argv[]){
     server->addAuthorizationInfo("admin","micagent");
     server->addAuthorizationInfo("admin1","micagent1");
     auto session=media_session::CreateNew("test");
+    MediaType type=H264;
     if(strstr(argv[1],"h264")!=nullptr){
         session->setMediaSource(channel_0,h264_source::createNew());
     }
     else {
+        type=H265;
         session->setMediaSource(channel_0,h265_source::createNew());
     }
     auto session_id=server->addMediaSession(session);
@@ -59,7 +61,7 @@ int main(int argc,char *argv[]){
             int frameSize = file.readFrame(frameBuf+offset, bufSize);
             if(frameSize > 0)
             {
-                if(frameBuf[offset+4]!=0x26&&frameBuf[offset+4]!=0x02){
+                if((type==frameBuf[offset+4]!=0x26&&frameBuf[offset+4]!=0x02)||(type==H264&&frameBuf[offset+4]!=0x61&&frameBuf[offset+4]!=0x65)){
                     offset+=frameSize;
                     continue;
                 }

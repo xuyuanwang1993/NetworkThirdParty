@@ -36,6 +36,65 @@ typedef struct program_stream_map_pes_packet {
 } program_stream_map_pes;
 #pragma pack ()
 //end gb28181 defines
+ps_stream_filter::ps_stream_filter(uint32_t max_cache_size,uint32_t max_cache_counts):buf_len(max_cache_size),use_len(0),last_status(0),cache_counts(max_cache_counts==0?1:max_cache_counts)\
+,last_find_pos(0),have_find_header(false)
+{
+    cache_buf.reset(new uint8_t[buf_len+1],default_delete<uint8_t[]>());
+}
+bool ps_stream_filter::append(const void *buf, uint32_t input_buf_len)
+{
+    if(input_buf_len>buf_len){
+        PS_DEMUX_LOG("ps_stream_filter buffer overflow!");
+        return  false;
+    }
+    if(buf_len-use_len<input_buf_len){
+        PS_DEMUX_LOG("ps_stream_filter buffer overflow!");
+        //clear status
+        clear();
+    }
+    uint32_t check_len=use_len;
+    //copy data
+    memcpy(cache_buf.get()+use_len,buf,input_buf_len);
+    use_len+=input_buf_len;
+    while(check_len<use_len)
+    {
+        last_status=(last_status<<8)|cache_buf.get()[check_len];
+        if(last_status==PS_PACKET_START_CODE){
+            if(have_find_header){
+                //save a complete ps frame
+                if(m_frame_cache.size()>=cache_counts&&!m_frame_cache.empty()){
+                    m_frame_cache.pop_front();
+                }
+                uint32_t new_frame_len=check_len-4-last_find_pos;
+                shared_ptr<uint8_t>new_frame_buf(new uint8_t[new_frame_len+1],default_delete<uint8_t[]>());
+                memcpy(new_frame_buf.get(),cache_buf.get()+last_find_pos,new_frame_len);
+                m_frame_cache.push_back(make_pair(new_frame_buf,new_frame_len));
+            }
+            if(check_len>3){
+                have_find_header=true;
+                last_find_pos=check_len-4;
+            }
+        }
+        check_len++;
+    }
+    if(have_find_header){
+        //copy buf
+        auto left_len=use_len-last_find_pos;
+        shared_ptr<uint8_t>tmp_buf(new uint8_t[left_len+1],default_delete<uint8_t[]>());
+        memcpy(tmp_buf.get(),cache_buf.get()+last_find_pos,left_len);
+        last_find_pos=0;
+        use_len=left_len;
+        memcpy(cache_buf.get(),tmp_buf.get(),left_len);
+    }
+    return !m_frame_cache.empty();
+}
+pair<shared_ptr<uint8_t>, uint32_t> ps_stream_filter::read_frame()
+{
+    if(m_frame_cache.empty())return  {nullptr,0};
+    auto ret=m_frame_cache.front();
+    m_frame_cache.pop_front();
+    return ret;
+}
 constexpr static size_t ps_map_header_len=sizeof (program_stream_map_start);
 constexpr static size_t ps_header_len=sizeof (program_stream_pack_header);
 constexpr static size_t pes_program_map_len=sizeof (program_stream_map_pes);
@@ -314,7 +373,7 @@ bool ps_demux::parse_video_pes_packet(const uint8_t *buf_start,uint32_t &start_p
     uint32_t pes_end_pos=start_pos+pes_len;
     if(pes_end_pos>total_len){
         //perhaps miss some rtp packets
-        PS_DEMUX_LOG("PES packet overflow %u %u!",pes_end_pos,total_len);
+        //PS_DEMUX_LOG("PES packet overflow %u %u!",pes_end_pos,total_len);
         pes_end_pos=total_len;
     }
     start_pos++;//discard this copy rigth byte
@@ -430,7 +489,7 @@ bool ps_demux::parse_video_pes_packet(const uint8_t *buf_start,uint32_t &start_p
             if(packet_len<4)break;
             auto start_code=decode_u32(buf_start+packet_start);
             if(start_code!=PS_PACKET_VIDEO_START)break;
-            output.frame_list.push_back(make_shared<ps_stream_frame>(buf_start+packet_start,packet_len,PS_FRAME_VIDEO,static_cast<uint32_t>((m_last_video_pts>>1)/45.0)));
+            output.frame_list.push_back(make_shared<ps_stream_frame>(buf_start+packet_start,packet_len,PS_FRAME_VIDEO,static_cast<int64_t>((m_last_video_pts>>1)/45.0)));
         }
         else {
             if(packet_len<4){
@@ -443,7 +502,7 @@ bool ps_demux::parse_video_pes_packet(const uint8_t *buf_start,uint32_t &start_p
                     output.frame_list.rbegin()->get()->ps_frame_append(buf_start+packet_start,packet_len);
                 }
                 else {
-                    output.frame_list.push_back(make_shared<ps_stream_frame>(buf_start+packet_start,packet_len,PS_FRAME_VIDEO,static_cast<uint32_t>((m_last_video_pts>>1)/45.0)));
+                    output.frame_list.push_back(make_shared<ps_stream_frame>(buf_start+packet_start,packet_len,PS_FRAME_VIDEO,static_cast<int64_t>((m_last_video_pts>>1)/45.0)));
                 }
             }
         }
@@ -608,7 +667,7 @@ bool ps_demux::parse_audio_pes_packet(const uint8_t *buf_start,uint32_t &start_p
             m_audio_channels=1;
             m_audio_sample_rate=8000;
         }
-        if(m_audio_sample_rate>0)output.frame_list.push_back(make_shared<ps_stream_frame>(buf_start+packet_start,packet_len,PS_FRAME_AUDIO,static_cast<uint32_t>((m_last_audio_pts>>1)*1000/(m_audio_sample_rate/2))));
+        if(m_audio_sample_rate>0)output.frame_list.push_back(make_shared<ps_stream_frame>(buf_start+packet_start,packet_len,PS_FRAME_AUDIO,static_cast<int64_t>((m_last_audio_pts>>1)*1000/(m_audio_sample_rate/2))));
     }while(0);
     return true;
 }

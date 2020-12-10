@@ -1,5 +1,4 @@
 HEADERS += \
-    ../kcp_manage.h \
     ../ikcp.h \
     ../../LOG/c_log.h \
     ../../events_handler/trigger_event.h \
@@ -10,7 +9,7 @@ HEADERS += \
     ../../events_handler/network_util.h \
     ../../events_handler/io_channel.h \
     ../../events_handler/event_loop.h \
-    ../kcp_server.h
+    ../kcp_common.h
 
 LIBS+= -lpthread
 
@@ -18,7 +17,6 @@ QMAKE_CXXFLAGS += -g
 
 SOURCES += \
     main.cpp \
-    ../kcp_manage.cpp \
     ../ikcp.c \
     ../../LOG/c_log.cpp \
     ../../events_handler/trigger_event.cpp \
@@ -28,7 +26,7 @@ SOURCES += \
     ../../events_handler/pipe.cpp \
     ../../events_handler/network_util.cpp \
     ../../events_handler/event_loop.cpp \
-    ../kcp_server.cpp
+    ../kcp_common.cpp
 
 INCLUDEPATH += ..\
 ../../LOG \

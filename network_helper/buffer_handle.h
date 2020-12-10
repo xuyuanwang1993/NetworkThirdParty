@@ -11,10 +11,12 @@ namespace micagent {
 using namespace std;
 /*读取数据回调函数，若设置了回调函数，数据将会移交给用户自行处理，不会存入缓存*/
 using ReadBufferCallback=function<void(const char *,uint32_t)>;
+struct BufferPacket;
 /**
  * @brief The buffer_handle class 用于处理网络IO的数据接收与发送
  */
 class buffer_handle{
+    friend struct BufferPacket;
 protected:
     /**
      * @brief MAX_BUFFER_CAPACITY 最大buffer块容量
@@ -93,7 +95,38 @@ protected:
      */
     virtual bool insert_packet(const char *buf,uint32_t buf_len);
 protected:
-    struct BufferPacket{
+    mutable mutex m_mutex;
+    /**
+     * @brief m_callback 读回调函数
+     */
+    ReadBufferCallback m_callback;
+    /**
+     * @brief m_per_read_size 单次读取最大长度
+     */
+    uint32_t m_per_read_size;
+    /**
+     * @brief m_capacity 缓存区最大长度
+     */
+    uint32_t m_capacity;
+    /**
+     * @brief m_packet_list 帧缓存链表
+     */
+    list<BufferPacket> m_packet_list;
+    /**
+     * @brief m_is_stream 是否为按流输入标识
+     */
+    bool m_is_stream;
+private:
+    /**
+      * @brief m_crlf 帧分隔符示例 \r\n\r\n\r\n
+      */
+     static  constexpr const  char *m_crlf="\r\n\r\n";
+     /**
+     * @brief m_crlf_len 帧分隔符示例长度
+     */
+    constexpr const static uint8_t m_crlf_len=4;
+};
+struct BufferPacket{
     /*数据存放区域*/
        shared_ptr<char> buf;
        /*数据区域长度*/
@@ -137,12 +170,12 @@ protected:
        /*获取完成状态*/
        bool finished()const{return is_finished;}
        /*追加数据*/
-       bool append(const char *input_buf,uint32_t input_len){
+       bool append(const void *input_buf,uint32_t input_len){
            if(input_len<=available_size()){
                memcpy(write_ptr(),input_buf,input_len);
                write_index+=input_len;
            }
-           else if (filled_size()+input_len>MAX_PACKET_SIZE) return false;
+           else if (filled_size()+input_len>buffer_handle::MAX_PACKET_SIZE) return false;
            else {
                buf_len=filled_size()+input_len;
                char *new_buf=new char[buf_len];
@@ -155,36 +188,5 @@ protected:
            return true;
        }
     };
-    mutable mutex m_mutex;
-    /**
-     * @brief m_callback 读回调函数
-     */
-    ReadBufferCallback m_callback;
-    /**
-     * @brief m_per_read_size 单次读取最大长度
-     */
-    uint32_t m_per_read_size;
-    /**
-     * @brief m_capacity 缓存区最大长度
-     */
-    uint32_t m_capacity;
-    /**
-     * @brief m_packet_list 帧缓存链表
-     */
-    list<BufferPacket> m_packet_list;
-    /**
-     * @brief m_is_stream 是否为按流输入标识
-     */
-    bool m_is_stream;
-private:
-    /**
-      * @brief m_crlf 帧分隔符示例 \r\n\r\n\r\n
-      */
-     static  constexpr const  char *m_crlf="\r\n\r\n";
-     /**
-     * @brief m_crlf_len 帧分隔符示例长度
-     */
-    constexpr const static uint8_t m_crlf_len=4;
-};
 }
 #endif // BUFFER_HANDLE_H

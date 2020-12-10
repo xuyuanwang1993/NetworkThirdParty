@@ -840,4 +840,13 @@ bool Network_Util::ip_check_with_mask(string ip1,string ip2,string netmask)
     auto val3=inet_addr(netmask.c_str());
     return  (val1&val3)==(val2&val3);
 }
+bool Network_Util::check_socket_io_error_status()const
+{
+#if defined(WIN32) || defined(_WIN32)
+    int error = WSAGetLastError();
+     if (error == WSAEWOULDBLOCK || error == WSAEINPROGRESS || error == 0)return true;
+#else
+    return (errno==EINTR||errno==EAGAIN||errno==EWOULDBLOCK||errno==0);
+#endif
+}
 }

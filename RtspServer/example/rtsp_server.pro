@@ -32,7 +32,7 @@ HEADERS += \
     ../../json_config/CJsonObject.hpp \
     ../../json_config/cJSON.h \
     ../../OtherTools/DelayControl/delay_control.h \
-    ../../OtherTools/Base64/Base64.h
+    ../../OtherTools/Base64/Base64.h \
 
 LIBS+= -lpthread
 
@@ -69,7 +69,7 @@ SOURCES += \
     ../../json_config/CJsonObject.cpp \
     ../../json_config/cJSON.c \
     ../../OtherTools/DelayControl/delay_control.cpp \
-    ../../OtherTools/Base64/Base64.cpp
+    ../../OtherTools/Base64/Base64.cpp \
 
 INCLUDEPATH += ..\
 ../../LOG \

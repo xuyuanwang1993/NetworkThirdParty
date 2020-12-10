@@ -105,6 +105,25 @@ enum ps_demux_const:uint32_t{
     //FRAME SIZE
     PS_MAX_MEDIA_FRAME_SIZE=10*1024*1024,
 };
+struct ps_stream_filter{
+    ps_stream_filter(uint32_t max_cache_size=1024*1024,uint32_t max_cache_counts=1);
+    shared_ptr<uint8_t>cache_buf;
+    const uint32_t buf_len;
+    uint32_t use_len;
+    uint32_t last_status;
+    const uint32_t cache_counts;
+    list<pair<shared_ptr<uint8_t>,uint32_t>>m_frame_cache;
+    uint32_t last_find_pos;
+    bool have_find_header;
+    bool append(const void *buf,uint32_t input_buf_len);
+    pair<shared_ptr<uint8_t>,uint32_t>read_frame();
+    void clear(){
+        use_len=0;
+        last_status=0;
+        have_find_header=false;
+    }
+};
+
 class ps_demux{
 public:
     ps_demux():m_find_system_header(false),m_probe_finished(false),\

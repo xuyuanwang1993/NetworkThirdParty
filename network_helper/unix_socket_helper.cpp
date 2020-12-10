@@ -10,9 +10,29 @@ unix_socket_base::~unix_socket_base(){
     if(m_fd!=INVALID_SOCKET)NETWORK.close_socket(m_fd);
     if(m_path[0]!='\0')unlink(m_path);
 }
-ssize_t unix_socket_base::recv(void *buf,uint32_t max_len)
+ssize_t unix_socket_base::recv(void *buf, uint32_t max_len, uint32_t time_out_ms)
 {
-    return ::read(m_fd,buf,max_len);
+
+    if (time_out_ms > 0)
+    {
+        NETWORK.make_noblocking(m_fd);
+        fd_set fdRead;
+        FD_ZERO(&fdRead);
+        FD_SET(m_fd, &fdRead);
+        struct timeval tv = { static_cast<__time_t>(time_out_ms / 1000), static_cast<__suseconds_t>(time_out_ms % 1000 * 1000 )};
+        select(m_fd + 1, &fdRead, nullptr, nullptr, &tv);
+        ssize_t ret=-1;
+        if (FD_ISSET(m_fd, &fdRead))
+        {
+
+            ret= ::read(m_fd,buf,max_len);
+        }
+        NETWORK.make_blocking(m_fd,time_out_ms);
+        return ret;
+    }
+    else {
+        return ::read(m_fd,buf,max_len);
+    }
 }
 /********************************unix_stream_socket**********************************/
 unix_stream_socket::unix_stream_socket(const string &path):unix_socket_base(path)
@@ -64,7 +84,7 @@ SOCKET unix_dgram_socket::build()
 }
 ssize_t unix_dgram_socket::send(const void *buf,uint32_t len,const string &peer_path)
 {
-     if(len==0)return 0;
+    if(len==0)return 0;
     if(!peer_path.empty())
     {
         sockaddr_un destination;

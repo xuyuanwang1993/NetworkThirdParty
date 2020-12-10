@@ -175,7 +175,6 @@ bool ProxyInterface::protocol_input(const void *buf,uint32_t buf_len)
     decode_proxy_header(header,tmp);
     //check
     if(header.data_len+sizeof (ProxyHeader)!=buf_len){
-        
         return false;
     }
     {

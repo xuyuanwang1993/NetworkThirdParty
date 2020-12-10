@@ -42,7 +42,7 @@ public:
      * @param max_len max recv  len
      * @return the real bytes that is written to the buf
      */
-     ssize_t recv(void *buf,uint32_t max_len);
+     ssize_t recv(void *buf,uint32_t max_len,uint32_t time_out_ms=200);
 protected:
     /**
      * @brief m_fd socket's descriptor
