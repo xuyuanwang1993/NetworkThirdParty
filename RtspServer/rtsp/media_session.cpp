@@ -1,4 +1,5 @@
 #include "media_session.h"
+#include "rtsp_connection.h"
 #define ENABLE_GOP_CACHE 1
 using namespace micagent;
 atomic<MediaSessionId> media_session::s_session_id(0);
@@ -21,6 +22,7 @@ void media_session::setMediaSource(MediaChannelId id,shared_ptr<media_source>sou
             auto ptr=i->second.lock();
             if(!ptr){
                 m_rtp_connections.erase(i++);
+                if(m_notice_client_nums_callback)m_notice_client_nums_callback(m_session_id,m_rtp_connections.size());
             }
             else {
                 if((pkt.type==FRAME_I||pkt.type==FRAME_SPS||pkt.type==FRAME_VPS)&&ptr->is_Playing(channelId))ptr->set_see_idr();
@@ -33,6 +35,7 @@ void media_session::setMediaSource(MediaChannelId id,shared_ptr<media_source>sou
                         if(isMulticast())break;
                     }else {
                         m_rtp_connections.erase(i++);
+                        if(m_notice_client_nums_callback)m_notice_client_nums_callback(m_session_id,m_rtp_connections.size());
                     }
 
                 }else {
@@ -92,6 +95,20 @@ bool media_session::updateFrame(MediaChannelId channel,const AVFrame &frame)
             m_proxy_session_map.erase(iter++);
         }
     }
+    for(auto iter=m_websocket_connections.begin();iter!=m_websocket_connections.end();)
+    {
+        auto strong=iter->second.lock();
+        if(strong)
+        {
+            auto ptr=strong.get();
+            auto websocket_connection=dynamic_cast<rtsp_connection *>(ptr);
+            if(websocket_connection)websocket_connection->websocket_forward_stream(channel,frame);
+            iter++;
+        }
+        else {
+            m_websocket_connections.erase(iter++);
+        }
+    }
     if(m_has_new_client){
 #if ENABLE_GOP_CACHE
         for(uint32_t i=0;i<MAX_MEDIA_CHANNEL;++i)
@@ -135,7 +152,16 @@ bool media_session::addClient(SOCKET rtspfd, std::shared_ptr<rtp_connection> rtp
         m_rtp_connections.erase(iter);
     }
     auto ret=m_rtp_connections.emplace(rtspfd,weak_ptr<rtp_connection>(rtpConnPtr));
+    if(m_notice_client_nums_callback)m_notice_client_nums_callback(m_session_id,m_rtp_connections.size());
     return ret.second;
+}
+void media_session::addWebsocketSink(SOCKET rtspfd, weak_ptr<tcp_connection> websocket_sink)
+{
+    lock_guard<mutex>locker(m_mutex);
+    auto iter=m_websocket_connections.find(rtspfd);
+    if(iter==end(m_websocket_connections)){
+        m_websocket_connections.emplace(rtspfd,websocket_sink);
+    }
 }
 void media_session::notice_new_connection()
 {
@@ -156,6 +182,7 @@ void media_session::removeClient(SOCKET rtspfd)
 {
     lock_guard<mutex>locker(m_mutex);
     m_rtp_connections.erase(rtspfd);
+    if(m_notice_client_nums_callback)m_notice_client_nums_callback(m_session_id,m_rtp_connections.size());
 }
 string media_session::get_sdp_info (const string & version)
 {
@@ -247,7 +274,7 @@ vector<media_source_info>media_session::get_media_source_info()const
     return ret;
 }
 media_session::media_session(string rtsp_suffix):m_suffix(rtsp_suffix),m_session_id(generate_session_id()),m_is_multicast(false)\
-  ,m_multicast_ip(""),m_sdp(""),m_has_new_client(false)
+  ,m_multicast_ip(""),m_sdp(""),m_has_new_client(false),m_notice_client_nums_callback(nullptr)
 {
 #ifdef SAVE_FILE_ACCESS
     m_save_fp=fopen((string(SAVE_FILE_PRFIX)+to_string(m_session_id)).c_str(),"w+");

@@ -302,6 +302,20 @@ public:
     static  uint32_t get_stream_token(const void *buf,uint32_t buf_len);
     //输出头信息
     static void dump_header_info(const void *buf,uint32_t buf_len);
+    //判断帧的类型
+    static PFrameType inline  get_frame_type(int media_type,const char *buf){
+        switch (media_type) {
+        case PPCMA:
+        case PAAC:
+            return NORMAL_FRAME;
+        case PH264:
+            return get_264_type(buf[0]);
+        case PH265:
+            return get_265_type(buf[0]);
+        default:
+            return  NORMAL_FRAME;
+        }
+    }
 private:
     //264帧分析
     static PFrameType inline get_264_type(char first_byte){
@@ -321,20 +335,7 @@ private:
             return NORMAL_FRAME;
         }
     }
-    //判断帧的类型
-    static PFrameType inline  get_frame_type(int media_type,const char *buf){
-        switch (media_type) {
-        case PPCMA:
-        case PAAC:
-            return NORMAL_FRAME;
-        case PH264:
-            return get_264_type(buf[0]);
-        case PH265:
-            return get_265_type(buf[0]);
-        default:
-            return  NORMAL_FRAME;
-        }
-    }
+
     //循环序列号比较
     bool inline circle_compare(uint16_t last,uint16_t present){
         return  present>=last||(last-present)>UINT16_MAX/2;

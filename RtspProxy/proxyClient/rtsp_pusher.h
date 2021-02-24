@@ -70,6 +70,9 @@ private:
     void handle_set_up_stream_ack(CJsonObject &object);
     void handle_modify_stream_ack(CJsonObject &object);
     void handle_tear_down_stream_ack();
+    void handle_play_stream();
+    void handle_pause_stream();
+    bool check_packet_can_send(const void *buf,PMediaTYpe type);
 private:
     //初始化参数
     //连接辅助
@@ -123,6 +126,8 @@ private:
     //tcp收发数据缓冲区
     shared_ptr<proxy_message> m_recv_buf;
     shared_ptr<proxy_message> m_send_buf;
+    //是否过滤视频非关键帧
+    atomic<bool> m_filter_video_b_p_frame;
 };
 }
 #endif // RTSP_PUSHER_H

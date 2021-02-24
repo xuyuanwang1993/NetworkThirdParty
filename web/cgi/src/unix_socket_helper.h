@@ -41,14 +41,14 @@ public:
      * @param peer_path destination
      * @return the real send size and -1 for a send error
      */
-    virtual ssize_t send(const void *buf,uint32_t len,const string &peer_path="")=0;
+    virtual ssize_t send(const void *buf,uint32_t len,const string &peer_path="",uint32_t time_out_ms=200)=0;
     /**
      * @brief recv recv a frame from the socket's cache buf
      * @param buf where the recv bytes is saved
      * @param max_len max recv  len
      * @return the real bytes that is written to the buf
      */
-    ssize_t recv(void *buf,uint32_t max_len);
+    ssize_t recv(void *buf,uint32_t max_len,uint32_t time_out_ms=200);
 protected:
     /**
      * @brief m_fd socket's descriptor
@@ -72,7 +72,7 @@ public:
       * @param path it's local path if it's necessary
       */
     void reset(SOCKET fd,const string & path="");
-    ssize_t send(const void *buf,uint32_t len,const string &peer_path="")override;
+    ssize_t send(const void *buf,uint32_t len,const string &peer_path="",uint32_t time_out_ms=200)override;
     /**
      * @brief listen when the socket works as a server,you man call this function
      * @param size the waiting queue's size
@@ -98,6 +98,13 @@ public:
  * @brief The unix_stream_socket class just like udp
  */
 class  unix_dgram_socket:public unix_socket_base{
+    struct private_protocal_header{
+         uint16_t packet_seq;//set a same random num for one packet
+         uint32_t left_len;
+     };
+     static constexpr uint32_t DEFAULT_PACKET_HEADER_LEN=6;
+     static constexpr uint32_t DEFAULT_MTU_SIZE=10000;
+    static constexpr uint32_t DEFAULT_PACKET_SIZE=DEFAULT_MTU_SIZE+DEFAULT_PACKET_HEADER_LEN;
 public:
     unix_dgram_socket(const string &path="");
     SOCKET build()override;
@@ -118,7 +125,26 @@ public:
      * @return
      */
     string get_local_path()const{return m_path;}
-    ssize_t send(const void *buf,uint32_t len,const string &peer_path="")override;
+    ssize_t send(const void *buf,uint32_t len,const string &peer_path="",uint32_t time_out_ms=200)override;
+     /**
+      * @brief send_packet private  protocal
+      * @param buf
+      * @param len
+      * @param time_out_ms
+      * @param peer_path
+      * @return
+      * @note only used by a udp server
+      */
+     ssize_t send_packet(const void *buf,uint32_t len,uint32_t time_out_ms=200,const string &peer_path="");
+     /**
+      * @brief recv_packet private  protocal
+      * @param buf
+      * @param max_len
+      * @param time_out_ms
+      * @return
+      * @note only use by a udp client
+      */
+     ssize_t recv_packet(void *buf,uint32_t max_len,uint32_t time_out_ms=200);
     ~unix_dgram_socket()override{
 
     }
@@ -127,6 +153,10 @@ private:
       * @brief m_peer_path cache the peer path
       */
     sockaddr_un m_peer_path;
+    uint8_t m_packet_send_cache[DEFAULT_PACKET_SIZE+1]={0};
+     private_protocal_header m_recv_packet_header;
+     uint32_t m_packet_cache_len;
+     uint8_t m_packet_recv_cache[DEFAULT_PACKET_SIZE+1]={0};
 };
 
 

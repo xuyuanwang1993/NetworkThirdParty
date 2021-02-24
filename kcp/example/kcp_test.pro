@@ -9,7 +9,12 @@ HEADERS += \
     ../../events_handler/network_util.h \
     ../../events_handler/io_channel.h \
     ../../events_handler/event_loop.h \
-    ../kcp_common.h
+    ../kcp_common.h \
+    ../kcp_proxy_interface.h \
+    ../kcp_proxy_server.h \
+    ../kcp_proxy_connection.h \
+    ../irudp_over_kcp_common.h \
+    ../irudp_over_kcp_server.h
 
 LIBS+= -lpthread
 
@@ -26,7 +31,12 @@ SOURCES += \
     ../../events_handler/pipe.cpp \
     ../../events_handler/network_util.cpp \
     ../../events_handler/event_loop.cpp \
-    ../kcp_common.cpp
+    ../kcp_common.cpp \
+    ../kcp_proxy_interface.cpp \
+    ../kcp_proxy_server.cpp \
+    ../kcp_proxy_connection.cpp \
+    ../irudp_over_kcp_common.cpp \
+    ../irudp_over_kcp_server.cpp
 
 INCLUDEPATH += ..\
 ../../LOG \

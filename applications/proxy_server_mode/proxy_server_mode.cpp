@@ -99,8 +99,8 @@ void proxy_server_mode::start()
             string dns_server_ip=NETWORK.parase_domain(m_dns_server_domain);
             m_dns_client.reset(new dns_client(dns_server_ip,m_dns_server_port));
             m_dns_client->config(m_event_loop,m_dns_domain_name,m_dns_account_name,m_dns_pass_word,m_dns_upload_interval_ms);
-            m_dns_client->set_port_map_item("rtsp",m_rtsp_server_port,m_rtsp_server_external_port);
-            m_dns_client->set_port_map_item("rtsp_proxy",m_rtsp_proxy_port,m_rtsp_proxy_external_port);
+            m_dns_client->set_port_map_item("rtsp",m_rtsp_server_external_port, m_rtsp_server_port);
+            m_dns_client->set_port_map_item("rtsp_proxy",m_rtsp_proxy_external_port,m_rtsp_proxy_port);
             m_dns_client->set_user_account_info(m_rtsp_account_name,m_rtsp_account_password);
         }
         //m_dns_client->register_to_server(m_dns_domain_name,m_dns_account_name,m_dns_pass_word,m_dns_description);
@@ -138,6 +138,12 @@ void proxy_server_mode::start()
         {
             m_proxy_server.reset(new proxy_server(m_rtsp_proxy_port));
             m_proxy_server->set_rtsp_server(m_rtsp_server);
+            weak_ptr<proxy_server>weak_proxy_server(m_proxy_server);
+            m_rtsp_server->setNoticeClientNumsCallback([weak_proxy_server](uint32_t token,uint32_t client_nums){
+                auto server=weak_proxy_server.lock();
+                if(!server)return ;
+                server->handle_stream_state(token,client_nums);
+            });
         }
         m_proxy_server->register_handle(m_event_loop);
         upnp_helper::Instance().config(m_event_loop,m_set_external_ip,m_router_ip);
@@ -402,7 +408,7 @@ void proxy_server_mode::load_default_config(const string &json_config_path)
     m_rtsp_proxy_port=DEFAULT_RTSP_PROXY_PORT;
     m_json_config->Add("rtsp_proxy_port",m_rtsp_proxy_port);
     //upnp
-    m_set_external_ip=true;
+    m_set_external_ip=false;
     m_router_ip="";
     m_rtsp_server_external_port=m_rtsp_server_port;
     m_rtsp_proxy_external_port=m_rtsp_proxy_port;
@@ -412,7 +418,7 @@ void proxy_server_mode::load_default_config(const string &json_config_path)
     m_json_config->Add("rtsp_proxy_external_port",m_rtsp_proxy_external_port);
     //itself
     m_log_open=true;
-    m_log_path="./log";
+    m_log_path="/home/microcreat/log/";
     m_json_config->Add("log_open",m_log_open,m_log_open);
     m_json_config->Add("log_path",m_log_path);
     m_json_config->SetSavePath(json_config_path);
@@ -460,6 +466,9 @@ void proxy_server_mode::message_handle()
             }
             else  if (cmd=="restart"){
                 handle_restart(from);
+            }
+            else if (cmd=="device_search") {
+                handle_device_search(object,from);
             }
             else {
                 handle_cmd_unsupported(cmd,from);
@@ -643,6 +652,18 @@ void proxy_server_mode::handle_restart(const string&from)
         system_reboot();
         return false;
     },20);
+}
+void proxy_server_mode::handle_device_search(const CJsonObject&object,const string&from)
+{
+    uint32_t search_port;
+    string res;
+    if(object.Get("search_port",search_port)){
+        res=do_handle_device_search(search_port&0xffff);
+    }
+    else {
+        res=do_handle_device_search();
+    }
+    m_message_fd->send(res.c_str(),res.length(),from);
 }
 void proxy_server_mode::handle_cmd_unsupported(const string&cmd,const string&from)
 {

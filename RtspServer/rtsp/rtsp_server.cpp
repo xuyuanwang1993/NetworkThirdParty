@@ -3,12 +3,25 @@
 #include "network_util.h"
 using namespace micagent;
 rtsp_server::rtsp_server(uint16_t listen_port,uint32_t netinterface_index):tcp_server (listen_port,netinterface_index),m_remove_timer_id(INVALID_TIMER_ID),\
-m_new_connection_callback(nullptr),m_new_media_session_callback(nullptr),m_delete_media_session_callback(nullptr)
+m_new_connection_callback(nullptr),m_notice_client_nums_callback(nullptr),m_new_media_session_callback(nullptr),m_delete_media_session_callback(nullptr)
 {
 
 }
 MediaSessionId rtsp_server::addMediaSession(shared_ptr<media_session>session)
 {
+    if(m_notice_client_nums_callback){
+        auto loop=m_loop;
+        auto cb=m_notice_client_nums_callback;
+        session->setNoticeClientNumsCallback([loop,cb](uint32_t stream_token,uint32_t client_num){
+            auto strong_loop=loop.lock();
+            if(strong_loop)
+            {
+                strong_loop->add_trigger_event([cb,stream_token,client_num](){
+                    cb(stream_token,client_num);
+                });
+            }
+        });
+    }
     unique_lock<mutex>locker(m_session_mutex);
     do{
         if(!session)break;

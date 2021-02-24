@@ -10,7 +10,7 @@ void Post_Mode_Handle(void);
 int main(int argc,char **argv)
 //int cgiMain()
 {
-    printf("Content-type:application/json;charset=utf-8\n\n");	//response header
+    printf("Content-type:application/json;charset=utf-8\n");	//response header
 
     if(!getenv("REQUEST_METHOD"))
     {
@@ -68,11 +68,14 @@ void Post_Mode_Handle()
     io_socket.send(word.get(),unix_socket_base::PATH_MAX_SIZE+ByteLength,"/tmp/proxy_server");
     uint32_t recv_size=30*1024;
     shared_ptr<char>recv_buf(new char[recv_size],default_delete<char[]>());
+    memset(recv_buf.get(),0,recv_size);
     auto recv_len=io_socket.recv(recv_buf.get(),recv_size);
     if(recv_len>0){
+        printf("CONTENT_LENGTH: %ld\n",recv_len);
         recv_buf.get()[recv_len]='\0';
-        printf("%s",recv_buf.get());
     }
+    printf("\n");
+    printf("%s",recv_buf.get());
 }
 
 

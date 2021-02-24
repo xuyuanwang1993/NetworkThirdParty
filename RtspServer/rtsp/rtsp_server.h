@@ -71,6 +71,10 @@ public:
         lock_guard<mutex>locker(m_session_mutex);
         m_new_connection_callback=cb;
     }
+    void setNoticeClientNumsCallback(const RTSP_NOTICE_CLIENT_NUMS_CALLBACK &cb){
+        lock_guard<mutex>locker(m_session_mutex);
+        m_notice_client_nums_callback=cb;
+    }
     void resgisterMediaSessionCallback(const RTSP_MEDIA_SESSION_CALLBACK &new_session_cb,\
     const RTSP_MEDIA_SESSION_CALLBACK &delete_session_cb){
         lock_guard<mutex>locker(m_session_mutex);
@@ -106,6 +110,7 @@ private:
     std::unordered_map<MediaSessionId,shared_ptr<media_session>>m_session_map;
     std::unordered_map<string,MediaSessionId>m_suffix_map;
     RTSP_NEW_CONNECTION_CALLBACK m_new_connection_callback;
+    RTSP_NOTICE_CLIENT_NUMS_CALLBACK m_notice_client_nums_callback;
     RTSP_MEDIA_SESSION_CALLBACK m_new_media_session_callback;
     RTSP_MEDIA_SESSION_CALLBACK m_delete_media_session_callback;
 };

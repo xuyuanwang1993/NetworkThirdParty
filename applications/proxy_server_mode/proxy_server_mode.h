@@ -13,23 +13,23 @@ namespace micagent {
 using namespace std;
 using neb::CJsonObject;
 class proxy_server_mode{
-//event_loop
+    //event_loop
     static constexpr int32_t DEFAULT_THREAD_POOL_SIZE=2;
     static constexpr uint32_t DEFAULT_TRIGGER_THREADS=2;
     static constexpr uint32_t DEFAULT_TRIGGER_QUEUE_SIZE=2000;
     static constexpr uint32_t DEFAULT_NETWORK_IO_THREADS=4;
-//dns
+    //dns
     static constexpr int64_t DEFAULT_DNS_UPLOAD_INTERVAL_MS=60*1000;//60s
     static constexpr char   DEFAULT_DNS_SERVER_DOMAIN[]="www.meanning.com";
     static constexpr uint16_t DEFAULT_DNS_PORT=10000;
-//load_balance
+    //load_balance
     static constexpr int64_t DEFAULT_BALANCE_UPLOAD_INTERVAL_MS=2*1000;//2s
     static constexpr uint16_t DEFAULT_BALANCE_PORT=10001;
     static constexpr uint32_t DEFAULT_MAX_PAYLOAD_SIZE=25;
     static constexpr double DEFAULT_SERVER_WEIGHT=0.5;
-//rtsp_server
+    //rtsp_server
     static constexpr uint16_t DEFAULT_RTSP_SERVER_PORT=8554;
-//rtsp_proxy
+    //rtsp_proxy
     static constexpr uint16_t DEFAULT_RTSP_PROXY_PORT=8555;
 public:
     proxy_server_mode();
@@ -37,7 +37,17 @@ public:
     void generate_daemon_config(const string &pro_name,const string &daemon_config_path);
     void start();
     void stop();
-    ~proxy_server_mode();
+    virtual ~proxy_server_mode();
+protected:
+    virtual string do_handle_device_search(uint16_t search_port=0){
+        CJsonObject response;
+        CJsonObject json_response;
+        response.Add("cmd",string("device_search")+"_response");
+        json_response.Add("error","not supported!");
+        response.Add("response",json_response);
+        auto str_response=response.ToString();
+        return str_response;
+    }
 private:
     void loop();
     bool parse_config();
@@ -52,17 +62,18 @@ private:
     void handle_get_net_config(const string&from);
     void handle_update_net_info(const CJsonObject&object,const string&from);
     void handle_restart(const string&from);
+    void handle_device_search(const CJsonObject&object,const string&from);
 private:
     void system_reboot();
     void local_ip_change(const string&dev,const string&ip,const string&mask,const string&gateway_ip,const string&mac)const;
 private:
-//event_loop
+    //event_loop
     int32_t m_event_thread_pool_size;
     uint32_t m_event_trigger_threads;
     uint32_t m_event_trigger_queue_size;
     uint32_t m_event_network_io_threads;
     shared_ptr<EventLoop> m_event_loop;
-//dns
+    //dns
     int64_t m_dns_upload_interval_ms;
     string m_dns_server_domain;
     uint16_t m_dns_server_port;
@@ -71,27 +82,27 @@ private:
     string m_dns_pass_word;
     string m_dns_description;
     shared_ptr<dns_client>m_dns_client;
-//load_balance
+    //load_balance
     int64_t m_balance_upload_interval_ms;
     string m_balance_server_domain;
     uint16_t m_balance_server_port;
     uint32_t m_balance_max_payload_size;
     double m_balance_server_weight;
     shared_ptr<load_balance_client>m_load_balance_client;
-//rtsp_server
+    //rtsp_server
     uint16_t m_rtsp_server_port;
     string m_rtsp_account_name;
     string m_rtsp_account_password;
     shared_ptr<rtsp_server>m_rtsp_server;
-//rtsp_proxy
+    //rtsp_proxy
     uint16_t m_rtsp_proxy_port;
     shared_ptr<proxy_server>m_proxy_server;
-//upnp
+    //upnp
     bool m_set_external_ip;
     string m_router_ip;
     uint16_t m_rtsp_server_external_port;
     uint16_t m_rtsp_proxy_external_port;
-//itself
+    //itself
     bool m_log_open;
     string m_log_path;
 private:

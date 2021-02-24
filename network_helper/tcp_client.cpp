@@ -198,8 +198,11 @@ void tcp_client:: handle_connect(CONNECTION_STATUS status,SOCKET fd)
         if(loop){
             loop->updateChannel(m_tcp_channel);
             if(m_connection_callback){
+                auto cb=m_connection_callback;
                 locker.unlock();
-                m_connection_callback();
+                loop->add_trigger_event([cb](){
+                    cb();
+                });
             }
         }
     }

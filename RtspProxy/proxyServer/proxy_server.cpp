@@ -29,6 +29,29 @@ shared_ptr<tcp_connection>proxy_server::new_connection(SOCKET fd)
 {
     return make_shared<proxy_connection>(fd,this);
 }
+void proxy_server::handle_stream_state(uint32_t stream_token,uint32_t client_num)
+{
+    lock_guard<mutex>locker(m_mutex);
+    auto iter=m_udp_connections_map.find(stream_token);
+    if(iter!=m_udp_connections_map.end())
+    {
+        auto connections_iter=m_connections.find(iter->second);
+        if(connections_iter!=m_connections.end())
+        {
+            auto connection_ptr=connections_iter->second;
+            auto connection=dynamic_cast<proxy_connection *>(connection_ptr.get());
+            if(connection){
+                if(client_num==0)connection->send_pause_stream();
+                else {
+                    connection->send_play_stream();
+                }
+            }
+        }
+        else {
+            m_udp_connections_map.erase(iter);
+        }
+    }
+}
 void proxy_server::remove_invalid_connection()
 {
     lock_guard<mutex>locker(m_mutex);

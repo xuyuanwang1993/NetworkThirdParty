@@ -173,6 +173,9 @@ int main(int argc,char *argv[])
             server->register_handle(loop);
             shared_ptr<proxy_server>pro_server(new proxy_server(server_port));
             pro_server->set_rtsp_server(server);
+            server->setNoticeClientNumsCallback([pro_server](uint32_t token ,uint32_t nums){
+                pro_server->handle_stream_state(token,nums);
+            });
             pro_server->register_handle(loop);
             //Timer::sleep(1000000);
             while (getchar()!='8') continue;

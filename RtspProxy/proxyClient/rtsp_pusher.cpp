@@ -4,7 +4,8 @@ using namespace micagent;
 rtsp_pusher::rtsp_pusher(weak_ptr<tcp_connection_helper> helper, PTransMode mode, const string &des_name, const string &des_ip , uint16_t des_port, const string &user_name="", const string &password=""):\
     proxy_session_base(),m_connection_helper(helper),m_mode(mode),m_des_name(des_name),m_des_ip(des_ip),m_des_port(des_port),m_user_name(user_name),m_pass_word(password)\
   ,m_media_info_set(false),m_media_info(MAX_MEDIA_CHANNEL,PNONE),m_is_connecting(false),m_udp_fd(INVALID_SOCKET),m_last_time_out(MIN_WAIT_TIME),m_is_authorized(false),\
-    m_is_setup(false),m_is_closed(false),m_stream_token(INVALID_MediaSessionId),m_seq(0),m_recv_buf(new proxy_message(false)),m_send_buf(new proxy_message(true))
+    m_is_setup(false),m_is_closed(false),m_stream_token(INVALID_MediaSessionId),m_seq(0),m_recv_buf(new proxy_message(false)),m_send_buf(new proxy_message(true))\
+    ,m_filter_video_b_p_frame(true)
 {
     memset(&m_des_addr,0,sizeof (m_des_addr));
     m_des_addr.sin_family=AF_INET;
@@ -28,7 +29,19 @@ void rtsp_pusher::proxy_frame(MediaChannelId id,const AVFrame &frame)
 {
     lock_guard<mutex>locker(m_mutex);
         if(m_is_setup){
-            shared_ptr<ProxyFrame>proxy_frame(new ProxyFrame(frame.buffer.get(),frame.size,m_media_info[id],0,id));
+            uint32_t offset=0;
+
+            if(frame.size>4)
+            {
+                if(frame.buffer.get()[0]==0x00&&frame.buffer.get()[1]==0x00&&frame.buffer.get()[2]==0x00&&frame.buffer.get()[3]==0x01)
+                {//filter video start_code
+                    offset=4;
+                }
+            }
+            if(!check_packet_can_send(frame.buffer.get()+offset,m_media_info[id])){
+                return;
+            }
+            shared_ptr<ProxyFrame>proxy_frame(new ProxyFrame(frame.buffer.get()+offset,frame.size-offset,m_media_info[id],0,id));
             proxy_frame->timestamp=static_cast<uint32_t>(frame.timestamp);
             m_proxy_interface->send_frame(proxy_frame);
         }
@@ -291,6 +304,12 @@ bool rtsp_pusher::handle_proxy_request(const shared_ptr<ProxyFrame>&frame)
     else if (cmd=="tear_down_stream_ack") {
         handle_tear_down_stream_ack();
     }
+    else if (cmd=="play_stream") {
+        handle_play_stream();
+    }
+    else if (cmd=="pause_stream") {
+        handle_pause_stream();
+    }
     else {
         MICAGENT_LOG(LOG_ERROR,"unknown command %s",object.ToFormattedString().c_str());
     }
@@ -461,6 +480,20 @@ void rtsp_pusher::handle_set_up_stream_ack(CJsonObject &object)
 void rtsp_pusher::handle_modify_stream_ack(CJsonObject &)
 {
 
+}
+void rtsp_pusher::handle_play_stream()
+{
+    m_filter_video_b_p_frame.exchange(false);
+}
+void rtsp_pusher::handle_pause_stream()
+{
+    m_filter_video_b_p_frame.exchange(true);
+}
+bool rtsp_pusher::check_packet_can_send(const void *buf,PMediaTYpe type)
+{
+    if(!m_filter_video_b_p_frame)return true;
+    auto frame_type=ProxyInterface::get_frame_type(type,static_cast<const char*>(buf));
+    return frame_type!=NORMAL_FRAME;
 }
 void rtsp_pusher::handle_tear_down_stream_ack()
 {

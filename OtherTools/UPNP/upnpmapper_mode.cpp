@@ -8,18 +8,13 @@ void upnp_helper::config(shared_ptr<EventLoop> loop, bool set_net, string lgd_ip
     m_is_config.exchange(true);
     m_loop=loop;
     m_set_net=set_net;
-    m_lgd_ip=lgd_ip;
-    auto net_info=NETWORK.get_net_interface_info(true);
+    //m_lgd_ip=lgd_ip;
+    auto net_info=NETWORK.get_default_net_interface_info();
+    m_last_internal_ip=net_info.ip;
+    m_dev_name=net_info.dev_name;
+    m_lgd_ip=net_info.gateway_ip;
     UpnpMapper::Instance().Init(loop,m_lgd_ip);
-    if(!net_info.empty()){
-        for(auto i:net_info){
-            if(i.is_default){
-                m_last_internal_ip=i.ip;
-                m_dev_name=i.dev_name;
-            }
-        }
 
-    }
     //start timer check task
     m_check_timer_id=loop->addTimer([this](){
         lock_guard<mutex>locker(m_mutex);
@@ -126,7 +121,15 @@ void upnp_helper::check_port_task()
                 auto iter=m_upnp_task_map.find(key);
                 if(iter!=m_upnp_task_map.end())
                 {
-                    UpnpMapper::Instance().Api_addportMapper(task.type,m_last_internal_ip,task.internal_port,task.external_port,task.description);
+                    if(iter->second.error_cnts>5)
+                    {
+                        iter->second.error_cnts=0;
+                        UpnpMapper::Instance().Api_addportMapper(task.type,m_last_internal_ip,task.internal_port,task.external_port,task.description);
+                    }
+                    else {
+                        iter->second.error_cnts++;
+                        UpnpMapper::Instance().Api_deleteportMapper(task.type,task.external_port);
+                    }
                 }
             }
             else {

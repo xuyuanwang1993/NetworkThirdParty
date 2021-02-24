@@ -348,7 +348,7 @@ void dns_client::handle_read()
             MICAGENT_DEBUG("unknown response %s!",response.ToFormattedString().c_str());
         }
         else {
-            //MICAGENT_DEBUG("response %s!",response.ToFormattedString().c_str());
+            MICAGENT_DEBUG("response %s!",response.ToFormattedString().c_str());
             if("get_token_response"==cmd){
                 handle_get_token_response(response);
             }

@@ -3,8 +3,23 @@
 #include <map>
 #include<string>
 #define REALM_INFO "micagent@meanning_cloud"
+#define RTSP_WEBSOCKET_VERSION 1
 namespace micagent {
 using namespace std;
+enum RTSP_CONNECTION_TYPE:uint8_t{
+    RTSP_BASE_CONNECTION,
+    RTSP_WEBSOCKET_CONNECTION,
+};
+enum RTSP_WEBSOCKET_STATUS:uint8_t{
+    WEBSOCKET_START,
+    WEBSOCKET_PLAYING,
+    WEBSOCKET_CLOSED,
+};
+enum RTSP_WEBSOCKET_PAYLOAD:uint8_t{
+    R_W_DESCRIBE=0,
+    R_W_CLOSE_STREAM=1,
+    R_W_STREAM_DATA=2,
+};
 class rtsp_helper{
 public:
 static pair<bool ,map<string,string>> parseUrl(const string &url);
@@ -22,6 +37,8 @@ static string buildUnauthorizedRes(const string & CSeq="0");
 static string buildServerErrorRes(const string & CSeq="0");
 static string buildUnsupportedRes(const string & CSeq="0");
 static string buildRtspHeaderRes(std::string head_info,const string & CSeq="0");
+
+static string buildWebsocketRes(const string &key);
 
 static string getDateHeader();
 static string getRandomNonce();

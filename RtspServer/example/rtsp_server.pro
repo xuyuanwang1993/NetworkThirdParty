@@ -33,6 +33,8 @@ HEADERS += \
     ../../json_config/cJSON.h \
     ../../OtherTools/DelayControl/delay_control.h \
     ../../OtherTools/Base64/Base64.h \
+    ../../network_helper/websocket_buffer_cache.h \
+    ../../network_helper/websocket_common.h
 
 LIBS+= -lpthread
 
@@ -70,6 +72,8 @@ SOURCES += \
     ../../json_config/cJSON.c \
     ../../OtherTools/DelayControl/delay_control.cpp \
     ../../OtherTools/Base64/Base64.cpp \
+    ../../network_helper/websocket_buffer_cache.cpp \
+    ../../network_helper/websocket_common.cpp
 
 INCLUDEPATH += ..\
 ../../LOG \
@@ -80,6 +84,7 @@ INCLUDEPATH += ..\
 ../API/ \
 ../../OtherTools/DelayControl/ \
 ../../OtherTools/Base64/ \
+../../json_config \
 
 CONFIG-=qt
 

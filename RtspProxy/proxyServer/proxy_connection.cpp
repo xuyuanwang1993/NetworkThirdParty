@@ -442,7 +442,7 @@ void proxy_connection::handle_set_up_stream(CJsonObject &object)
             return this->send_message(static_cast<const char *>(buf),buf_len);},nullptr,[this](shared_ptr<ProxyFrame>frame){
                                     return this->handle_proxy_frame(frame);
                                 }));
-        if(mode==RAW_UDP||mode==RAW_HYBRID||mode==GRADED_HYBRID)
+    //    if(mode==RAW_UDP||mode==RAW_HYBRID||mode==GRADED_HYBRID)
         {
             //增加映射
             m_proxy_server->add_udp_map(m_stream_token,fd());
@@ -588,6 +588,20 @@ void proxy_connection::handle_tear_down_stream(CJsonObject &object)
         build_json_response("tear_down_stream_ack",seq,P_OK,"OK",response);
         m_proxy_server->remove_connection(fd());
     }while(0);
+    auto res=response.ToString();
+    m_proxy_interface->send_control_command(res.c_str(),res.length());
+}
+void proxy_connection::send_play_stream()
+{
+    CJsonObject response;
+    response.Add("cmd","play_stream");
+    auto res=response.ToString();
+    m_proxy_interface->send_control_command(res.c_str(),res.length());
+}
+void proxy_connection::send_pause_stream()
+{
+    CJsonObject response;
+    response.Add("cmd","pause_stream");
     auto res=response.ToString();
     m_proxy_interface->send_control_command(res.c_str(),res.length());
 }

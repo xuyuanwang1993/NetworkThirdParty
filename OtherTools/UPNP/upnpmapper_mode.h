@@ -11,8 +11,9 @@ class upnp_helper{
         uint16_t internal_port;
         uint16_t external_port;
         string description;
+        int error_cnts;
         upnp_task(SOCKET_TYPE _type,uint16_t _internal_port,uint16_t _external_port,string _description):\
-        type(_type),internal_port(_internal_port),external_port(_external_port),description(_description){
+        type(_type),internal_port(_internal_port),external_port(_external_port),description(_description),error_cnts(0){
 
         }
     };

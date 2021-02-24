@@ -15,6 +15,7 @@
 #define SAVE_FILE_PRFIX "stream_"
 #endif
 namespace micagent {
+using RTSP_NOTICE_CLIENT_NUMS_CALLBACK=function<void(uint32_t,uint32_t)>;
 class MulticastAddr
 {
 public:
@@ -74,7 +75,7 @@ public:
     virtual void proxy_frame(MediaChannelId id,const AVFrame &frame)=0;
     virtual void open_connection(const vector<media_source_info>&media_source_info)=0;
 };
-
+class tcp_connection;
 class media_session{
 public:
     static shared_ptr<media_session>CreateNew(const string &rtsp_suffix,bool is_multicast=false);
@@ -83,7 +84,10 @@ public:
 
     void setFrameRate(uint32_t frame_rate);
 
-
+    void setNoticeClientNumsCallback(const RTSP_NOTICE_CLIENT_NUMS_CALLBACK &cb){
+        lock_guard<mutex>locker(m_mutex);
+        m_notice_client_nums_callback=cb;
+    }
     string getSuffix(){return m_suffix;}
     MediaSessionId getSessionid()const{return m_session_id;}
     uint32_t getClientsNums()const;
@@ -94,6 +98,7 @@ public:
     uint16_t getMulticastPort(MediaChannelId channelId) const{return m_multicastPort[channelId];}
 
     bool addClient(SOCKET rtspfd, std::shared_ptr<rtp_connection> rtpConnPtr);
+    void addWebsocketSink(SOCKET rtspfd,weak_ptr<tcp_connection>websocket_sink);
     void notice_new_connection();
     void  addProxySession(shared_ptr<proxy_session_base> session,bool proxy=false);
     void removeClient(SOCKET rtspfd);
@@ -122,6 +127,7 @@ private:
     vector<shared_ptr<media_source>>m_media_source;
 
     map<SOCKET,weak_ptr<rtp_connection>>m_rtp_connections;
+    map<SOCKET,weak_ptr<tcp_connection>>m_websocket_connections;
     list<weak_ptr<proxy_session_base>> m_proxy_session_map;
     bool m_is_multicast;
     string m_multicast_ip;
@@ -133,6 +139,7 @@ private:
 #ifdef  SAVE_FILE_ACCESS
     FILE *m_save_fp;
 #endif
+    RTSP_NOTICE_CLIENT_NUMS_CALLBACK m_notice_client_nums_callback;
 };
 }
 

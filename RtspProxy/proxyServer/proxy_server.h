@@ -17,6 +17,7 @@ public:
     ~proxy_server();
     //创建转发连接
     shared_ptr<tcp_connection>new_connection(SOCKET fd);
+    void handle_stream_state(uint32_t stream_token,uint32_t client_num);
 private:
     //移除超时连接的处理函数
     void remove_invalid_connection();

@@ -120,9 +120,16 @@ void http_client::handle_connect_success()
     unique_lock<mutex>locker(m_mutex);
     m_http_recv_helper.reset(new http_helper());
     m_http_recv_helper->set_packet_finished_callback(m_recv_callback);
+    auto connection_helper=m_connection_helper.lock();
+    if(!connection_helper)return;
+    auto loop=connection_helper->get_loop().lock();
+        if(!loop)return;
     if(m_http_connect_callback)
     {
+        auto cb=m_http_connect_callback;
         if(locker.owns_lock())locker.unlock();
-        m_http_connect_callback();
+        loop->add_trigger_event([cb](){
+            cb();
+        });
     }
 }

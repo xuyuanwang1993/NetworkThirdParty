@@ -29,6 +29,7 @@ DECLARE_TEST(tcp_server);
 DECLARE_TEST(http_request);
 DECLARE_TEST(http_response);
 void unix_socket_test(int argc,char *argv[]);
+void unix_socket_test2(int argc,char *argv[]);
 void tcp_client_test(int argc,char *argv[]);
 void http_client_test(int argc,char *argv[]);
 void http_helper_test(int argc,char *argv[]);
@@ -36,13 +37,14 @@ void websocket_test(int argc,char *argv[]);
 static bool exit_flag=true;
 int main(int argc,char *argv[])
 {
-    Logger::Instance().register_handle();
-    Logger::Instance().set_log_to_std(true);
-    Logger::register_exit_signal_func([](){
-        printf("---------------\r\n");
-        exit_flag=false;
-    });
-    http_client::parse_url_info("http://www.meanning.com:8084");
+//    Logger::Instance().register_handle();
+//    Logger::Instance().set_log_to_std(true);
+//    Logger::register_exit_signal_func([](){
+//        printf("---------------\r\n");
+//        exit_flag=false;
+//    });
+    unix_socket_test2(argc,argv);
+    //http_client::parse_url_info("http://www.meanning.com:8084");
     //websocket_test(argc,argv);
     //http_helper_test(argc,argv);
     //http_client_test(argc,argv);
@@ -398,4 +400,64 @@ void websocket_test(int argc,char *argv[])
     //web_socket_helper::WS_util_test();
     //web_socket_buffer_cache::util_test();
     websocket_client::util_test();
+}
+void unix_socket_test2(int argc,char *argv[])
+{
+    const char *const server_domain="/tmp/test_server.domain2";
+    const char *const udp_client_domain_base="/tmp/test_client";
+    if(argc>1)
+    {//server
+        unix_dgram_socket sock(server_domain);
+        sock.build();
+        char buf[256]={0};
+        random_device rd;
+        while(1){
+            memset(buf,0,256);
+            auto len=sock.recv(buf,256,0);
+            if(len==112)
+            {
+                string path(buf,108);
+                uint32_t buf_len=0;
+                memcpy(&buf_len,buf+108,4);
+                shared_ptr<char>send_buf(new char[buf_len],default_delete<char[]>());
+                for(uint32_t i=0;i<buf_len;i++)
+                {
+                    char c=(rd()%26)+'a';
+                    send_buf.get()[i]=c;
+                }
+                printf("send len %u   %s \r\n",buf_len,string(send_buf.get(),9).c_str());
+                sock.send_packet(send_buf.get(),buf_len,5000,path);
+            }
+        }
+    }
+    else {
+        //client
+        random_device rd;
+        unix_dgram_socket sock(udp_client_domain_base);
+        sock.build();
+        char buf[113]={0};
+        memset(buf,0,113);
+        strncpy(buf,udp_client_domain_base,108);
+        uint32_t max_packet_len=3000000;
+        thread t([&](){
+            shared_ptr<char>packet_buf(new char[max_packet_len],default_delete<char[]>());
+            while(1)
+            {
+                memset(packet_buf.get(),0,max_packet_len);
+                auto len=sock.recv_packet(packet_buf.get(),max_packet_len,5000);
+                if(len>0)
+                {
+                    printf("recv len %ld %s\r\n",len,string(packet_buf.get(),9).c_str());
+                }
+            }
+        });
+        while(1)
+        {
+            uint32_t send_len=(rd()%(max_packet_len-10))+9;
+            memcpy(buf+108,(char *)(&send_len),4);
+            sock.send(buf,112,server_domain);
+            usleep(100);
+        }
+        t.join();
+    }
 }

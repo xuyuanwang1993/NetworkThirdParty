@@ -6,6 +6,7 @@
 #include "MD5.h"
 #include <algorithm>
 #include "c_log.h"
+#include "websocket_common.h"
 #define LIB_STRING_FOR_MICAGENT  "micagent"
 using namespace micagent;
 const char rtsp_helper::kCRLF[] = "\r\n";
@@ -88,6 +89,14 @@ pair<bool ,map<string,string>> rtsp_helper::parseCommand(const string &buf)
         }
         else if (cmd->second=="GET_PARAMETER") {
             if(! parseGetparam(left,save))break;
+        }
+        else if (cmd->second=="GET") {
+            //websocket
+            MICAGENT_INFO("recv http message:%s",buf.c_str());
+        }
+        else if (cmd->second=="POST") {
+            //websocket
+            MICAGENT_INFO("recv http message:%s",buf.c_str());
         }
         else {
             break;
@@ -276,6 +285,20 @@ string rtsp_helper::buildRtspHeaderRes(std::string head_info,const string & CSeq
             "\r\n",
             head_info.c_str(),CSeq.c_str(),getDateHeader().c_str());
 
+    return string(buf);
+}
+
+string rtsp_helper::buildWebsocketRes(const string &key)
+{
+    char buf[4096]={0};
+    snprintf(buf, 4096,
+            "HTTP/1.1 101 Switching Protocols\r\n"
+            "Upgrade: websocket\r\n"
+            "Connection: Upgrade\r\n"
+            "Sec-WebSocket-Accept: %s\r\n"
+            "Sec-WebSocket-Protocol: chat\r\n"
+            "\r\n",
+           web_socket_helper::WS_Generate_Accept_Key(key).c_str() );
     return string(buf);
 }
 
