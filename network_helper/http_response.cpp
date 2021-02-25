@@ -3,6 +3,13 @@
 #include <algorithm>
 #include <string>
 namespace micagent {
+const char *const http_response::HTTP_VERSION="HTTP/1.1";
+const char *const http_response::CONTENT_KEY="Content-Type";
+const char *const http_response::DEFAULT_CONTENT_TYPE="application/json";
+const char *const http_response::UNKNOWN_CONTENT_TYPE="application/octet-stream";
+const char *const http_response::CONTENT_LENGTH_KEY="Content-Length";
+const char *const  http_response::HEAD_END="\r\n\r\n";
+const char * const http_response::LINE_END="\r\n";
 http_response::http_response(const string &status,const string &info):m_status(status),m_info(info),m_body_len(-1),m_body(string())\
 ,m_buf_cache(string()),m_error_string("success"),m_error_status(0)
 {

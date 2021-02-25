@@ -2,6 +2,7 @@
 #include <cstring>
 #include<algorithm>
 using namespace micagent;
+const char *const http_helper::CONTENT_LENGTH_KEY="Content-Length";
 http_helper::http_helper():m_packet_type(HTTP_UNKNOWN),m_status_code("200"),m_status_string("OK"),m_http_version(HTTP_VERSION),\
     m_request_method(HTTP_POST_STRING),m_get_param(""),m_api(""),m_body_len(HTTP_INVALID_BODY_LEN),m_body_filled_len(0),m_buf_cache_len(0),\
     m_buf_cache(new uint8_t[HTTP_MAX_HEADR_LEN],default_delete<uint8_t[]>()),m_http_packet_recv_callback(nullptr)

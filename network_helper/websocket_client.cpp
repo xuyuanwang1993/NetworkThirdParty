@@ -158,25 +158,47 @@ void websocket_client::usr_handle_websocket_frame(const WS_Frame &frame)
 void websocket_client::util_test()
 {
 #if UTIL_TEST
-    string url="ws://192.168.2.115:8080/ws/vision_device/";
+    string url="ws://192.168.2.111:8554";
     //string url="ws://192.168.2.105:8001/echo_once/";
     auto url_info=parse_url_info(url,"ws");
     
     shared_ptr<EventLoop>loop(new EventLoop());
     shared_ptr<tcp_connection_helper>helper( tcp_connection_helper::CreateNew(loop));
     shared_ptr<websocket_client> client(new websocket_client(helper,url_info.ip,url_info.port,url_info.api));
-    auto cb=[client](){
-        websocket_client::websocket_init_callback(client,nullptr,[client](){
+    auto weak_client=weak_ptr<websocket_client>(client);
+    auto cb=[weak_client](){
+        auto func=[](const WS_Frame &frame)->bool{
+            printf("%d %d ",frame.data.get()[0],frame.data.get()[1]);
+            if(frame.data.get()[1]==0){
+                printf("%s\r\n",string(reinterpret_cast<char *>(frame.data.get()+2),frame.data_len-2).c_str());
+            }
+            else {
+                auto ptr=frame.data.get()+2;
+                int channel=ptr[0];
+                int timestamp=0;
+                timestamp|=ptr[1];
+                timestamp<<=8;
+                timestamp|=ptr[2];
+                timestamp<<=8;
+                timestamp|=ptr[3];
+                timestamp<<=8;
+                timestamp|=ptr[4];
+                printf("%d %d %02x\r\n",channel,timestamp,ptr[5]);
+            }
+            return true;
+        };
+        websocket_client::websocket_init_callback(weak_client,func,[weak_client](){
             MICAGENT_BACKTRACE("websocket_client connect success!");
-            thread t3([client](){
-                client->send_websocket_data("1111111",7,WS_Frame_Header::WS_TEXT_FRAME);
+            thread t3([weak_client](){
+            auto client=weak_client.lock();
+            if(client)client->send_websocket_data("1111111",7,WS_Frame_Header::WS_TEXT_FRAME);
             });
             t3.detach();
         });
     };
     client->open_connection(cb);
-    sleep(10);
-    client->close_connection();
+//    sleep(500);
+//    client->close_connection();
     while(getchar()!='8')continue;
 #endif
 }

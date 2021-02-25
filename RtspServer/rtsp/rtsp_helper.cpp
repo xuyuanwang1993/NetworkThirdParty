@@ -360,7 +360,8 @@ bool rtsp_helper::parseRequestLine(const string &buf,map<string,string>&save)
         }
         save.emplace(key,value);
     }
-    return save.find("CSeq")!=std::end(save);
+    auto cmd=save.find("cmd");
+    return save.find("CSeq")!=std::end(save)||(cmd!=save.end()&&(cmd->second=="GET"||cmd->second=="POST"));
 }
 bool rtsp_helper::parseGetparam(const string &buf,map<string,string>&save)
 {

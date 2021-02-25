@@ -37,15 +37,15 @@ void websocket_test(int argc,char *argv[]);
 static bool exit_flag=true;
 int main(int argc,char *argv[])
 {
-//    Logger::Instance().register_handle();
-//    Logger::Instance().set_log_to_std(true);
-//    Logger::register_exit_signal_func([](){
-//        printf("---------------\r\n");
-//        exit_flag=false;
-//    });
-    unix_socket_test2(argc,argv);
+    Logger::Instance().register_handle();
+    Logger::Instance().set_log_to_std(true);
+    Logger::register_exit_signal_func([](){
+        printf("---------------\r\n");
+        exit_flag=false;
+    });
+    //unix_socket_test2(argc,argv);
     //http_client::parse_url_info("http://www.meanning.com:8084");
-    //websocket_test(argc,argv);
+    websocket_test(argc,argv);
     //http_helper_test(argc,argv);
     //http_client_test(argc,argv);
     //tcp_client_test(argc,argv);

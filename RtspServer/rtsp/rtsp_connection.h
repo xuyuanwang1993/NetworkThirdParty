@@ -70,6 +70,7 @@ private:
 
     //application
     bool websocket_handle_describe(const void *buf,uint32_t buf_len);
+    bool websocket_handle_describe_test(const string &name,const string &account,const string&password);
     bool websocket_handle_close_stream();
 private:
     bool rtsp_process_read();

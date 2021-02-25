@@ -29,9 +29,11 @@ public:
     Channel(SOCKET _fd):m_cycle_flag(false),m_fd(_fd),m_events(0),m_readCallback(nullptr),\
         m_writeCallback(nullptr),m_errorCallback(nullptr),m_closeCallback(nullptr){
         Network_Util::Instance().make_noblocking(m_fd);
+       // MICAGENT_BACKTRACE("%s %hu %hu\r\n",NETWORK.get_peer_ip(m_fd).c_str(),NETWORK.get_peer_port(m_fd),NETWORK.get_local_port(m_fd));
     }
     ~Channel(){
         if(!m_cycle_flag&&m_fd!=INVALID_SOCKET){
+            //MICAGENT_BACKTRACE("%s %hu %hu\r\n",NETWORK.get_peer_ip(m_fd).c_str(),NETWORK.get_peer_port(m_fd),NETWORK.get_local_port(m_fd));
             Network_Util::Instance().close_socket(m_fd);
         }
     }

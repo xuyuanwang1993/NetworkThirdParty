@@ -7,14 +7,14 @@
 namespace micagent {
 using namespace std;
 class http_response{
-    static constexpr const char *const HTTP_VERSION="HTTP/1.1";
-    static constexpr const char *const CONTENT_KEY="Content-Type";
-    static constexpr const char *const DEFAULT_CONTENT_TYPE="application/json";
-    static constexpr const char *const UNKNOWN_CONTENT_TYPE="application/octet-stream";
-    static constexpr const char *const CONTENT_LENGTH_KEY="Content-Length";
-    static constexpr const char *const  HEAD_END="\r\n\r\n";
+    static  const char *const HTTP_VERSION;
+    static  const char *const CONTENT_KEY;
+    static  const char *const DEFAULT_CONTENT_TYPE;
+    static  const char *const UNKNOWN_CONTENT_TYPE;
+    static  const char *const CONTENT_LENGTH_KEY;
+    static  const char *const  HEAD_END;
     static constexpr const int HEAD_END_LEN=4;
-    static constexpr const char * const LINE_END="\r\n";
+    static  const char * const LINE_END;
     static constexpr const int LINE_END_LEN=2;
     static constexpr const int KEY_MAX_LEN=128;
     static constexpr const int VALUE_MAX_LEN=1024;

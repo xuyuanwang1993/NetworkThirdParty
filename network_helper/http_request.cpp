@@ -1,11 +1,19 @@
 #include "http_request.h"
 #include "algorithm"
 namespace micagent {
+const char *const http_request::HTTP_VERSION="HTTP/1.1";
+const char *const  http_request::CONTENT_KEY="Content-Type";
+const char *const  http_request::DEFAULT_CONTENT_TYPE="application/json";
+const char *const  http_request::UNKNOWN_CONTENT_TYPE="application/octet-stream";
+const char *const  http_request::CONTENT_LENGTH_KEY="Content-Length";
+const char *const   http_request::HEAD_END="\r\n\r\n";
+const char * const  http_request::LINE_END="\r\n";
 http_request::http_request(const string &api):m_api(api),m_body_len(-1),m_body(string())\
   ,m_buf_cache(string()),m_error_string("success"),m_error_status(0)
 {
     m_head_map.emplace(make_pair(http_request::CONTENT_KEY,http_request::DEFAULT_CONTENT_TYPE));
 }
+
 http_request::http_request(const http_request&src):m_head_map(src.m_head_map),m_api(src.m_api),m_body_len(src.m_body_len),m_body(src.m_body)\
   ,m_buf_cache(string()),m_error_string("success"),m_error_status(0)
 {

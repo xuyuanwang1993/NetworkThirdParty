@@ -52,8 +52,10 @@ int main(int argc,char *argv[]){
         int bufSize = 500000;
         uint8_t *frameBuf = new uint8_t[bufSize];
         AVFrame frame;
+        frame.timestamp=Timer::getTimeNow();
         uint32_t send_count=0;
         uint32_t offset=0;
+        const int64_t interval=25;
         while(1)
         {
             auto timePoint = std::chrono::steady_clock::now();
@@ -61,15 +63,18 @@ int main(int argc,char *argv[]){
             int frameSize = file.readFrame(frameBuf+offset, bufSize);
             if(frameSize > 0)
             {
-                if((type==frameBuf[offset+4]!=0x26&&frameBuf[offset+4]!=0x02)||(type==H264&&frameBuf[offset+4]!=0x61&&frameBuf[offset+4]!=0x65)){
-                    offset+=frameSize;
-                    continue;
+                if((type==H265&&frameBuf[offset+4]!=0x26&&frameBuf[offset+4]!=0x02)||(type==H264&&frameBuf[offset+4]!=0x61&&frameBuf[offset+4]!=0x65)){
+//                    offset+=frameSize;
+//                    continue;
                 }
                 offset+=frameSize;
                 frame.size=offset-4;
                 frame.buffer.reset(new uint8_t[frame.size]);
+                frame.timestamp+=interval;
                 memcpy(frame.buffer.get(),frameBuf+4,offset-4);
-                if(!server->updateFrame(session_id,channel_0,frame));
+                if(!server->updateFrame(session_id,channel_0,frame)){
+                    cout<<"send error!"<<endl;
+                }
                 offset=0;
                 send_count++;
                 if(need_change&&send_count>1000)
@@ -84,7 +89,7 @@ int main(int argc,char *argv[]){
             }
             auto timePoint2 = std::chrono::steady_clock::now();
             auto time_now2=std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch()).count();
-            int sleep_time=40-time_now2+time_now;
+            int sleep_time=interval-time_now2+time_now;
             if(sleep_time>0)Timer::sleep(sleep_time);
         }
         if(strstr(argv[3],"h264")!=nullptr){
@@ -102,9 +107,11 @@ int main(int argc,char *argv[]){
             {
                 frame.size=frameSize-4;
                 frame.buffer.reset(new uint8_t[frame.size]);
+                frame.timestamp+=interval;
                 memcpy(frame.buffer.get(),frameBuf+4,frameSize-4);
-                if(!server->updateFrame(session_id,channel_0,frame));
-                //break;
+                if(!server->updateFrame(session_id,channel_0,frame)){
+                    cout<<"send error!"<<endl;
+                }
             }
             else
             {
@@ -112,7 +119,7 @@ int main(int argc,char *argv[]){
             }
             auto timePoint2 = std::chrono::steady_clock::now();
             auto time_now2=std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch()).count();
-            int sleep_time=40-time_now2+time_now;
+            int sleep_time=interval-time_now2+time_now;
             if(sleep_time>0)Timer::sleep(sleep_time);
         }
         std::cout<<"exit send_thread"<<std::endl;

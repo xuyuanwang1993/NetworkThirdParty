@@ -24,7 +24,7 @@ class http_helper{
     static constexpr const char *const CONTENT_KEY="Content-Type";
     static constexpr const char *const DEFAULT_CONTENT_TYPE="application/json";
     static constexpr const char *const UNKNOWN_CONTENT_TYPE="application/octet-stream";
-    static constexpr const char *const CONTENT_LENGTH_KEY="Content-Length";
+    static  const char *const CONTENT_LENGTH_KEY;
     static constexpr const char *const  HEAD_END="\r\n\r\n";
     static constexpr const int HEAD_END_LEN=4;
     static constexpr const char * const LINE_END="\r\n";

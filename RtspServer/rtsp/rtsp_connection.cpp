@@ -58,7 +58,6 @@ bool rtsp_connection::websocket_handle_frame(const WS_Frame &frame)
 {
     switch (frame.type) {
     case WS_Frame_Header::WS_CONTINUATION_FRAME:
-    case WS_Frame_Header::WS_TEXT_FRAME:
     case WS_Frame_Header::WS_RESERVER_NO_CONTROL_3_FRAME:
     case WS_Frame_Header::WS_RESERVER_NO_CONTROL_4_FRAME:
     case  WS_Frame_Header::WS_RESERVER_NO_CONTROL_5_FRAME:
@@ -77,6 +76,10 @@ bool rtsp_connection::websocket_handle_frame(const WS_Frame &frame)
         return websocket_handle_binary_frame(frame);
     case WS_Frame_Header::WS_PING_FRAME:
         return websocket_handle_ping_frame(frame);
+    case WS_Frame_Header::WS_TEXT_FRAME:
+        //just print
+        MICAGENT_DEBUG("websocket recv text:%s",string(reinterpret_cast<const char *>(frame.data.get()),frame.data_len).c_str());
+        break;
     }
     return true;
 }
@@ -187,7 +190,73 @@ bool rtsp_connection::websocket_handle_describe(const void *buf,uint32_t buf_len
     }while(0);
     response.Add("status_code",status_code);
     response.Add("status_str",status_str);
-    if(stream_info.IsEmpty())response.Add("stream_info",stream_info);
+    if(!stream_info.IsEmpty())response.Add("stream_info",stream_info);
+    auto ret_str=response.ToString();
+    auto ret_len=ret_str.length()+2;
+    shared_ptr<char>ret_buf(new char[ret_len+1],default_delete<char[]>());
+    memset(ret_buf.get(),0,ret_len);
+    ret_buf.get()[0]=RTSP_WEBSOCKET_VERSION;
+    ret_buf.get()[1]=R_W_DESCRIBE;
+    memcpy(ret_buf.get()+2,ret_str.c_str(),ret_str.length());
+    return websocket_send_frame(ret_buf.get(),static_cast<uint32_t>(ret_len),WS_Frame_Header::WS_BINARY_FRAME);
+}
+bool rtsp_connection::websocket_handle_describe_test(const string &name,const string &account,const string&password)
+{
+    int status_code=200;
+    string status_str("OK");
+    CJsonObject response;
+    CJsonObject stream_info;
+    do{
+        {
+            bool auth_failed=false;
+            //check authentication info
+            lock_guard<mutex>locker(m_rtsp_server->m_mtxAccountMap);
+            if(!m_rtsp_server->m_Account_Map.empty()){
+                if(account.empty())auth_failed=true;
+                else {
+                    auto iter=m_rtsp_server->m_Account_Map.find(account);
+                    if(iter==m_rtsp_server->m_Account_Map.end())auth_failed=true;
+                    else {
+                        if(iter->second!=password)auth_failed=true;
+                    }
+                }
+            }
+            if(auth_failed){
+                status_code=400;
+                status_str="Authentication failed";
+                break;
+            }
+        }
+        {
+            //find stream
+            auto media_session=m_rtsp_server->lookMediaSession(name);
+            if(!media_session){
+                status_code=404;
+                status_str="Stream is not found";
+                break;
+            }
+            //generate stream_info
+            auto media_info=media_session->get_media_source_info();
+            if(media_info.empty()){
+                status_code=500;
+                status_str="Server Internal error";
+                break;
+            }
+            for(auto i:media_info){
+                CJsonObject item;
+                item.Add("stream_type",i.media_name);
+                item.Add("channel",i.channel);
+                item.Add("param",i.proxy_param);
+                stream_info.Add(item);
+            }
+            auto conn=shared_from_this();
+            m_websocket_status=WEBSOCKET_PLAYING;
+            media_session->addWebsocketSink(fd(),conn);
+        }
+    }while(0);
+    response.Add("status_code",status_code);
+    response.Add("status_str",status_str);
+    if(!stream_info.IsEmpty())response.Add("stream_info",stream_info);
     auto ret_str=response.ToString();
     auto ret_len=ret_str.length()+2;
     shared_ptr<char>ret_buf(new char[ret_len+1],default_delete<char[]>());
@@ -551,7 +620,15 @@ bool rtsp_connection::handleWebsocketConnection(map<string ,string>&handle_map)
     if(key==handle_map.end())return false;
     m_connection_type=RTSP_WEBSOCKET_CONNECTION;
     m_websocket_recv_cache.reset(new web_socket_buffer_cache(1000));
+    auto loop=m_rtsp_server->m_loop.lock();
+    if(loop){
+        loop->addTimer([this](){
+            websocket_handle_describe_test("test","admin","micagent");
+            return false;
+        },1000);
+    }
     return  send_message(rtsp_helper::buildWebsocketRes(key->second));
+
 }
 void rtsp_connection::websocket_forward_stream(MediaChannelId channel,const AVFrame &frame)
 {
@@ -563,6 +640,7 @@ void rtsp_connection::websocket_forward_stream(MediaChannelId channel,const AVFr
     ret_buf.get()[1]=R_W_STREAM_DATA;
     ret_buf.get()[2]=channel;
     auto timestamp=frame.timestamp;
+    if(0==timestamp)timestamp=Timer::getTimeNow();
     ret_buf.get()[3]=(timestamp>>24)&0xff;
     ret_buf.get()[4]=(timestamp>>16)&0xff;
     ret_buf.get()[5]=(timestamp>>8)&0xff;
