@@ -37,7 +37,9 @@ HEADERS += \
     ../../OtherTools/DelayControl/delay_control.h \
     ../../OtherTools/UPNP/upnpmapper_mode.h \
     ../../OtherTools/UPNP/upnpmapper.h \
-    ../../OtherTools/Base64/Base64.h
+    ../../OtherTools/Base64/Base64.h \
+    ../../network_helper/websocket_buffer_cache.h \
+    ../../network_helper/websocket_common.h
 
 LIBS+= -lpthread
 
@@ -80,7 +82,9 @@ SOURCES += \
     ../../OtherTools/DelayControl/delay_control.cpp \
     ../../OtherTools/UPNP/upnpmapper_mode.cpp \
     ../../OtherTools/UPNP/upnpmapper.cpp \
-    ../../OtherTools/Base64/Base64.cpp
+    ../../OtherTools/Base64/Base64.cpp \
+    ../../network_helper/websocket_buffer_cache.cpp \
+    ../../network_helper/websocket_common.cpp
 
 INCLUDEPATH += ..\
 ../../LOG \

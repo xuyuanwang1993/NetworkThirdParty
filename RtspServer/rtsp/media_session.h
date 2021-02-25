@@ -113,7 +113,9 @@ public:
     media_session(string rtsp_suffix);
     vector<media_source_info>get_media_source_info()const ;
 private:
-
+    size_t get_client_nums()const{
+        return m_rtp_connections.size()+m_websocket_connections.size();
+    }
     void initMulticast();
     static MediaSessionId generate_session_id(){
         if(s_session_id==INVALID_MediaSessionId)s_session_id++;

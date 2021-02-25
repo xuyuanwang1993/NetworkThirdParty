@@ -48,6 +48,7 @@ EXTERN_INCLUDE += $(OUT_PATH)/include/c_log \
 $(OUT_PATH)/include/netcore \
 $(OUT_PATH)/include/Iother_tools \
 $(OUT_PATH)/include/network_helper \
+$(OUT_PATH)/include/json_config
 
 ###########################################################################################
 
@@ -61,6 +62,8 @@ LOCAL_SHARDE_LIBS = $(OUT_PATH)/lib/network_helper/libnetwork_helper.$(DLL_LIB_S
 $(OUT_PATH)/lib/netcore/libnetcore.$(DLL_LIB_SUFIX)\
 $(OUT_PATH)/lib/c_log/libc_log.$(DLL_LIB_SUFIX) \
 $(OUT_PATH)/lib/Iother_tools/libIother_tools.$(DLL_LIB_SUFIX) \
+$(OUT_PATH)/lib/json_config/libjson_config.$(DLL_LIB_SUFIX) \
+
 
 ###########################################################################################
 #本地动态链接库搜索目录
