@@ -55,7 +55,7 @@ int main(int argc,char *argv[]){
         frame.timestamp=Timer::getTimeNow();
         uint32_t send_count=0;
         uint32_t offset=0;
-        const int64_t interval=25;
+        const int64_t interval=40;
         while(1)
         {
             auto timePoint = std::chrono::steady_clock::now();
@@ -64,8 +64,8 @@ int main(int argc,char *argv[]){
             if(frameSize > 0)
             {
                 if((type==H265&&frameBuf[offset+4]!=0x26&&frameBuf[offset+4]!=0x02)||(type==H264&&frameBuf[offset+4]!=0x61&&frameBuf[offset+4]!=0x65)){
-//                    offset+=frameSize;
-//                    continue;
+                    offset+=frameSize;
+                    continue;
                 }
                 offset+=frameSize;
                 frame.size=offset-4;

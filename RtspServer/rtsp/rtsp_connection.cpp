@@ -130,6 +130,7 @@ bool rtsp_connection::websocket_handle_close()
 bool rtsp_connection::websocket_handle_describe(const void *buf,uint32_t buf_len)
 {
     CJsonObject object(string(static_cast<const char *>(buf),buf_len));
+    MICAGENT_BACKTRACE("%s",object.ToFormattedString().c_str());
     string stream_name;
     if(!object.Get("stream_name",stream_name))return websocket_handle_close();
     string account(""),password("");
@@ -268,6 +269,7 @@ bool rtsp_connection::websocket_handle_describe_test(const string &name,const st
 }
 bool rtsp_connection::websocket_handle_close_stream()
 {
+    MICAGENT_BACKTRACE(" %s!",m_url.c_str());
     m_websocket_status=WEBSOCKET_CLOSED;
     size_t ret_len=2;
     shared_ptr<char>ret_buf(new char[ret_len+1],default_delete<char[]>());
@@ -620,13 +622,13 @@ bool rtsp_connection::handleWebsocketConnection(map<string ,string>&handle_map)
     if(key==handle_map.end())return false;
     m_connection_type=RTSP_WEBSOCKET_CONNECTION;
     m_websocket_recv_cache.reset(new web_socket_buffer_cache(1000));
-    auto loop=m_rtsp_server->m_loop.lock();
-    if(loop){
-        loop->addTimer([this](){
-            websocket_handle_describe_test("test","admin","micagent");
-            return false;
-        },1000);
-    }
+//    auto loop=m_rtsp_server->m_loop.lock();
+//    if(loop){
+//        loop->addTimer([this](){
+//            websocket_handle_describe_test("test","admin","micagent");
+//            return false;
+//        },1000);
+//    }
     return  send_message(rtsp_helper::buildWebsocketRes(key->second));
 
 }

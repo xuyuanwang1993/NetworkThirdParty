@@ -158,7 +158,7 @@ void websocket_client::usr_handle_websocket_frame(const WS_Frame &frame)
 void websocket_client::util_test()
 {
 #if UTIL_TEST
-    string url="ws://192.168.2.111:8554";
+    string url="ws://192.168.2.111:8556";
     //string url="ws://192.168.2.105:8001/echo_once/";
     auto url_info=parse_url_info(url,"ws");
     
@@ -171,6 +171,9 @@ void websocket_client::util_test()
             printf("%d %d ",frame.data.get()[0],frame.data.get()[1]);
             if(frame.data.get()[1]==0){
                 printf("%s\r\n",string(reinterpret_cast<char *>(frame.data.get()+2),frame.data_len-2).c_str());
+            }
+            else if (frame.data.get()[1]==1) {
+                printf("close!\r\n");
             }
             else {
                 auto ptr=frame.data.get()+2;
@@ -191,12 +194,32 @@ void websocket_client::util_test()
             MICAGENT_BACKTRACE("websocket_client connect success!");
             thread t3([weak_client](){
             auto client=weak_client.lock();
-            if(client)client->send_websocket_data("1111111",7,WS_Frame_Header::WS_TEXT_FRAME);
+            if(client){
+                //client->send_websocket_data("1111111",7,WS_Frame_Header::WS_TEXT_FRAME);
+                string json_request="{\"stream_name\":\"test\",\"account\":\"admin\",\"password\":\"micagent\"}";
+                uint32_t send_len=2+json_request.size();
+                shared_ptr<uint8_t>send_buf(new uint8_t[send_len],default_delete<uint8_t[]>());
+                send_buf.get()[0]=1;
+                send_buf.get()[1]=0;
+                memcpy(send_buf.get()+2,json_request.c_str(),json_request.size());
+                client->send_websocket_data(send_buf.get(),send_len,WS_Frame_Header::WS_BINARY_FRAME);
+            }
             });
             t3.detach();
         });
     };
     client->open_connection(cb);
+    loop->addTimer([weak_client](){
+        auto client=weak_client.lock();
+            if(client){
+                uint32_t send_len=2;
+                shared_ptr<uint8_t>send_buf(new uint8_t[send_len],default_delete<uint8_t[]>());
+                send_buf.get()[0]=1;
+                send_buf.get()[1]=1;
+                client->send_websocket_data(send_buf.get(),send_len,WS_Frame_Header::WS_BINARY_FRAME);
+            }
+        return false;
+    },5000);
 //    sleep(500);
 //    client->close_connection();
     while(getchar()!='8')continue;
