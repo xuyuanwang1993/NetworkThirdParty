@@ -15,6 +15,7 @@ bool rtsp_connection::handle_read()
     case RTSP_WEBSOCKET_CONNECTION:
         return websocket_process_read();
     }
+    return  true;
 }
 bool rtsp_connection::rtsp_process_read()
 {
@@ -50,7 +51,7 @@ bool rtsp_connection::websocket_process_read(){
         shared_ptr<uint8_t>packet_buf(new uint8_t[packet_len+1],default_delete<uint8_t[]>());
         auto read_len=m_websocket_recv_cache->read_packet(packet_buf.get(),packet_len);
         auto frame=web_socket_helper::WS_DecodeData(packet_buf.get(),read_len,true);
-        websocket_handle_frame(frame);
+        if(!websocket_handle_frame(frame))return false;
     }
     return true;
 }
@@ -63,7 +64,6 @@ bool rtsp_connection::websocket_handle_frame(const WS_Frame &frame)
     case  WS_Frame_Header::WS_RESERVER_NO_CONTROL_5_FRAME:
     case WS_Frame_Header::WS_RESERVER_NO_CONTROL_6_FRAME:
     case WS_Frame_Header::WS_RESERVER_NO_CONTROL_7_FRAME:
-    case WS_Frame_Header::WS_CONNECTION_CLOSE_FRAME:
     case WS_Frame_Header::WS_PONG_FRAME:
     case WS_Frame_Header::WS_RESERVER_CONTROL_B_FRAME:
     case WS_Frame_Header::WS_RESERVER_CONTROL_C_FRAME:
@@ -72,6 +72,8 @@ bool rtsp_connection::websocket_handle_frame(const WS_Frame &frame)
     case WS_Frame_Header::WS_RESERVER_CONTROL_F_FRAME:
         //discard
         break;
+    case WS_Frame_Header::WS_CONNECTION_CLOSE_FRAME:
+        return websocket_handle_close();
     case WS_Frame_Header::WS_BINARY_FRAME:
         return websocket_handle_binary_frame(frame);
     case WS_Frame_Header::WS_PING_FRAME:
@@ -119,6 +121,7 @@ bool rtsp_connection::websocket_send_frame(const void *buf,uint32_t buf_len,WS_F
 }
 bool rtsp_connection::websocket_handle_close()
 {
+    websocket_handle_close_stream();
     return websocket_send_frame(nullptr,0,WS_Frame_Header::WS_CONNECTION_CLOSE_FRAME);
 }
 //{
@@ -269,6 +272,7 @@ bool rtsp_connection::websocket_handle_describe_test(const string &name,const st
 }
 bool rtsp_connection::websocket_handle_close_stream()
 {
+    if(m_websocket_status!=WEBSOCKET_PLAYING)return true;
     MICAGENT_BACKTRACE(" %s!",m_url.c_str());
     m_websocket_status=WEBSOCKET_CLOSED;
     size_t ret_len=2;

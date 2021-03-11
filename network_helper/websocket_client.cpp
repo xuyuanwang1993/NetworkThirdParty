@@ -158,7 +158,7 @@ void websocket_client::usr_handle_websocket_frame(const WS_Frame &frame)
 void websocket_client::util_test()
 {
 #if UTIL_TEST
-    string url="ws://192.168.2.203:8554";
+    string url="ws://192.168.3.215:58554";
     //string url="ws://192.168.2.105:8001/echo_once/";
     auto url_info=parse_url_info(url,"ws");
     
@@ -196,7 +196,7 @@ void websocket_client::util_test()
             auto client=weak_client.lock();
             if(client){
                 //client->send_websocket_data("1111111",7,WS_Frame_Header::WS_TEXT_FRAME);
-                string json_request="{\"stream_name\":\"test0\",\"account\":\"admin\",\"password\":\"micagent\"}";
+                string json_request="{\"stream_name\":\"micagent/3d5e384288000001/local_195\",\"account\":\"admin\",\"password\":\"micagent\"}";
                 uint32_t send_len=2+json_request.size();
                 shared_ptr<uint8_t>send_buf(new uint8_t[send_len],default_delete<uint8_t[]>());
                 send_buf.get()[0]=1;

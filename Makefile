@@ -42,6 +42,7 @@ applications/core_server \
 applications/proxy_server_mode \
 sqlite \
 web \
+mqtt \
 
 .PHONY :all  lib app clean help distclean install uninstall
 all : lib app

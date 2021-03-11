@@ -104,7 +104,7 @@ void upnp_helper::check_internal_ip()
 void upnp_helper::check_external_ip()
 {
     string external_ip=UpnpMapper::Instance().APi_getexternalIP();
-    add_external_ip_to_dev(external_ip);
+    //add_external_ip_to_dev(external_ip);
     UpnpMapper::Instance().Api_GetNewexternalIP();
 }
 void upnp_helper::check_port_task()
